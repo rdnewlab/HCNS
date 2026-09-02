@@ -864,15 +864,38 @@
     }
     #tab-duyettong .hd-toc-item.active .dem { background: rgba(255,255,255,.28); }
 
-    /* CHƯA SỬA (chờ duyệt): iPhone TỰ PHÓNG TO trang khi bấm vào ô nhập có cỡ chữ DƯỚI 16px.
-       Đo thật 04/09/2026 ở khổ 375px, màn "3. Chấm công sản lượng": 24/24 ô đang là 12–13px
-       (đặt inline trong code), và app CHƯA có luật chặn. Hậu quả: người dùng gõ trên điện thoại
-       thấy màn hình nhảy to, phải chụm tay thu lại — đúng điều chủ app từng hỏi.
-       Cách chữa là thêm vào đây:
-           @media (max-width:768px){ input,select,textarea{ font-size:16px !important; } }
-       ĐÁNH ĐỔI phải cân nhắc trước khi bật: chữ 12,5px → 16px làm BẢNG NHẬP NHIỀU CỘT rộng thêm
-       khoảng 1/4, nên phải cuộn ngang trong khung nhiều hơn. Vì là thay đổi giao diện diện rộng
-       nên KHÔNG tự bật — chờ chủ app chốt. Máy tính (>768px) không bị ảnh hưởng dù bật hay không. */
+    /* ========================================================================
+       [ĐÃ BẬT 05/09/2026] CHỐNG ĐIỆN THOẠI TỰ PHÓNG TO KHI BẤM VÀO Ô NHẬP
+       ------------------------------------------------------------------------
+       LỊCH SỬ: luật này viết sẵn từ 04/09/2026 nhưng CỐ Ý để treo chờ chủ app
+       duyệt (là thay đổi giao diện diện rộng). Ngày 05/09/2026 chủ app báo đúng
+       triệu chứng: "vừa mở app luôn có cảm giác to hơn màn hình, phải kéo nhỏ
+       lại mới được" → duyệt xong, bật.
+
+       VÌ SAO PHẢI CÓ: cả iPhone lẫn Android đều TỰ PHÓNG TO cả trang khi người
+       dùng bấm vào một ô nhập có cỡ chữ DƯỚI 16px — đó là quy tắc cứng của trình
+       duyệt, không tắt được bằng cách khác. Phóng xong nó KHÔNG tự thu lại, nên
+       người dùng phải chụm hai ngón kéo nhỏ về. Đo thật 04/09/2026 ở khổ 375px:
+       24/24 ô của màn "Chấm công sản lượng" đang là 12–13px → lần nào gõ cũng nhảy.
+
+       ⚠️ ĐÁNH ĐỔI ĐÃ BIẾT (chủ app đã được báo): chữ trong ô 12,5px → 16px làm
+       BẢNG NHẬP NHIỀU CỘT rộng thêm khoảng 1/4, nên trên điện thoại phải cuộn
+       ngang trong khung bảng nhiều hơn trước. Đổi lại: không còn màn hình nhảy
+       to mỗi lần gõ. Muốn quay lại như cũ thì xoá đúng ba dòng luật bên dưới.
+
+       ⚠️ MÁY TÍNH KHÔNG ĐỔI: luật nằm trong @media (max-width:768px).
+       ======================================================================== */
+    @media (max-width: 768px) {
+      /* [SỬA 05/09/2026] Ban đầu chỉ áp cho vùng nội dung, nhưng ĐO LẠI thấy MÀN
+         ĐĂNG NHẬP nằm NGOÀI vùng đó và vẫn để 13px — mà đây đúng là ô người dùng
+         chạm ĐẦU TIÊN khi mở app, nên máy phóng to ngay từ giây đầu. Nay áp cho
+         MỌI ô nhập, kể cả màn đăng nhập, màn nhập key và các hộp thoại. */
+      input,
+      select,
+      textarea {
+        font-size: 16px !important;
+      }
+    }
 
     /* [THÊM MỚI 28/08/2026] TRÊN ĐIỆN THOẠI: 2 nút "Điểm Danh Báo Công" và "Tạo Đơn Xin Nghỉ/OT"
        ở thẻ chào Trang chủ nằm CÙNG 1 HÀNG, mỗi nút rộng đúng 50% cho cân đối (không rớt dòng lệch).
@@ -900,7 +923,8 @@
       /* [THÊM MỚI 01/09/2026] Hàng nút Bảng Lương (nhiều nút + ô chọn tháng) → LƯỚI 2 nút/hàng đều đặn
          trên điện thoại. KHÔNG dùng .btn-row-even (nowrap 1 hàng) vì ≥7 nút sẽ bị ép chật. Máy tính (>768px)
          giữ nguyên flex-wrap như cũ (rule này chỉ trong @media điện thoại). */
-      .pr-toolbar { display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px !important; width: 100%; }
+      /* [SỬA 05/09/2026] "1fr" → "minmax(0,1fr)". Xem giải thích ở khối CHỐNG LÒI RA NGOÀI phía dưới. */
+      .pr-toolbar { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px !important; width: 100%; }
       .pr-toolbar > * { width: 100%; margin: 0 !important; }
       .pr-toolbar > .btn { justify-content: center; }
       /* [THÊM MỚI 01/09/2026] Nhãn lưới phím tắt Trang chủ KHÔNG xuống 2 dòng trên màn hẹp (giữ ô đều nhau);
@@ -2091,6 +2115,11 @@
       .sidebar.show {
         transform: translateX(0) !important;
       }
+      /* [THÊM MỚI 05/09/2026] Menu trượt ra cũng phải chừa chỗ hàng trạng thái,
+         nếu không tên người dùng ở đầu menu bị đồng hồ đè lên. */
+      .sidebar {
+        padding-top: env(safe-area-inset-top) !important;
+      }
       .sidebar-backdrop {
         display: none;
         position: fixed;
@@ -2140,9 +2169,15 @@
         cursor: pointer;
       }
 
+      /* [SỬA 05/09/2026] CHỪA CHỖ CHO CỘT SÓNG / PIN / ĐỒNG HỒ Ở ĐỈNH MÀN HÌNH.
+         Lỗi cũ: tiêu đề trang và đồng hồ hệ thống đè chồng lên nhau (chủ app chụp ảnh báo).
+         Nguyên nhân: trang khai viewport-fit=cover để chống thanh gạt iPhone ở ĐÁY, nhưng
+         chỉ chừa chỗ ở đáy mà quên chừa ở ĐỈNH → thanh đầu trang chui lên dưới hàng trạng thái.
+         env(safe-area-inset-top) = 0 trên máy tính và máy không có tai thỏ → KHÔNG đổi gì ở đó. */
       .top-header {
-        height: 52px !important;
-        padding: 0 10px !important;
+        height: calc(52px + env(safe-area-inset-top)) !important;
+        padding: env(safe-area-inset-top) 10px 0 10px !important;
+        box-sizing: border-box !important;
       }
       .page-title {
         font-size: 13.5px !important;
@@ -2160,7 +2195,9 @@
 
       .content-area {
         padding: 10px 8px calc(var(--bottom-bar-h) + 16px + env(safe-area-inset-bottom)) !important;
-        height: calc(100vh - 52px) !important;
+        /* [SỬA 05/09/2026] Trừ thêm phần vừa chừa cho hàng trạng thái ở trên,
+           nếu không vùng nội dung sẽ cao dư đúng bằng chừng đó và bị đẩy tụt xuống. */
+        height: calc(100vh - 52px - env(safe-area-inset-top)) !important;
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
       }
@@ -2239,11 +2276,181 @@
         overflow-x: auto !important;
         -webkit-overflow-scrolling: touch !important;
       }
+
+      /* ========================================================================
+         [THÊM MỚI 05/09/2026] CHỐNG LÒI RA NGOÀI MÀN HÌNH ĐIỆN THOẠI
+         ------------------------------------------------------------------------
+         CHUYỆN GÌ ĐÃ XẢY RA: chủ app mở trên điện thoại thấy màn hình "to hơn máy",
+         phải chụm hai ngón kéo nhỏ lại; riêng trang Bảng lương thì tiêu đề bị cắt
+         mất bên trái, còn các nút "Xuất Bảng Lương Excel", "Nhập doanh số (KD)",
+         "Nạp chấm công mẫu" lòi hẳn ra ngoài.
+
+         VÌ SAO: gần như mọi lưới trong app khai độ rộng cột là "1fr". Nghe thì
+         tưởng "chia đôi đều nhau", nhưng CSS hiểu "1fr" là "minmax(auto, 1fr)":
+         cột KHÔNG BAO GIỜ được hẹp hơn dòng chữ dài nhất nằm trong nó. Máy nào
+         để cỡ chữ lớn (Cài đặt → Màn hình → Cỡ chữ) thì dòng chữ dài ra, cột phình
+         theo, và cả khối đẩy tràn khỏi màn hình.
+
+         VÍ DỤ SỐ THẬT (đo ở khổ 320px, cỡ chữ ×1,35 — đúng máy chủ app):
+           nút "📤 Xuất Bảng Lương Excel" cần 221px
+           → hai cột 207 + 221 + khe 8 = 436px, nhét vào khung rộng 266px
+           → lòi ra 143px. Đúng bằng khoảng bị cắt trong ảnh chủ app gửi.
+
+         CÁCH CHỮA: "minmax(0, 1fr)" — bỏ cái sàn đó đi, cho cột co lại; đồng thời
+         cho chữ trong nút được xuống dòng. Nút thấp/cao thêm một dòng, nhưng
+         KHÔNG BAO GIỜ lòi ra ngoài nữa.
+
+         ⚠️ Cả khối này nằm trong @media (max-width:768px) → GIAO DIỆN MÁY TÍNH
+         GIỮ NGUYÊN 100%.
+         ======================================================================== */
+      .stats-grid,
+      #tab-self_attendance .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
+
+      /* Cho mọi ô con của lưới/flex được phép co lại. Thiếu min-width:0 thì
+         phần tử con vẫn giữ bề rộng theo chữ dài nhất và đẩy khung ra ngoài. */
+      .stats-grid > *, .pr-toolbar > *, .form-row > *, .row > * {
+        min-width: 0 !important;
+      }
+
+      /* Thẻ và tiêu đề: không cho rộng quá màn, chữ quá dài thì xuống dòng
+         (overflow-wrap: anywhere) thay vì đẩy cả thẻ đi. */
+      .card, .cfg-card, .stat-card, .card-header, .cfg-card-hdr {
+        max-width: 100% !important;
+        min-width: 0 !important;
+      }
+      .card-title, .cfg-card-hdr, .stat-value, .stat-label, .stat-info {
+        min-width: 0 !important;
+        overflow-wrap: anywhere;
+      }
+
+      /* Chữ trong nút của thanh công cụ Bảng lương được xuống dòng. */
+      .pr-toolbar > .btn {
+        white-space: normal !important;
+        line-height: 1.25 !important;
+        overflow-wrap: anywhere;
+      }
+
+      /* Lưới khai sẵn "auto-fit, minmax(200px, 1fr)" ở phần dùng chung: trên màn
+         hẹp 320px thì 200px là quá rộng, tự nó đã tràn. Hạ sàn xuống 0. */
+      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+
+      /* ------------------------------------------------------------------------
+         [THÊM MỚI 05/09/2026] LƯỚI KHAI THẲNG TRONG THẺ HTML — BỎ SÀN CỘT
+         Rất nhiều màn (Báo cáo nhân sự, Trang chủ, Trang tin…) khai lưới ngay
+         trong thẻ HTML kiểu:  repeat(auto-fit, minmax(340px, 1fr))
+         Ý định đúng: "màn rộng thì xếp nhiều cột, màn hẹp thì tự xuống 1 cột".
+         Nhưng 340px là SÀN CỨNG — cột không được hẹp hơn thế. Màn điện thoại chỉ
+         còn 304px sau khi trừ lề, nên thẻ vẫn bị ép rộng 340px và lòi ra 36px.
+         Đo thật: Báo cáo Nhân sự lòi 28px, Trang chủ 8px, Trang tin 7px.
+         Trên điện thoại luôn chỉ đủ chỗ cho MỘT cột, nên ép thẳng về một cột.
+         Chỉ đụng lưới có "auto-fit"/"auto-fill" (loại vốn đã định tự xuống dòng),
+         KHÔNG đụng lưới cố định 2 cột như 4 ô số ở Trang chủ.
+         ------------------------------------------------------------------------ */
+      /* [SỬA 05/09/2026 — sửa lại chính luật viết sáng nay] CHỈ ép về một cột những lưới
+         khai sàn cột TO (260–340px). Bản đầu tôi viết "mọi lưới auto-fit về một cột" là SAI:
+         nó ép luôn lưới "Truy Cập Nhanh Các Phân Hệ" ở Trang chủ từ 3 cột × 4 hàng thành
+         1 cột × 12 hàng, kéo mãi không hết.
+
+         VÌ SAO phân biệt: lưới Truy Cập Nhanh khai sàn 88px → ba cột chỉ hết 264px, VỪA
+         màn 304px, nó có tràn đâu mà phải ép. Chỉ sàn 260–340px mới thật sự rộng hơn màn
+         (304px sau khi trừ lề) nên luôn lòi ra.
+         Các sàn nhỏ (88 · 150 · 180 · 200 · 210 · 220px) GIỮ NGUYÊN — tự chia 2–3 cột vừa màn. */
+      [style*="minmax(260px"],
+      [style*="minmax( 260px"],
+      [style*="minmax(280px"],
+      [style*="minmax( 280px"],
+      [style*="minmax(300px"],
+      [style*="minmax( 300px"],
+      [style*="minmax(310px"],
+      [style*="minmax( 310px"],
+      [style*="minmax(320px"],
+      [style*="minmax( 320px"],
+      [style*="minmax(340px"],
+      [style*="minmax( 340px"] {
+        grid-template-columns: minmax(0, 1fr) !important;
+      }
+
+      /* Mọi ô con của lưới khai thẳng trong thẻ HTML cũng phải được phép co lại.
+         Thiếu dòng này thì một dòng chữ dài trong ô vẫn kéo cả cột rộng ra. */
+      [style*="grid-template-columns"] > * {
+        min-width: 0 !important;
+      }
+
+      /* ------------------------------------------------------------------------
+         [THÊM MỚI 05/09/2026] HAI CHỖ CUỐI CÙNG CÒN LÒI RA (đo được 7–8px)
+
+         (a) Nhãn ô số (.stat-label) đang khai "không xuống dòng". Trên máy tính thì
+             hợp lý — nhãn ngắn, để một dòng cho gọn. Trên điện thoại, dòng
+             "Tổng giờ OT tích lũy" cần 151px mà ô chỉ còn 124px → đẩy lòi ra.
+             Cho xuống dòng: ô cao thêm một dòng, nhưng không lòi nữa.
+
+         (b) Vài khối khai thẳng trong thẻ HTML một bề rộng tối thiểu (vd
+             min-width:280px) để chia hai cột trên máy tính. Khối đó nằm trong khung
+             chỉ 229px trên điện thoại → tự nó đẩy ra 51px.
+             Bỏ sàn đó đi TRÊN ĐIỆN THOẠI THÔI.
+
+         ⚠️ Cố ý chỉ áp cho thẻ <div>, và loại trừ khung cuộn bảng: bảng dữ liệu
+         nhiều cột vẫn cần bề rộng tối thiểu của nó để sinh thanh cuộn ngang
+         BÊN TRONG khung — bỏ luôn cái đó là bảng bị bóp nát, đọc không nổi.
+         ------------------------------------------------------------------------ */
+      .stat-label, .stat-value {
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+      }
+
+      /* [THÊM MỚI 05/09/2026] CHỐT CHẶN CUỐI — thử ở mức cực đoan (cỡ chữ ×1,6 trên
+         màn 320px) thì màn "Ghi Nhận & Phê Duyệt" và màn "Họp" vẫn lòi ~44px.
+         Ép mọi khối trong vùng nội dung không được rộng quá khung của nó.
+         ⚠️ LOẠI TRỪ <table> và khung cuộn bảng: bảng nhiều cột phải giữ bề rộng
+         thật thì mới có thanh cuộn ngang bên trong; bỏ đi là bảng bị bóp nát. */
+      .content-area .hd-section,
+      .content-area .hd-content,
+      .content-area .hd-toc {
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .content-area .card *:not(table):not(.table-responsive),
+      .content-area .hd-section *:not(table):not(.table-responsive) {
+        min-width: 0 !important;
+      }
+
+      /* [THÊM MỚI 05/09/2026] Màn Họp: các hàng ngang trong thẻ họp (biểu tượng +
+         giờ + địa điểm) khai display:flex nhưng không cho xuống hàng → cỡ chữ lớn
+         là đẩy lòi ra 28px. Cho xuống hàng: dòng dài thì gãy xuống dưới, không lòi. */
+      .content-area .rdv-card [style*="display:flex"],
+      .content-area .rdv-card [style*="display: flex"] {
+        flex-wrap: wrap !important;
+      }
+      /* [SỬA 05/09/2026 — sửa lại chính luật viết sáng nay] Chỉ vô hiệu SÀN CHIA CỘT
+         (260–420px). Sàn này sinh ra để chia hai cột trên máy tính, nhưng nó rộng
+         hơn cả bề ngang màn điện thoại (chỉ còn 304px sau khi trừ lề) nên luôn đẩy
+         nội dung lòi ra ngoài.
+
+         ⚠️ CỐ Ý KHÔNG đụng hai loại còn lại — bỏ nhầm là hỏng chỗ khác:
+           · sàn nhỏ (90–240px): để các ô số TỰ XUỐNG HÀNG khi màn hẹp. Bỏ đi thì
+             ba ô bị ép chung một hàng, mỗi ô còn 93px, con số cần 152px → lòi ra
+             (đã đo thật ở màn Kho: lòi thêm 68px).
+           · sàn rất lớn (≥520px): là bề rộng thật của bảng nhiều cột, cần giữ để
+             bảng sinh thanh cuộn ngang bên trong khung, thay vì bị bóp nát. */
+      .content-area div[style*="min-width:260px"],
+      .content-area div[style*="min-width: 260px"],
+      .content-area div[style*="min-width:280px"],
+      .content-area div[style*="min-width: 280px"],
+      .content-area div[style*="min-width:380px"],
+      .content-area div[style*="min-width: 380px"],
+      .content-area div[style*="min-width:420px"],
+      .content-area div[style*="min-width: 420px"] {
+        min-width: 0 !important;
+      }
     }
 
     @media (max-width: 480px) {
+      /* [SỬA 05/09/2026] "1fr" → "minmax(0,1fr)" (cùng lý do khối CHỐNG LÒI RA NGOÀI ở trên). */
       .stats-grid {
-        grid-template-columns: 1fr !important;
+        grid-template-columns: minmax(0, 1fr) !important;
       }
       .live-clock-time {
         font-size: 32px !important;
@@ -2894,194 +3101,7 @@
         <!-- Nhóm 2: QL Nhân sự (Quản lý) -->
         <div id="tab-tasks" class="tab-content" style="display:none"></div>
         <div id="tab-kpi" class="tab-content" style="display:none"></div>
-        <div id="tab-attendance" class="tab-content" style="display: none;">
-            <div class="guide-box">
-              <i class="fa-solid fa-lightbulb guide-icon"></i>
-              <div class="guide-content">
-                <div class="guide-title">💡 Luồng Chấm Công: NGUỒN VÀO → XỬ LÝ → KẾT QUẢ</div>
-                <div class="guide-steps">
-                  <strong>① Danh mục:</strong> Danh sách nhân sự tham gia chấm công.<br>
-                  <strong>② Nguồn vào (4 nguồn dữ liệu thô):</strong> ⏰ Chấm công máy · 📱 Chấm công app · 🏭 Chấm công sản lượng · 📝 Đơn phép/OT đã duyệt.<br>
-                  <strong>③ Xử lý:</strong> 🔀 Đối chiếu các nguồn → ra công theo quy tắc (dung sai, ca, ký hiệu — cài ở 6.2).<br>
-                  <strong>④ Kết quả:</strong> 🏢 Bảng công phòng ban · 📊 Tổng công nhân viên (tính lương) · 🖨️ Báo cáo &amp; in.
-                </div>
-              </div>
-            </div>
-
-            <!-- [SỬA 29/08/2026 lần 2] BỐ CỤC MENU DỌC TRÁI + NỘI DUNG PHẢI (kiểu màn 6.2) theo yêu cầu
-                 chủ app — thay cho thanh tab ngang. Nhóm theo luồng: ① Danh mục ② Nguồn vào ③ Xử lý ④ Kết quả.
-                 Menu 210px (hẹp để chừa bề rộng cho bảng); bảng rộng tự cuộn ngang trong khung nội dung.
-                 switchSubTab / renderSubTabContent GIỮ NGUYÊN — chỉ đổi VỎ điều hướng. Tái dùng class .cfg62-mi. -->
-            <div class="bcc-wrap" style="display:grid;grid-template-columns:210px 1fr;gap:14px;align-items:start;">
-              <div style="background:var(--bg-surface);border:1px solid var(--border-color);border-radius:12px;padding:10px;box-shadow:var(--shadow-sm);position:sticky;top:10px;">
-                <div style="font-size:11.5px;font-weight:700;color:var(--text-secondary);padding:2px 6px 6px;"><i class="fa-solid fa-list"></i> QUY TRÌNH CHẤM CÔNG</div>
-                
-                    <div style="font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:.5px;padding:4px 6px 3px;">① DANH MỤC</div>
-                    
-                    <button type="button" class="cfg62-mi active" onclick="AppModules.attendance.switchSubTab('nhan_su')">
-                      <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;">👥</span>
-                      <span style="min-width:0;"><span style="display:block;">0. Danh sách nhân sự</span><span class="mi-mota">Ai tham gia chấm công (5)</span></span>
-                    </button>
-                    <div style="font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:.5px;padding:9px 6px 3px;border-top:1px solid var(--border-light);margin-top:4px;">② NGUỒN VÀO (dữ liệu thô)</div>
-                    
-                    <button type="button" class="cfg62-mi " onclick="AppModules.attendance.switchSubTab('may_cham_cong')">
-                      <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;">⏰</span>
-                      <span style="min-width:0;"><span style="display:block;">1. Chấm công bằng máy</span><span class="mi-mota">Vân tay/khuôn mặt, Excel (5)</span></span>
-                    </button>
-                    
-                    <button type="button" class="cfg62-mi " onclick="AppModules.attendance.switchSubTab('app_cham_cong')">
-                      <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;">📱</span>
-                      <span style="min-width:0;"><span style="display:block;">2. Chấm công bằng app</span><span class="mi-mota">GPS/Ảnh/Online tự chấm (0)</span></span>
-                    </button>
-                    
-                    <button type="button" class="cfg62-mi " onclick="AppModules.attendance.switchSubTab('cham_cong_sl')">
-                      <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;">🏭</span>
-                      <span style="min-width:0;"><span style="display:block;">3. Chấm công sản lượng</span><span class="mi-mota">Khoán công đoạn CV SL (0)</span></span>
-                    </button>
-                    
-                    <button type="button" class="cfg62-mi " onclick="AppModules.attendance.switchSubTab('don_xin_phep')">
-                      <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;">📝</span>
-                      <span style="min-width:0;"><span style="display:block;">4. Đơn đã duyệt</span><span class="mi-mota">Phép, OT, ra ngoài (3)</span></span>
-                    </button>
-                    <div style="font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:.5px;padding:9px 6px 3px;border-top:1px solid var(--border-light);margin-top:4px;">③ XỬ LÝ</div>
-                    
-                    <button type="button" class="cfg62-mi " onclick="AppModules.attendance.switchSubTab('doi_chieu')">
-                      <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;">🔀</span>
-                      <span style="min-width:0;"><span style="display:block;">5. Đối chiếu công</span><span class="mi-mota">Gộp nguồn → ra công</span></span>
-                    </button>
-                    <div style="font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:.5px;padding:9px 6px 3px;border-top:1px solid var(--border-light);margin-top:4px;">④ KẾT QUẢ</div>
-                    
-                    <button type="button" class="cfg62-mi " onclick="AppModules.attendance.switchSubTab('theo_phong_ban')">
-                      <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;">🏢</span>
-                      <span style="min-width:0;"><span style="display:block;">6. Bảng công phòng ban</span><span class="mi-mota">Chi tiết theo bộ phận</span></span>
-                    </button>
-                    
-                    <button type="button" class="cfg62-mi " onclick="AppModules.attendance.switchSubTab('bang_cong_thang')">
-                      <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;">📅</span>
-                      <span style="min-width:0;"><span style="display:block;">7. Bảng công tháng</span><span class="mi-mota">Ma trận ngày × người (kiểu Excel)</span></span>
-                    </button>
-                    
-                    <button type="button" class="cfg62-mi " onclick="AppModules.attendance.switchSubTab('tong_theo_nhan_vien')">
-                      <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;">📊</span>
-                      <span style="min-width:0;"><span style="display:block;">8. Tổng công nhân viên</span><span class="mi-mota">Chốt công tính lương</span></span>
-                    </button>
-                    
-                    <button type="button" class="cfg62-mi " onclick="AppModules.attendance.switchSubTab('bao_cao_bang_cong')">
-                      <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;">🖨️</span>
-                      <span style="min-width:0;"><span style="display:block;">9. Báo cáo &amp; in</span><span class="mi-mota">A4 + Excel Kế toán</span></span>
-                    </button>
-                  
-              </div>
-
-              <!-- NỘI DUNG MỤC ĐANG CHỌN -->
-              <div id="attendanceSubContent" style="min-width:0;">
-                <!-- [THÊM MỚI 30/08/2026] THANH CHỌN THÁNG DÙNG CHUNG: chọn 1 lần, mọi bảng con + Bảng
-                     Lương đều theo tháng này; nhớ lựa chọn để mở lại đúng tháng; xem lại tháng cũ dễ. -->
-                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--primary-lighter);border:1px solid var(--border-light);border-radius:10px;padding:8px 12px;margin-bottom:12px;">
-                  <span style="font-size:13px;font-weight:600;color:var(--primary-dark);"><i class="fa-regular fa-calendar-days"></i> Tháng làm việc:</span>
-                  <input type="month" value="2026-09" style="font-size:13px;padding:4px 8px;border:1px solid var(--border-color);border-radius:6px;" onchange="CoreService.datThangLamViec(this.value); AppModules.attendance.render();">
-                  <span style="font-size:11.5px;color:var(--text-secondary);">Áp dụng cho: chấm công máy · đối chiếu · bảng công · tổng công · <strong>và Bảng Lương</strong>. Đổi tháng để xem lại tháng cũ.</span>
-                </div>
-                
-              <div class="card">
-                <div class="card-header">
-                  <div class="card-title"><i class="fa-solid fa-users"></i> 1. Danh Sách Nhân Sự Tham Gia Chấm Công</div>
-                  <div style="display:flex; gap:8px;">
-                    <button class="btn btn-sm btn-success" onclick="AppModules.attendance.checkInToday()">
-                      <i class="fa-solid fa-location-dot"></i> Điểm Danh Nhanh Hôm Nay
-                    </button>
-                  </div>
-                </div>
-                <div class="table-responsive">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th class="col-stt" style="width:44px">STT</th>
-                        <th class="col-ma">Mã NV</th>
-                        <th>Họ Và Tên</th>
-                        <th>Phòng Ban</th>
-                        <th>Chức Vụ</th>
-                        <th>Ca Làm Mặc Định</th>
-                        <th class="col-so">Công Chuẩn</th>
-                        <th class="col-so" style="color:var(--primary-main)">Phép Năm Còn</th>
-                        <th style="text-align:center">Trạng Thái</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      
-                        <tr>
-                          <td class="col-stt">1</td>
-                          <td class="col-ma">NV001</td>
-                          <!-- [SỬA 29/08/2026] Gộp về 1 dòng cho gọn kiểu Excel: chỉ hiện Tên, email đưa vào tooltip (rê chuột xem). -->
-                          <td title="giamdoc@company.com"><strong>Nguyễn Văn Giám Đốc</strong></td>
-                          <td>Ban Giám Đốc</td>
-                          <td>Tổng Giám Đốc</td>
-                          <td><span class="badge badge-info">Ca HC (08:00 - 17:30)</span></td>
-                          <td class="col-so" style="font-weight:bold;">22 công</td>
-                          <td class="col-so" style="font-weight:bold; color:var(--primary-main);">14,0 ngày</td>
-                          <td style="text-align:center"><span class="badge badge-success">🟢 Đang chấm công</span></td>
-                        </tr>
-                      
-                        <tr>
-                          <td class="col-stt">2</td>
-                          <td class="col-ma">NV002</td>
-                          <!-- [SỬA 29/08/2026] Gộp về 1 dòng cho gọn kiểu Excel: chỉ hiện Tên, email đưa vào tooltip (rê chuột xem). -->
-                          <td title="hr@company.com"><strong>Trần Thị Nhân Sự</strong></td>
-                          <td>Hành Chính Nhân Sự</td>
-                          <td>Trưởng Phòng HCNS</td>
-                          <td><span class="badge badge-info">Ca HC (08:00 - 17:30)</span></td>
-                          <td class="col-so" style="font-weight:bold;">22 công</td>
-                          <td class="col-so" style="font-weight:bold; color:var(--primary-main);">12,0 ngày</td>
-                          <td style="text-align:center"><span class="badge badge-success">🟢 Đang chấm công</span></td>
-                        </tr>
-                      
-                        <tr>
-                          <td class="col-stt">3</td>
-                          <td class="col-ma">NV003</td>
-                          <!-- [SỬA 29/08/2026] Gộp về 1 dòng cho gọn kiểu Excel: chỉ hiện Tên, email đưa vào tooltip (rê chuột xem). -->
-                          <td title="truongphong@company.com"><strong>Lê Văn Quản Lý</strong></td>
-                          <td>Kỹ Thuật &amp; Sản Xuất</td>
-                          <td>Trưởng Phòng Kỹ Thuật</td>
-                          <td><span class="badge badge-info">Ca HC (08:00 - 17:30)</span></td>
-                          <td class="col-so" style="font-weight:bold;">22 công</td>
-                          <td class="col-so" style="font-weight:bold; color:var(--primary-main);">11,0 ngày</td>
-                          <td style="text-align:center"><span class="badge badge-success">🟢 Đang chấm công</span></td>
-                        </tr>
-                      
-                        <tr>
-                          <td class="col-stt">4</td>
-                          <td class="col-ma">NV004</td>
-                          <!-- [SỬA 29/08/2026] Gộp về 1 dòng cho gọn kiểu Excel: chỉ hiện Tên, email đưa vào tooltip (rê chuột xem). -->
-                          <td title="nhanvien@company.com"><strong>Phạm Văn Nhân Viên</strong></td>
-                          <td>Kỹ Thuật &amp; Sản Xuất</td>
-                          <td>Kỹ Sư Lập Trình</td>
-                          <td><span class="badge badge-info">Ca HC (08:00 - 17:30)</span></td>
-                          <td class="col-so" style="font-weight:bold;">22 công</td>
-                          <td class="col-so" style="font-weight:bold; color:var(--primary-main);">10,0 ngày</td>
-                          <td style="text-align:center"><span class="badge badge-success">🟢 Đang chấm công</span></td>
-                        </tr>
-                      
-                        <tr>
-                          <td class="col-stt">5</td>
-                          <td class="col-ma">NV005</td>
-                          <!-- [SỬA 29/08/2026] Gộp về 1 dòng cho gọn kiểu Excel: chỉ hiện Tên, email đưa vào tooltip (rê chuột xem). -->
-                          <td title="ketoan@company.com"><strong>Hoàng Thị Kế Toán</strong></td>
-                          <td>Tài Chính Kế Toán</td>
-                          <td>Kế Toán Viên</td>
-                          <td><span class="badge badge-info">Ca HC (08:00 - 17:30)</span></td>
-                          <td class="col-so" style="font-weight:bold;">22 công</td>
-                          <td class="col-so" style="font-weight:bold; color:var(--primary-main);">12,0 ngày</td>
-                          <td style="text-align:center"><span class="badge badge-success">🟢 Đang chấm công</span></td>
-                        </tr>
-                      
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            
-              </div>
-            </div>
-          </div>
+        <div id="tab-attendance" class="tab-content" style="display:none"></div>
         <!-- [THÊM MỚI 28/08/2026] Ô chứa mục "Đề Xuất Nhân Sự" (phòng ban thiếu người → đề xuất tuyển, duyệt nhiều cấp). -->
         <div id="tab-denxuat" class="tab-content" style="display:none"></div>
         <!-- [THÊM MỚI 02/09/2026] Ô chứa TRUNG TÂM "Ghi Nhận & Phê Duyệt" — gom MỌI việc cần người đang đăng
@@ -3114,7 +3134,595 @@
              2 tab con (tài khoản + ma trận) được vẽ BÊN TRONG nó sau khi nhập mật khẩu.
              Giữ tab-rbac cũ (không còn trên menu) để không vỡ code cũ còn tham chiếu. -->
         <div id="tab-rbac" class="tab-content" style="display:none"></div>
-        <div id="tab-phanquyen" class="tab-content" style="display:none"></div>
+        <div id="tab-phanquyen" class="tab-content" style="display: none;">
+          <!-- [SỬA 28/08/2026] Header gọn đẹp: icon + tiêu đề + trạng thái mở khóa; thanh 2 tab con tách riêng. -->
+          <div class="card" style="padding:12px 16px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:38px;height:38px;border-radius:10px;background:#eef2ff;color:#4f46e5;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;"><i class="fa-solid fa-user-shield"></i></div>
+              <div>
+                <div style="font-size:15px;font-weight:600;color:var(--text-primary);line-height:1.2;">Quản Trị Phân Quyền &amp; Tài Khoản</div>
+                <div style="font-size:11.5px;color:var(--text-secondary);"><i class="fa-solid fa-unlock" style="color:#16a34a"></i> Đã mở khóa — nhớ bấm "Khóa lại" khi rời khỏi khu này.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <!-- [THÊM MỚI 28/08/2026] Nút đổi mật khẩu quản trị (nhập mật khẩu cũ → đặt mật khẩu mới). -->
+              <button class="btn btn-sm btn-secondary" onclick="AppModules.rbac.doiMatKhau()"><i class="fa-solid fa-key"></i> Đổi Mật Khẩu</button>
+              <button class="btn btn-sm btn-secondary" onclick="AppModules.rbac.khoaLai()"><i class="fa-solid fa-lock"></i> Khóa Lại</button>
+            </div>
+          </div>
+          <div style="display:inline-flex;gap:4px;background:var(--bg-surface);padding:4px;border-radius:10px;border:1px solid var(--border-color);box-shadow:var(--shadow-sm);flex-wrap:wrap;margin-bottom:14px;">
+            
+          <button class="btn btn-sm btn-primary" style="" onclick="AppModules.phanquyen.chonTab('taikhoan')"><i class="fa-solid fa-users-gear"></i> Danh Sách Tài Khoản</button>
+            
+          <button class="btn btn-sm btn-secondary" style="background:transparent;border-color:transparent;color:var(--text-secondary);" onclick="AppModules.phanquyen.chonTab('matran')"><i class="fa-solid fa-table-cells"></i> Ma Trận Phân Quyền</button>
+            
+          <button class="btn btn-sm btn-secondary" style="background:transparent;border-color:transparent;color:var(--text-secondary);" onclick="AppModules.phanquyen.chonTab('quytrinh')"><i class="fa-solid fa-diagram-project"></i> Quy Trình Duyệt</button>
+          </div>
+          <div id="tab-taikhoan" style="display:block">
+          <!-- [SỬA 28/08/2026] Bố cục kiểu Auto RD V12: dải KPI + tiêu đề khu có thanh màu + bảng đầu màu chính. -->
+          <div class="rdv-kpis">
+            <div class="rdv-kpi" style="--kpi-c:#2563eb"><div class="rdv-kpi-num">5</div><div class="rdv-kpi-lb"><i class="fa-solid fa-users"></i> Tổng tài khoản</div></div>
+            <div class="rdv-kpi" style="--kpi-c:#16a34a"><div class="rdv-kpi-num">5</div><div class="rdv-kpi-lb"><i class="fa-solid fa-unlock"></i> Đang mở đăng nhập</div></div>
+            <div class="rdv-kpi" style="--kpi-c:#dc2626"><div class="rdv-kpi-num">0</div><div class="rdv-kpi-lb"><i class="fa-solid fa-pause"></i> Đang tạm dừng</div></div>
+          </div>
+          <div class="rdv-head">
+            <div class="rdv-ico"><i class="fa-solid fa-users-gear"></i></div>
+            <div>
+              <div class="rdv-tt">Danh Sách Tài Khoản &amp; Phân Bổ Vai Trò</div>
+              <div class="rdv-sub">5 người · quản lý quyền, mã PIN, tạm dừng đăng nhập</div>
+            </div>
+            <div class="rdv-act" style="display:flex;gap:8px;flex-wrap:wrap;">
+              <!-- [THÊM MỚI 01/09/2026] Gửi danh thiếp (mã ĐN + PIN) hàng loạt qua email — cần bật Google Sheets. -->
+              <!-- [SỬA 03/09/2026 lần 3] Menu Nhập/Xuất (cấp tài khoản hàng loạt từ Excel/CSV) đứng CÙNG HÀNG
+                   với các nút sẵn có — trước đây nằm riêng 1 hàng phía dưới, tốn chỗ. -->
+              <div class="dio-wrap">
+          <button type="button" class="btn btn-sm btn-secondary dio-nut" title="Nhập / xuất dữ liệu bảng Hồ sơ nhân sự" onclick="DataIO.moMenu(this)">📂 Nhập / Xuất <span style="font-size:9px;">▾</span></button>
+          <div class="dio-menu" hidden=""><div class="dio-tieude">Hồ sơ nhân sự</div><button type="button" class="dio-item" title="Tệp CSV mẫu có ĐÚNG tên cột + 1 dòng ví dụ — điền xong nhập lại" onclick="DataIO.dongMenu();DataIO.taiFileMau('nhanVien')">📋 Tải file mẫu (CSV)</button><button type="button" class="dio-item" title="Chọn sheet, khoanh vùng, gán từng cột — giống Cài đặt 6.2" onclick="DataIO.dongMenu();DataIO.nhapExcel('nhanVien')">🧙 Nhập Excel (chọn cột)</button><button type="button" class="dio-item" title="Xuất bảng ra tệp .xlsx" onclick="DataIO.dongMenu();DataIO.xuatExcel('nhanVien')">📊 Xuất Excel</button><button type="button" class="dio-item" title="Xuất nguyên dữ liệu gốc — sao lưu / chuyển máy" onclick="DataIO.dongMenu();DataIO.xuatJSON('nhanVien')">{ } Xuất JSON</button><button type="button" class="dio-item" title="Nhập lại từ tệp .json đã xuất" onclick="DataIO.dongMenu();DataIO.nhapJSON('nhanVien')">📥 Nhập JSON</button><button type="button" class="dio-item" title="Xuất .csv (ngăn bằng dấu ;) — mở được bằng Excel" onclick="DataIO.dongMenu();DataIO.xuatCSV('nhanVien')">📄 Xuất CSV</button><button type="button" class="dio-item" title="Nhập từ .csv — dòng đầu là tên cột" onclick="DataIO.dongMenu();DataIO.nhapCSV('nhanVien')">📥 Nhập CSV</button></div>
+        </div>
+              <!-- [THÊM MỚI 05/09/2026] Công tắc KHÓA / MỞ việc nhân viên tự đổi mã PIN.
+                   Đặt ngay đây vì đây đúng là màn quản lý tài khoản, và khu này đã có mật khẩu
+                   quản trị canh cửa nên chỉ người có quyền mới bấm được. -->
+              <button class="btn btn-sm btn-secondary" onclick="AppModules.rbac.moBangKhoaDoiMK()" title="Chọn loại tài khoản nào được tự đổi mã PIN, loại nào bị khóa."><i class="fa-solid fa-lock" style="color:#dc2626"></i> Khóa Đổi Mã PIN: 18/18 loại</button>
+              <button class="btn btn-sm btn-secondary" onclick="AppModules.rbac.guiDanhThiepHangLoat()"><i class="fa-solid fa-envelopes-bulk"></i> Gửi Danh Thiếp Hàng Loạt</button>
+              <button class="btn btn-sm btn-primary" onclick="AppModules.rbac.openCreateAccountModal()"><i class="fa-solid fa-user-plus"></i> Cấp Tài Khoản Mới</button>
+            </div>
+          </div>
+          <!-- [THÊM MỚI 28/08/2026] Ghi chú giải thích "Tạm dừng đăng nhập" cho chủ app dễ hiểu. -->
+          <div style="margin:0 0 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:8px 12px;font-size:11.5px;color:#1e40af;">
+            ℹ️ <strong>Tạm dừng đăng nhập</strong>: nhân viên vẫn đang làm việc, chỉ TẠM THỜI không đăng nhập được (cả máy tính lẫn điện thoại) — bấm <strong>Mở lại</strong> để cho vào. <strong>Đăng xuất từ xa</strong>: buộc người đang mở app phải đăng nhập lại.
+          </div>
+          <!-- [THÊM MỚI 03/09/2026] Bộ công cụ dữ liệu dùng chung — cấp tài khoản HÀNG LOẠT từ Excel/CSV
+               (gán cột như 6.2) thay vì gõ tay từng người; xuất JSON để sao lưu danh sách tài khoản. -->
+          <div style="margin:0 0 12px;"><div class="dio-wrap">
+          <button type="button" class="btn btn-sm btn-secondary dio-nut" title="Nhập / xuất dữ liệu bảng Hồ sơ nhân sự" onclick="DataIO.moMenu(this)">📂 Nhập / Xuất <span style="font-size:9px;">▾</span></button>
+          <div class="dio-menu" hidden=""><div class="dio-tieude">Hồ sơ nhân sự</div><button type="button" class="dio-item" title="Tệp CSV mẫu có ĐÚNG tên cột + 1 dòng ví dụ — điền xong nhập lại" onclick="DataIO.dongMenu();DataIO.taiFileMau('nhanVien')">📋 Tải file mẫu (CSV)</button><button type="button" class="dio-item" title="Chọn sheet, khoanh vùng, gán từng cột — giống Cài đặt 6.2" onclick="DataIO.dongMenu();DataIO.nhapExcel('nhanVien')">🧙 Nhập Excel (chọn cột)</button><button type="button" class="dio-item" title="Xuất bảng ra tệp .xlsx" onclick="DataIO.dongMenu();DataIO.xuatExcel('nhanVien')">📊 Xuất Excel</button><button type="button" class="dio-item" title="Xuất nguyên dữ liệu gốc — sao lưu / chuyển máy" onclick="DataIO.dongMenu();DataIO.xuatJSON('nhanVien')">{ } Xuất JSON</button><button type="button" class="dio-item" title="Nhập lại từ tệp .json đã xuất" onclick="DataIO.dongMenu();DataIO.nhapJSON('nhanVien')">📥 Nhập JSON</button><button type="button" class="dio-item" title="Xuất .csv (ngăn bằng dấu ;) — mở được bằng Excel" onclick="DataIO.dongMenu();DataIO.xuatCSV('nhanVien')">📄 Xuất CSV</button><button type="button" class="dio-item" title="Nhập từ .csv — dòng đầu là tên cột" onclick="DataIO.dongMenu();DataIO.nhapCSV('nhanVien')">📥 Nhập CSV</button></div>
+        </div></div>
+          <div class="table-responsive">
+            <table class="rdv-table">
+              <thead>
+                  <tr>
+                    <th class="col-stt" style="width:44px">STT</th>
+                    <th class="col-ma">Mã NV</th>
+                    <th>Họ Và Tên</th>
+                    <th>Email / Đăng Nhập</th>
+                    <th>Phòng Ban</th>
+                    <th>Chức Vụ</th>
+                    <th>Vai Trò Phân Quyền</th>
+                    <th style="text-align:center">Mã PIN</th>
+                    <!-- [THÊM MỚI 28/08/2026] Cột trạng thái ĐĂNG NHẬP (đang mở / đã tạm dừng). -->
+                    <th style="text-align:center">Đăng nhập</th>
+                    <!-- [THÊM MỚI 28/08/2026] Cột ngày tạo tài khoản (ưu tiên ngayTaoTK, thiếu thì dùng ngày vào làm). -->
+                    <th class="col-ngay" style="text-align:center">Ngày tạo</th>
+                    <th class="col-action">Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  
+                    <tr>
+                      <td class="col-stt">1</td>
+                      <td class="col-ma">NV001</td>
+                      <td><strong>Nguyễn Văn Giám Đốc</strong></td>
+                      <td><small class="text-muted">giamdoc@company.com</small></td>
+                      <td>Ban Giám Đốc</td>
+                      <td>Tổng Giám Đốc</td>
+                      <td><span class="badge badge-info">Ban Giám Đốc</span></td>
+                      <td style="text-align:center"><code>123456</code></td>
+                      <td style="text-align:center"><span class="badge" style="background:#dcfce7;color:#16a34a;">Đang mở</span></td>
+                      <td class="col-ngay" style="text-align:center">01/01/2020</td>
+                      <td class="col-action">
+                        <!-- [SỬA 28/08/2026] Hàng nút CHỈ ICON, đều nhau, gọn — rê chuột hiện tên. -->
+                        <div style="display:flex;gap:6px;justify-content:center;flex-wrap:nowrap;">
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.rbac.openEditRoleModal('NV001')" title="Đổi vai trò / quyền" aria-label="Đổi quyền"><i class="fa-solid fa-user-pen" style="color:#2563eb"></i></button>
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.rbac.resetPinModal('NV001')" title="Đặt lại mã PIN" aria-label="Đổi PIN"><i class="fa-solid fa-key" style="color:#64748b"></i></button>
+                          <!-- [THÊM MỚI 01/09/2026] Danh thiếp: thẻ đẹp để gửi mã đăng nhập + PIN cho nhân viên. -->
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.rbac.danhThiepTaiKhoan('NV001')" title="Danh thiếp tài khoản (gửi mã ĐN + PIN)" aria-label="Danh thiếp"><i class="fa-solid fa-id-card" style="color:#7c3aed"></i></button>
+                          
+                          
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="col-stt">2</td>
+                      <td class="col-ma">NV002</td>
+                      <td><strong>Trần Thị Nhân Sự</strong></td>
+                      <td><small class="text-muted">hr@company.com</small></td>
+                      <td>Hành Chính Nhân Sự</td>
+                      <td>Trưởng Phòng HCNS</td>
+                      <td><span class="badge badge-info">HCNS (Hành Chính Nhân Sự)</span></td>
+                      <td style="text-align:center"><code>123456</code></td>
+                      <td style="text-align:center"><span class="badge" style="background:#dcfce7;color:#16a34a;">Đang mở</span></td>
+                      <td class="col-ngay" style="text-align:center">10/03/2022</td>
+                      <td class="col-action">
+                        <!-- [SỬA 28/08/2026] Hàng nút CHỈ ICON, đều nhau, gọn — rê chuột hiện tên. -->
+                        <div style="display:flex;gap:6px;justify-content:center;flex-wrap:nowrap;">
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.rbac.openEditRoleModal('NV002')" title="Đổi vai trò / quyền" aria-label="Đổi quyền"><i class="fa-solid fa-user-pen" style="color:#2563eb"></i></button>
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.rbac.resetPinModal('NV002')" title="Đặt lại mã PIN" aria-label="Đổi PIN"><i class="fa-solid fa-key" style="color:#64748b"></i></button>
+                          <!-- [THÊM MỚI 01/09/2026] Danh thiếp: thẻ đẹp để gửi mã đăng nhập + PIN cho nhân viên. -->
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.rbac.danhThiepTaiKhoan('NV002')" title="Danh thiếp tài khoản (gửi mã ĐN + PIN)" aria-label="Danh thiếp"><i class="fa-solid fa-id-card" style="color:#7c3aed"></i></button>
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.settings.toggleKhoaDN('NV002')" title="Tạm dừng đăng nhập" aria-label="Tạm dừng đăng nhập"><i class="fa-solid fa-pause" style="color:#d97706"></i></button>
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.settings.dangXuatTuXa('NV002')" title="Đăng xuất từ xa (buộc đăng nhập lại)" aria-label="Đăng xuất từ xa"><i class="fa-solid fa-right-from-bracket" style="color:#dc2626"></i></button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="col-stt">3</td>
+                      <td class="col-ma">NV003</td>
+                      <td><strong>Lê Văn Quản Lý</strong></td>
+                      <td><small class="text-muted">truongphong@company.com</small></td>
+                      <td>Kỹ Thuật &amp; Sản Xuất</td>
+                      <td>Trưởng Phòng Kỹ Thuật</td>
+                      <td><span class="badge badge-info">Quản Lý / Trưởng Phòng</span></td>
+                      <td style="text-align:center"><code>123456</code></td>
+                      <td style="text-align:center"><span class="badge" style="background:#dcfce7;color:#16a34a;">Đang mở</span></td>
+                      <td class="col-ngay" style="text-align:center">01/05/2023</td>
+                      <td class="col-action">
+                        <!-- [SỬA 28/08/2026] Hàng nút CHỈ ICON, đều nhau, gọn — rê chuột hiện tên. -->
+                        <div style="display:flex;gap:6px;justify-content:center;flex-wrap:nowrap;">
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.rbac.openEditRoleModal('NV003')" title="Đổi vai trò / quyền" aria-label="Đổi quyền"><i class="fa-solid fa-user-pen" style="color:#2563eb"></i></button>
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.rbac.resetPinModal('NV003')" title="Đặt lại mã PIN" aria-label="Đổi PIN"><i class="fa-solid fa-key" style="color:#64748b"></i></button>
+                          <!-- [THÊM MỚI 01/09/2026] Danh thiếp: thẻ đẹp để gửi mã đăng nhập + PIN cho nhân viên. -->
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.rbac.danhThiepTaiKhoan('NV003')" title="Danh thiếp tài khoản (gửi mã ĐN + PIN)" aria-label="Danh thiếp"><i class="fa-solid fa-id-card" style="color:#7c3aed"></i></button>
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.settings.toggleKhoaDN('NV003')" title="Tạm dừng đăng nhập" aria-label="Tạm dừng đăng nhập"><i class="fa-solid fa-pause" style="color:#d97706"></i></button>
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.settings.dangXuatTuXa('NV003')" title="Đăng xuất từ xa (buộc đăng nhập lại)" aria-label="Đăng xuất từ xa"><i class="fa-solid fa-right-from-bracket" style="color:#dc2626"></i></button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="col-stt">4</td>
+                      <td class="col-ma">NV004</td>
+                      <td><strong>Phạm Văn Nhân Viên</strong></td>
+                      <td><small class="text-muted">nhanvien@company.com</small></td>
+                      <td>Kỹ Thuật &amp; Sản Xuất</td>
+                      <td>Kỹ Sư Lập Trình</td>
+                      <td><span class="badge badge-info">Nhân Viên</span></td>
+                      <td style="text-align:center"><code>123456</code></td>
+                      <td style="text-align:center"><span class="badge" style="background:#dcfce7;color:#16a34a;">Đang mở</span></td>
+                      <td class="col-ngay" style="text-align:center">15/02/2024</td>
+                      <td class="col-action">
+                        <!-- [SỬA 28/08/2026] Hàng nút CHỈ ICON, đều nhau, gọn — rê chuột hiện tên. -->
+                        <div style="display:flex;gap:6px;justify-content:center;flex-wrap:nowrap;">
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.rbac.openEditRoleModal('NV004')" title="Đổi vai trò / quyền" aria-label="Đổi quyền"><i class="fa-solid fa-user-pen" style="color:#2563eb"></i></button>
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.rbac.resetPinModal('NV004')" title="Đặt lại mã PIN" aria-label="Đổi PIN"><i class="fa-solid fa-key" style="color:#64748b"></i></button>
+                          <!-- [THÊM MỚI 01/09/2026] Danh thiếp: thẻ đẹp để gửi mã đăng nhập + PIN cho nhân viên. -->
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.rbac.danhThiepTaiKhoan('NV004')" title="Danh thiếp tài khoản (gửi mã ĐN + PIN)" aria-label="Danh thiếp"><i class="fa-solid fa-id-card" style="color:#7c3aed"></i></button>
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.settings.toggleKhoaDN('NV004')" title="Tạm dừng đăng nhập" aria-label="Tạm dừng đăng nhập"><i class="fa-solid fa-pause" style="color:#d97706"></i></button>
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.settings.dangXuatTuXa('NV004')" title="Đăng xuất từ xa (buộc đăng nhập lại)" aria-label="Đăng xuất từ xa"><i class="fa-solid fa-right-from-bracket" style="color:#dc2626"></i></button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="col-stt">5</td>
+                      <td class="col-ma">NV005</td>
+                      <td><strong>Hoàng Thị Kế Toán</strong></td>
+                      <td><small class="text-muted">ketoan@company.com</small></td>
+                      <td>Tài Chính Kế Toán</td>
+                      <td>Kế Toán Viên</td>
+                      <td><span class="badge badge-info">Kế Toán</span></td>
+                      <td style="text-align:center"><code>123456</code></td>
+                      <td style="text-align:center"><span class="badge" style="background:#dcfce7;color:#16a34a;">Đang mở</span></td>
+                      <td class="col-ngay" style="text-align:center">01/08/2023</td>
+                      <td class="col-action">
+                        <!-- [SỬA 28/08/2026] Hàng nút CHỈ ICON, đều nhau, gọn — rê chuột hiện tên. -->
+                        <div style="display:flex;gap:6px;justify-content:center;flex-wrap:nowrap;">
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.rbac.openEditRoleModal('NV005')" title="Đổi vai trò / quyền" aria-label="Đổi quyền"><i class="fa-solid fa-user-pen" style="color:#2563eb"></i></button>
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.rbac.resetPinModal('NV005')" title="Đặt lại mã PIN" aria-label="Đổi PIN"><i class="fa-solid fa-key" style="color:#64748b"></i></button>
+                          <!-- [THÊM MỚI 01/09/2026] Danh thiếp: thẻ đẹp để gửi mã đăng nhập + PIN cho nhân viên. -->
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.rbac.danhThiepTaiKhoan('NV005')" title="Danh thiếp tài khoản (gửi mã ĐN + PIN)" aria-label="Danh thiếp"><i class="fa-solid fa-id-card" style="color:#7c3aed"></i></button>
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.settings.toggleKhoaDN('NV005')" title="Tạm dừng đăng nhập" aria-label="Tạm dừng đăng nhập"><i class="fa-solid fa-pause" style="color:#d97706"></i></button>
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.settings.dangXuatTuXa('NV005')" title="Đăng xuất từ xa (buộc đăng nhập lại)" aria-label="Đăng xuất từ xa"><i class="fa-solid fa-right-from-bracket" style="color:#dc2626"></i></button>
+                        </div>
+                      </td>
+                    </tr>
+                </tbody>
+              </table>
+            </div>
+            <!-- [THÊM MỚI 28/08/2026] Nhật ký thao tác tài khoản (dùng lại hàm _veNhatKyTK trong module settings). -->
+            <div style="margin-top:14px;"><div style="margin-top:14px;font-size:12px;color:var(--text-muted);">Chưa có thao tác tài khoản nào được ghi.</div></div>
+          </div>
+          <div id="tab-matran" style="display:none">
+          <div class="guide-box" style="margin-bottom:14px;">
+            <i class="fa-solid fa-lightbulb guide-icon"></i>
+            <div class="guide-content">
+              <div class="guide-title">💡 Ma Trận Phân Quyền Chi Tiết (Vùng × Quyền × Vai Trò)</div>
+              <div class="guide-steps">
+                Chọn <strong>vai trò</strong> ở menu trái → chỉnh bảng quyền bên phải. <strong>Vùng</strong> = màn hình/chức năng; <strong>Quyền</strong> = Xem/Thêm/Sửa/Xóa/Duyệt/In; <strong>Phạm vi</strong> = cá nhân/phòng/công ty.<br>
+                Bỏ tích <strong>Xem</strong> = ẩn hẳn chức năng với vai trò này. Mọi thay đổi <strong>tự lưu ngay</strong>. Dùng <strong>Đặt nhanh</strong> để set cả bảng 1 lần.
+              </div>
+            </div>
+          </div>
+          <!-- [THÊM MỚI 03/09/2026] Xuất/nhập MA TRẬN QUYỀN bằng JSON — để sao chép nguyên bộ phân quyền
+               sang máy/chi nhánh khác thay vì tích lại từng ô. Ma trận là cấu trúc LỒNG NHAU (vùng × quyền
+               × vai trò) nên CHỈ dùng JSON; ép ra Excel/CSV sẽ mất tầng dữ liệu. -->
+          <div style="margin-bottom:12px;"><div class="dio-wrap">
+          <button type="button" class="btn btn-sm btn-secondary dio-nut" title="Nhập / xuất dữ liệu bảng Ma trận phân quyền" onclick="DataIO.moMenu(this)">📂 Nhập / Xuất <span style="font-size:9px;">▾</span></button>
+          <div class="dio-menu" hidden=""><div class="dio-tieude">Ma trận phân quyền</div><button type="button" class="dio-item" title="Xuất nguyên dữ liệu gốc — sao lưu / chuyển máy" onclick="DataIO.dongMenu();DataIO.xuatJSON('maTranQuyen')">{ } Xuất JSON</button><button type="button" class="dio-item" title="Nhập lại từ tệp .json đã xuất" onclick="DataIO.dongMenu();DataIO.nhapJSON('maTranQuyen')">📥 Nhập JSON</button></div>
+        </div></div>
+
+          <div class="bcc-wrap" style="display:grid;grid-template-columns:280px 1fr;gap:14px;align-items:start;">
+            <!-- CỘT TRÁI: DANH SÁCH VAI TRÒ (menu) -->
+            <div style="background:var(--bg-surface);border:1px solid var(--border-color);border-radius:12px;padding:10px;box-shadow:var(--shadow-sm);position:sticky;top:10px;">
+              <div style="font-size:11.5px;font-weight:700;color:var(--text-secondary);padding:2px 6px 6px;"><i class="fa-solid fa-user-tag"></i> VAI TRÒ (18)</div>
+              
+                <button type="button" class="cfg62-mi active" onclick="AppModules.matran.chonVaiTro('director')">
+                  <span style="width:24px;text-align:center;font-size:13px;flex-shrink:0;"><i class="fa-solid fa-user-shield"></i></span>
+                  <span style="min-width:0;flex:1;"><span style="display:block;">Ban Giám Đốc <span class="badge badge-secondary" style="font-size:9px;padding:1px 4px;">hệ thống</span></span><span class="mi-mota">Giám đốc · 1 tài khoản</span></span>
+                </button>
+                <button type="button" class="cfg62-mi " onclick="AppModules.matran.chonVaiTro('assistant')">
+                  <span style="width:24px;text-align:center;font-size:13px;flex-shrink:0;"><i class="fa-solid fa-user-shield"></i></span>
+                  <span style="min-width:0;flex:1;"><span style="display:block;">Trợ Lý </span><span class="mi-mota">Quản lý · 0 tài khoản</span></span>
+                </button>
+                <button type="button" class="cfg62-mi " onclick="AppModules.matran.chonVaiTro('rnd')">
+                  <span style="width:24px;text-align:center;font-size:13px;flex-shrink:0;"><i class="fa-solid fa-user-shield"></i></span>
+                  <span style="min-width:0;flex:1;"><span style="display:block;">Nghiên Cứu &amp; Phát Triển </span><span class="mi-mota">Nhân viên · 0 tài khoản</span></span>
+                </button>
+                <button type="button" class="cfg62-mi " onclick="AppModules.matran.chonVaiTro('qa')">
+                  <span style="width:24px;text-align:center;font-size:13px;flex-shrink:0;"><i class="fa-solid fa-user-shield"></i></span>
+                  <span style="min-width:0;flex:1;"><span style="display:block;">QA </span><span class="mi-mota">Nhân viên · 0 tài khoản</span></span>
+                </button>
+                <button type="button" class="cfg62-mi " onclick="AppModules.matran.chonVaiTro('qc')">
+                  <span style="width:24px;text-align:center;font-size:13px;flex-shrink:0;"><i class="fa-solid fa-user-shield"></i></span>
+                  <span style="min-width:0;flex:1;"><span style="display:block;">QC </span><span class="mi-mota">Nhân viên · 0 tài khoản</span></span>
+                </button>
+                <button type="button" class="cfg62-mi " onclick="AppModules.matran.chonVaiTro('qaqc')">
+                  <span style="width:24px;text-align:center;font-size:13px;flex-shrink:0;"><i class="fa-solid fa-user-shield"></i></span>
+                  <span style="min-width:0;flex:1;"><span style="display:block;">QA-QC </span><span class="mi-mota">Quản lý · 0 tài khoản</span></span>
+                </button>
+                <button type="button" class="cfg62-mi " onclick="AppModules.matran.chonVaiTro('hr')">
+                  <span style="width:24px;text-align:center;font-size:13px;flex-shrink:0;"><i class="fa-solid fa-user-shield"></i></span>
+                  <span style="min-width:0;flex:1;"><span style="display:block;">HCNS (Hành Chính Nhân Sự) <span class="badge badge-secondary" style="font-size:9px;padding:1px 4px;">hệ thống</span></span><span class="mi-mota">HR/HCNS · 1 tài khoản</span></span>
+                </button>
+                <button type="button" class="cfg62-mi " onclick="AppModules.matran.chonVaiTro('kho')">
+                  <span style="width:24px;text-align:center;font-size:13px;flex-shrink:0;"><i class="fa-solid fa-user-shield"></i></span>
+                  <span style="min-width:0;flex:1;"><span style="display:block;">Kho / Thủ Kho </span><span class="mi-mota">Nhân viên · 0 tài khoản</span></span>
+                </button>
+                <button type="button" class="cfg62-mi " onclick="AppModules.matran.chonVaiTro('sx')">
+                  <span style="width:24px;text-align:center;font-size:13px;flex-shrink:0;"><i class="fa-solid fa-user-shield"></i></span>
+                  <span style="min-width:0;flex:1;"><span style="display:block;">Sản Xuất </span><span class="mi-mota">Nhân viên · 0 tài khoản</span></span>
+                </button>
+                <button type="button" class="cfg62-mi " onclick="AppModules.matran.chonVaiTro('sx_d')">
+                  <span style="width:24px;text-align:center;font-size:13px;flex-shrink:0;"><i class="fa-solid fa-user-shield"></i></span>
+                  <span style="min-width:0;flex:1;"><span style="display:block;">Sản Xuất Cấp D </span><span class="mi-mota">Nhân viên · 0 tài khoản</span></span>
+                </button>
+                <button type="button" class="cfg62-mi " onclick="AppModules.matran.chonVaiTro('sx_e')">
+                  <span style="width:24px;text-align:center;font-size:13px;flex-shrink:0;"><i class="fa-solid fa-user-shield"></i></span>
+                  <span style="min-width:0;flex:1;"><span style="display:block;">Sản Xuất Cấp E </span><span class="mi-mota">Nhân viên · 0 tài khoản</span></span>
+                </button>
+                <button type="button" class="cfg62-mi " onclick="AppModules.matran.chonVaiTro('khsx')">
+                  <span style="width:24px;text-align:center;font-size:13px;flex-shrink:0;"><i class="fa-solid fa-user-shield"></i></span>
+                  <span style="min-width:0;flex:1;"><span style="display:block;">Kế Hoạch Sản Xuất (KHSX) </span><span class="mi-mota">Quản lý · 0 tài khoản</span></span>
+                </button>
+                <button type="button" class="cfg62-mi " onclick="AppModules.matran.chonVaiTro('accountant')">
+                  <span style="width:24px;text-align:center;font-size:13px;flex-shrink:0;"><i class="fa-solid fa-user-shield"></i></span>
+                  <span style="min-width:0;flex:1;"><span style="display:block;">Kế Toán <span class="badge badge-secondary" style="font-size:9px;padding:1px 4px;">hệ thống</span></span><span class="mi-mota">Kế toán · 1 tài khoản</span></span>
+                </button>
+                <button type="button" class="cfg62-mi " onclick="AppModules.matran.chonVaiTro('kiemsoat')">
+                  <span style="width:24px;text-align:center;font-size:13px;flex-shrink:0;"><i class="fa-solid fa-user-shield"></i></span>
+                  <span style="min-width:0;flex:1;"><span style="display:block;">Kiểm Soát </span><span class="mi-mota">Kế toán · 0 tài khoản</span></span>
+                </button>
+                <button type="button" class="cfg62-mi " onclick="AppModules.matran.chonVaiTro('baotri')">
+                  <span style="width:24px;text-align:center;font-size:13px;flex-shrink:0;"><i class="fa-solid fa-user-shield"></i></span>
+                  <span style="min-width:0;flex:1;"><span style="display:block;">Bảo Trì </span><span class="mi-mota">Nhân viên · 0 tài khoản</span></span>
+                </button>
+                <button type="button" class="cfg62-mi " onclick="AppModules.matran.chonVaiTro('manager')">
+                  <span style="width:24px;text-align:center;font-size:13px;flex-shrink:0;"><i class="fa-solid fa-user-shield"></i></span>
+                  <span style="min-width:0;flex:1;"><span style="display:block;">Quản Lý / Trưởng Phòng <span class="badge badge-secondary" style="font-size:9px;padding:1px 4px;">hệ thống</span></span><span class="mi-mota">Quản lý · 1 tài khoản</span></span>
+                </button>
+                <button type="button" class="cfg62-mi " onclick="AppModules.matran.chonVaiTro('employee')">
+                  <span style="width:24px;text-align:center;font-size:13px;flex-shrink:0;"><i class="fa-solid fa-user-shield"></i></span>
+                  <span style="min-width:0;flex:1;"><span style="display:block;">Nhân Viên <span class="badge badge-secondary" style="font-size:9px;padding:1px 4px;">hệ thống</span></span><span class="mi-mota">Nhân viên · 1 tài khoản</span></span>
+                </button>
+                <button type="button" class="cfg62-mi " onclick="AppModules.matran.chonVaiTro('it_admin')">
+                  <span style="width:24px;text-align:center;font-size:13px;flex-shrink:0;"><i class="fa-solid fa-user-shield"></i></span>
+                  <span style="min-width:0;flex:1;"><span style="display:block;">Quản Trị Hệ Thống (IT) <span class="badge badge-secondary" style="font-size:9px;padding:1px 4px;">hệ thống</span></span><span class="mi-mota">Quản trị IT · 0 tài khoản</span></span>
+                </button>
+              <div style="border-top:1px solid var(--border-light);margin:8px 4px;"></div>
+              <button type="button" class="btn btn-sm btn-primary" style="width:100%;margin-bottom:6px;" onclick="AppModules.matran.themVaiTro()"><i class="fa-solid fa-plus"></i> Thêm Vai Trò</button>
+              <button type="button" class="btn btn-sm btn-secondary" style="width:100%;" onclick="AppModules.matran.xemNhatKy()"><i class="fa-solid fa-clock-rotate-left"></i> Nhật Ký Thay Đổi</button>
+            </div>
+
+            <!-- CỘT PHẢI: QUYỀN CHI TIẾT VAI TRÒ ĐANG CHỌN -->
+            <div style="min-width:0;">
+              <div class="card">
+                <div class="card-header" style="flex-wrap:wrap;gap:8px;">
+                  <div class="card-title" style="min-width:0;"><i class="fa-solid fa-table-cells-large"></i> Ban Giám Đốc
+                    <span class="badge" style="background:#f3e8ff;color:#9333ea;font-weight:600">Giám đốc</span>
+                    <span class="badge badge-secondary" style="font-size:10px">mặc định</span></div>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="btn btn-sm btn-secondary" onclick="AppModules.matran.nhanBanVaiTro('director')" title="Nhân bản vai trò (copy quyền)"><i class="fa-solid fa-copy"></i></button>
+                    <button class="btn btn-sm btn-secondary" onclick="AppModules.matran.suaVaiTro('director')" title="Đổi tên / cấp bậc"><i class="fa-solid fa-pen"></i></button>
+                    
+                    <button class="btn btn-sm btn-secondary" onclick="AppModules.matran.khoiPhucVaiTro()"><i class="fa-solid fa-rotate-left"></i> Mặc định</button>
+                  </div>
+                </div>
+                <!-- [THÊM MỚI 01/09/2026] Đặt nhanh cả bảng cho vai trò này (đỡ tích từng ô). -->
+                <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:2px 2px 10px;">
+                  <span style="font-size:11.5px;color:var(--text-secondary);font-weight:600;">Đặt nhanh:</span>
+                  <button class="btn btn-sm btn-secondary" onclick="AppModules.matran.datNhanh('chi_xem')"><i class="fa-solid fa-eye"></i> Chỉ xem tất cả</button>
+                  <button class="btn btn-sm btn-secondary" onclick="AppModules.matran.datNhanh('toan_quyen')"><i class="fa-solid fa-unlock"></i> Toàn quyền</button>
+                  <button class="btn btn-sm btn-secondary" onclick="AppModules.matran.datNhanh('an_het')"><i class="fa-solid fa-eye-slash"></i> Ẩn tất cả</button>
+                </div>
+                <div class="table-responsive">
+                  <table style="min-width:640px">
+                    <thead><tr>
+                      <th>Vùng (Chức Năng)</th>
+                      <th style="text-align:center"><i class="fa-solid fa-eye"></i><br>Xem</th><th style="text-align:center"><i class="fa-solid fa-plus"></i><br>Thêm</th><th style="text-align:center"><i class="fa-solid fa-pen"></i><br>Sửa</th><th style="text-align:center"><i class="fa-solid fa-trash"></i><br>Xóa</th><th style="text-align:center"><i class="fa-solid fa-check-double"></i><br>Duyệt</th><th style="text-align:center"><i class="fa-solid fa-print"></i><br>In / Xuất</th>
+                      <th style="text-align:center">Phạm Vi Dữ Liệu</th>
+                    </tr></thead>
+                    <tbody><tr>
+            <td><strong>Trang Chủ</strong><br><small class="text-muted">home</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('home','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('home','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('home','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('home','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('home','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('home','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('home', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Tin Tức &amp; Thông Báo</strong><br><small class="text-muted">news</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('news','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('news','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('news','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('news','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('news','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('news','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('news', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Nhân Sự / Danh Bạ</strong><br><small class="text-muted">employees</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('employees','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('employees','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('employees','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('employees','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('employees','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('employees','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('employees', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Hồ Sơ Toàn Công Ty</strong><br><small class="text-muted">hoso</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('hoso','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('hoso','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('hoso','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('hoso','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('hoso','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('hoso','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('hoso', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Giao Việc &amp; Báo Cáo</strong><br><small class="text-muted">tasks</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('tasks','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('tasks','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('tasks','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('tasks','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('tasks','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('tasks','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('tasks', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>KPI / Hiệu Suất</strong><br><small class="text-muted">kpi</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('kpi','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('kpi','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('kpi','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('kpi','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('kpi','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('kpi','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('kpi', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Bảng Chấm Công</strong><br><small class="text-muted">attendance</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('attendance','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('attendance','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('attendance','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('attendance','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('attendance','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('attendance','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('attendance', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Tự Chấm Công</strong><br><small class="text-muted">self_attendance</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('self_attendance','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('self_attendance','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('self_attendance','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('self_attendance','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('self_attendance','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('self_attendance','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('self_attendance', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Đơn Từ (Nghỉ/OT)</strong><br><small class="text-muted">requests</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('requests','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('requests','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('requests','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('requests','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('requests','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('requests','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('requests', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Đề Xuất Nhân Sự</strong><br><small class="text-muted">denxuat</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('denxuat','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('denxuat','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('denxuat','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('denxuat','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('denxuat','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('denxuat','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('denxuat', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Ghi Nhận &amp; Phê Duyệt</strong><br><small class="text-muted">duyettong</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('duyettong','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('duyettong','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('duyettong','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('duyettong','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('duyettong','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('duyettong','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('duyettong', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Yêu Cầu Khác (Cơm/Họp/Khách)</strong><br><small class="text-muted">yeucau</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('yeucau','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('yeucau','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('yeucau','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('yeucau','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('yeucau','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('yeucau','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('yeucau', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Kaizen / Cải Tiến</strong><br><small class="text-muted">kaizen</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('kaizen','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('kaizen','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('kaizen','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('kaizen','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('kaizen','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('kaizen','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('kaizen', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Góp Ý / Kiến Nghị</strong><br><small class="text-muted">feedback</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('feedback','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('feedback','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('feedback','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('feedback','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('feedback','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('feedback','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('feedback', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Dự Trù Văn Phòng Phẩm</strong><br><small class="text-muted">vpp</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('vpp','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('vpp','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('vpp','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('vpp','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('vpp','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('vpp','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('vpp', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Tài Sản / Công Cụ Cấp Phát</strong><br><small class="text-muted">taisan</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('taisan','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('taisan','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('taisan','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('taisan','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('taisan','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('taisan','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('taisan', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Kho Hành Chính &amp; Tài Sản</strong><br><small class="text-muted">kho</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('kho','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('kho','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('kho','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('kho','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('kho','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('kho','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('kho', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Báo Cáo Nhân Sự</strong><br><small class="text-muted">hr_reports</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('hr_reports','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('hr_reports','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('hr_reports','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('hr_reports','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('hr_reports','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('hr_reports','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('hr_reports', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Bảng Lương &amp; Phiếu Lương</strong><br><small class="text-muted">payroll</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('payroll','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('payroll','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('payroll','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('payroll','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('payroll','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('payroll','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('payroll', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Bảo Hiểm (BHXH)</strong><br><small class="text-muted">insurance</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('insurance','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('insurance','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('insurance','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('insurance','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('insurance','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('insurance','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('insurance', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Thuế TNCN</strong><br><small class="text-muted">tax</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('tax','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('tax','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('tax','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('tax','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('tax','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('tax','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('tax', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Biên Bản Họp</strong><br><small class="text-muted">meetings</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('meetings','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('meetings','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('meetings','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('meetings','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('meetings','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('meetings','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('meetings', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Danh Sách Tài Khoản</strong><br><small class="text-muted">taikhoan</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('taikhoan','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('taikhoan','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('taikhoan','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('taikhoan','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('taikhoan','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('taikhoan','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('taikhoan', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Ma Trận Phân Quyền</strong><br><small class="text-muted">matran</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('matran','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('matran','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('matran','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('matran','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('matran','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('matran','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('matran', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Cài Đặt Ứng Dụng</strong><br><small class="text-muted">settings</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('settings','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('settings','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('settings','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('settings','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('settings','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('settings','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('settings', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr><tr>
+            <td><strong>Hướng Dẫn Sử Dụng</strong><br><small class="text-muted">guide</small></td>
+            <td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('guide','xem', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('guide','them', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('guide','sua', this.checked)"></td><td style="text-align:center"><input type="checkbox" onchange="AppModules.matran.datOQuyen('guide','xoa', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('guide','duyet', this.checked)"></td><td style="text-align:center"><input type="checkbox" checked="" onchange="AppModules.matran.datOQuyen('guide','in', this.checked)"></td>
+            <td style="text-align:center"><select class="form-control" style="padding:3px 6px;font-size:12px;width:auto" onchange="AppModules.matran.datPhamVi('guide', this.value)">
+            <option value="ca_nhan">Cá nhân</option><option value="phong_ban">Phòng ban</option><option value="cong_ty" selected="">Toàn công ty</option></select></td>
+          </tr></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div></div>
+          <div id="tab-quytrinh" style="display:none">
+          <div class="card" style="padding:9px 12px;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:240px;font-size:12.5px;color:var(--text-secondary);line-height:1.45;">
+                💡 <strong style="color:var(--text-primary);">Sổ đăng ký quy trình duyệt</strong> — chọn chứng từ bên trái để xem/sửa "thang" cấp duyệt.
+                <a href="javascript:void(0)" onclick="AppModules.quytrinhduyet.bungChuThich(this)" style="font-size:11.5px;">Xem thêm ▾</a>
+                <div class="qtd-themct" hidden="" style="margin-top:5px;font-size:11.5px;">
+                  Đơn leo qua các cấp <strong>cao hơn người tạo</strong>, cấp cuối cùng là người <strong>chốt</strong>.
+                  Chỉ chứng từ <em>"Đang áp dụng"</em> mới chạy thật theo thang; loại <em>"1 cấp"</em> / <em>"khai báo"</em> là chuẩn bị.
+                  Còn <strong>việc CHỜ DUYỆT THỰC TẾ</strong> gom hết ở Trung tâm Ghi Nhận &amp; Phê Duyệt.
+                </div>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          <button class="btn btn-sm btn-secondary" style="padding:4px 9px;font-size:11.5px;flex-shrink:0;white-space:nowrap;" title="Xuất TOÀN BỘ cấu hình (cài đặt công ty · ma trận quyền · định mức · ghép mã · quy trình duyệt) ra 1 tệp JSON" onclick="DataIO.xuatGoiCauHinh()">⚙️ Xuất gói cấu hình</button>
+          <button class="btn btn-sm btn-secondary" style="padding:4px 9px;font-size:11.5px;flex-shrink:0;white-space:nowrap;" title="Nhập gói cấu hình từ máy khác — GHI ĐÈ cấu hình hiện tại, KHÔNG đụng dữ liệu nghiệp vụ" onclick="DataIO.nhapGoiCauHinh()">📥 Nhập gói cấu hình</button>
+        </div>
+              <button class="btn btn-sm btn-primary" style="padding:4px 10px;font-size:11.5px;white-space:nowrap;" onclick="CoreService.switchTab('duyettong')" title="Nơi xử lý các việc ĐANG CHỜ DUYỆT thật (đơn từ · yêu cầu · KPI · dự trù · công sản lượng…)"><i class="fa-solid fa-arrow-right-to-bracket"></i> Trung Tâm Phê Duyệt</button>
+            </div>
+          </div>
+
+          <!-- Bố cục MENU TRÁI (chứng từ) — CHI TIẾT PHẢI. Tái dùng .bcc-wrap + .cfg62-mi. -->
+          <div class="bcc-wrap" style="display:grid;grid-template-columns:280px 1fr;gap:14px;align-items:start;">
+            <div style="background:var(--bg-surface);border:1px solid var(--border-color);border-radius:12px;padding:10px;box-shadow:var(--shadow-sm);position:sticky;top:10px;">
+              <div style="font-size:11.5px;font-weight:700;color:var(--text-secondary);padding:2px 6px 6px;"><i class="fa-solid fa-diagram-project"></i> CÁC CHỨNG TỪ (<span id="qtdDem">17</span>/17)</div>
+              <!-- [THÊM MỚI 03/09/2026 lần 4] Ô TÌM + vùng CUỘN: 16 chứng từ xếp dọc dài quá màn, phải cuộn cả
+                   trang mới thấy hết. Nay danh sách tự cuộn trong khung cao tối đa 58% màn hình, có ô tìm. -->
+              <input type="search" id="qtdTim" class="form-control" placeholder="🔍 Tìm chứng từ..." style="font-size:12px;padding:5px 8px;margin-bottom:6px;" oninput="AppModules.quytrinhduyet.locChungTu(this.value)">
+              <div class="qtd-ds" style="max-height:min(58vh,540px);overflow-y:auto;overflow-x:hidden;">
+                
+          <button type="button" class="cfg62-mi qtd-muc " data-tim="don tu (nghi phep / ot / ra ngoai / ve som) truong phong nhan vien xin nghi/ot/ra ngoai. hien chay 1 cap: truong phong cung bo phan duyet." onclick="AppModules.quytrinhduyet.chonMuc('don_tu')">
+            <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;"><i class="fa-solid fa-file-signature"></i></span>
+            <span style="min-width:0;flex:1;"><span style="display:block;">Đơn từ (nghỉ phép / OT / ra ngoài / về sớm) <span class="badge badge-info" style="font-size:9px;padding:1px 5px;">1 cấp</span></span><span class="mi-mota">Thang: Trưởng phòng</span></span>
+          </button>
+          <button type="button" class="cfg62-mi qtd-muc " data-tim="bang cham cong thang truong phong → hc (hanh chinh – nhan su) chot bang cong cuoi thang de tinh luong. hien chua co buoc duyet — se lam sau." onclick="AppModules.quytrinhduyet.chonMuc('cham_cong')">
+            <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;"><i class="fa-solid fa-calendar-check"></i></span>
+            <span style="min-width:0;flex:1;"><span style="display:block;">Bảng chấm công tháng <span class="badge badge-warning" style="font-size:9px;padding:1px 5px;">Khai báo</span></span><span class="mi-mota">Thang: Trưởng phòng → HC (Hành chính – Nhân sự)</span></span>
+          </button>
+          <button type="button" class="cfg62-mi qtd-muc " data-tim="cong san luong khoan (cong nhan tu khai) truong phong → hc (hanh chinh – nhan su) cong nhan khai san luong theo cong doan → truong bo phan cua nguoi khai duyet → hcns duyet lan 2 → chot vao bang cham cong de tinh luong. dang chay dung thang nay." onclick="AppModules.quytrinhduyet.chonMuc('cong_san_luong')">
+            <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;"><i class="fa-solid fa-industry"></i></span>
+            <span style="min-width:0;flex:1;"><span style="display:block;">Công sản lượng khoán (công nhân tự khai) <span class="badge badge-success" style="font-size:9px;padding:1px 5px;">Đang chạy</span></span><span class="mi-mota">Thang: Trưởng phòng → HC (Hành chính – Nhân sự)</span></span>
+          </button>
+          <button type="button" class="cfg62-mi qtd-muc " data-tim="du tru / order van phong pham truong phong → hc (hanh chinh – nhan su) de nghi mua vpp. hien chay 1 cap: truong phong duyet → phat." onclick="AppModules.quytrinhduyet.chonMuc('du_tru_vpp')">
+            <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;"><i class="fa-solid fa-boxes-stacked"></i></span>
+            <span style="min-width:0;flex:1;"><span style="display:block;">Dự trù / Order văn phòng phẩm <span class="badge badge-info" style="font-size:9px;padding:1px 5px;">1 cấp</span></span><span class="mi-mota">Thang: Trưởng phòng → HC (Hành chính – Nhân sự)</span></span>
+          </button>
+          <button type="button" class="cfg62-mi qtd-muc " data-tim="sang kien kaizen truong phong → hc (hanh chinh – nhan su) danh gia sang kien cai tien. hien chay danh gia 1 cap." onclick="AppModules.quytrinhduyet.chonMuc('kaizen')">
+            <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;"><i class="fa-solid fa-lightbulb"></i></span>
+            <span style="min-width:0;flex:1;"><span style="display:block;">Sáng kiến Kaizen <span class="badge badge-info" style="font-size:9px;padding:1px 5px;">1 cấp</span></span><span class="mi-mota">Thang: Trưởng phòng → HC (Hành chính – Nhân sự)</span></span>
+          </button>
+          <button type="button" class="cfg62-mi qtd-muc active" data-tim="de xuat nhan su (tuyen / bo sung nguoi) truong phong → hc (hanh chinh – nhan su) → giam doc phong ban thieu nguoi → de xuat tuyen. dang chay dung thang nay." onclick="AppModules.quytrinhduyet.chonMuc('de_xuat_nhan_su')">
+            <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;"><i class="fa-solid fa-user-plus"></i></span>
+            <span style="min-width:0;flex:1;"><span style="display:block;">Đề xuất nhân sự (tuyển / bổ sung người) <span class="badge badge-success" style="font-size:9px;padding:1px 5px;">Đang chạy</span></span><span class="mi-mota">Thang: Trưởng phòng → HC (Hành chính – Nhân sự) → Giám đốc</span></span>
+          </button>
+          <button type="button" class="cfg62-mi qtd-muc " data-tim="yeu cau khac (bao com / hop / don khach / quay phim) truong phong cac yeu cau hanh chinh chung. thuong truong phong hoac hc duyet." onclick="AppModules.quytrinhduyet.chonMuc('yeu_cau_khac')">
+            <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;"><i class="fa-solid fa-clipboard-list"></i></span>
+            <span style="min-width:0;flex:1;"><span style="display:block;">Yêu cầu khác (báo cơm / họp / đón khách / quay phim) <span class="badge badge-success" style="font-size:9px;padding:1px 5px;">Đang chạy</span></span><span class="mi-mota">Thang: Trưởng phòng</span></span>
+          </button>
+          <button type="button" class="cfg62-mi qtd-muc " data-tim="cap phat tai san / cong cu truong phong → hc (hanh chinh – nhan su) nhan vien gui o man gui yeu cau khac → hr/quan ly duyet → ve man quan ly tai san bam cap phat. dang chay (duyet 1 cap qua yeu cau khac)." onclick="AppModules.quytrinhduyet.chonMuc('cap_phat_taisan')">
+            <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;"><i class="fa-solid fa-hand-holding-box"></i></span>
+            <span style="min-width:0;flex:1;"><span style="display:block;">Cấp phát tài sản / công cụ <span class="badge badge-info" style="font-size:9px;padding:1px 5px;">1 cấp</span></span><span class="mi-mota">Thang: Trưởng phòng → HC (Hành chính – Nhân sự)</span></span>
+          </button>
+          <button type="button" class="cfg62-mi qtd-muc " data-tim="nghi viec / thoi viec / cham dut hop dong truong phong → hc (hanh chinh – nhan su) → giam doc nhan vien xin nghi viec → ban giao → chot cong no/luong. anh huong lon nen chot o giam doc." onclick="AppModules.quytrinhduyet.chonMuc('nghi_viec')">
+            <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;"><i class="fa-solid fa-user-xmark"></i></span>
+            <span style="min-width:0;flex:1;"><span style="display:block;">Nghỉ việc / thôi việc / chấm dứt hợp đồng <span class="badge badge-warning" style="font-size:9px;padding:1px 5px;">Khai báo</span></span><span class="mi-mota">Thang: Trưởng phòng → HC (Hành chính – Nhân sự) → Giám đốc</span></span>
+          </button>
+          <button type="button" class="cfg62-mi qtd-muc " data-tim="tam ung luong truong phong → hc (hanh chinh – nhan su) → ke toan ung truoc mot phan luong. ke toan chot vi lien quan dong tien." onclick="AppModules.quytrinhduyet.chonMuc('tam_ung')">
+            <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;"><i class="fa-solid fa-money-bill-transfer"></i></span>
+            <span style="min-width:0;flex:1;"><span style="display:block;">Tạm ứng lương <span class="badge badge-warning" style="font-size:9px;padding:1px 5px;">Khai báo</span></span><span class="mi-mota">Thang: Trưởng phòng → HC (Hành chính – Nhân sự) → Kế toán</span></span>
+          </button>
+          <button type="button" class="cfg62-mi qtd-muc " data-tim="di cong tac &amp; cong tac phi truong phong → ke toan xin di cong tac + tam ung/hoan chi phi di lai, luu tru." onclick="AppModules.quytrinhduyet.chonMuc('cong_tac_phi')">
+            <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;"><i class="fa-solid fa-plane-departure"></i></span>
+            <span style="min-width:0;flex:1;"><span style="display:block;">Đi công tác &amp; công tác phí <span class="badge badge-warning" style="font-size:9px;padding:1px 5px;">Khai báo</span></span><span class="mi-mota">Thang: Trưởng phòng → Kế toán</span></span>
+          </button>
+          <button type="button" class="cfg62-mi qtd-muc " data-tim="mua sam / dau tu tai san, thiet bi truong phong → ke toan → giam doc mua tai san/thiet bi gia tri lon (khac vpp). chot o giam doc theo han muc." onclick="AppModules.quytrinhduyet.chonMuc('mua_sam')">
+            <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;"><i class="fa-solid fa-cart-shopping"></i></span>
+            <span style="min-width:0;flex:1;"><span style="display:block;">Mua sắm / đầu tư tài sản, thiết bị <span class="badge badge-warning" style="font-size:9px;padding:1px 5px;">Khai báo</span></span><span class="mi-mota">Thang: Trưởng phòng → Kế toán → Giám đốc</span></span>
+          </button>
+          <button type="button" class="cfg62-mi qtd-muc " data-tim="de nghi thanh toan / hoan ung chi phi truong phong → ke toan thanh toan hoa don/chi phi da chi. ke toan kiem chung tu." onclick="AppModules.quytrinhduyet.chonMuc('thanh_toan')">
+            <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;"><i class="fa-solid fa-file-invoice-dollar"></i></span>
+            <span style="min-width:0;flex:1;"><span style="display:block;">Đề nghị thanh toán / hoàn ứng chi phí <span class="badge badge-warning" style="font-size:9px;padding:1px 5px;">Khai báo</span></span><span class="mi-mota">Thang: Trưởng phòng → Kế toán</span></span>
+          </button>
+          <button type="button" class="cfg62-mi qtd-muc " data-tim="khen thuong / thuong nong truong phong → hc (hanh chinh – nhan su) → giam doc de xuat khen thuong ca nhan/tap the. chot o giam doc vi gan chi phi." onclick="AppModules.quytrinhduyet.chonMuc('khen_thuong')">
+            <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;"><i class="fa-solid fa-award"></i></span>
+            <span style="min-width:0;flex:1;"><span style="display:block;">Khen thưởng / thưởng nóng <span class="badge badge-warning" style="font-size:9px;padding:1px 5px;">Khai báo</span></span><span class="mi-mota">Thang: Trưởng phòng → HC (Hành chính – Nhân sự) → Giám đốc</span></span>
+          </button>
+          <button type="button" class="cfg62-mi qtd-muc " data-tim="ky luat / xu ly vi pham truong phong → hc (hanh chinh – nhan su) → giam doc xu ly vi pham noi quy. can hc va giam doc de dung quy trinh lao dong." onclick="AppModules.quytrinhduyet.chonMuc('ky_luat')">
+            <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;"><i class="fa-solid fa-gavel"></i></span>
+            <span style="min-width:0;flex:1;"><span style="display:block;">Kỷ luật / xử lý vi phạm <span class="badge badge-warning" style="font-size:9px;padding:1px 5px;">Khai báo</span></span><span class="mi-mota">Thang: Trưởng phòng → HC (Hành chính – Nhân sự) → Giám đốc</span></span>
+          </button>
+          <button type="button" class="cfg62-mi qtd-muc " data-tim="dieu chuyen / bo nhiem / thang chuc truong phong → hc (hanh chinh – nhan su) → giam doc doi vi tri/phong ban, bo nhiem chuc vu. chot o giam doc." onclick="AppModules.quytrinhduyet.chonMuc('dieu_chuyen')">
+            <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;"><i class="fa-solid fa-people-arrows"></i></span>
+            <span style="min-width:0;flex:1;"><span style="display:block;">Điều chuyển / bổ nhiệm / thăng chức <span class="badge badge-warning" style="font-size:9px;padding:1px 5px;">Khai báo</span></span><span class="mi-mota">Thang: Trưởng phòng → HC (Hành chính – Nhân sự) → Giám đốc</span></span>
+          </button>
+          <button type="button" class="cfg62-mi qtd-muc " data-tim="ky / gia han hop dong lao dong hc (hanh chinh – nhan su) → giam doc ky moi/gia han hdld, thu viec → chinh thuc. hc soan, giam doc ky." onclick="AppModules.quytrinhduyet.chonMuc('hop_dong')">
+            <span style="width:24px;text-align:center;font-size:14px;flex-shrink:0;"><i class="fa-solid fa-file-contract"></i></span>
+            <span style="min-width:0;flex:1;"><span style="display:block;">Ký / gia hạn hợp đồng lao động <span class="badge badge-warning" style="font-size:9px;padding:1px 5px;">Khai báo</span></span><span class="mi-mota">Thang: HC (Hành chính – Nhân sự) → Giám đốc</span></span>
+          </button>
+                <div id="qtdRong" hidden="" style="padding:14px 8px;text-align:center;color:var(--text-muted);font-size:12px;">Không có chứng từ nào khớp.</div>
+              </div>
+            </div>
+            <div style="min-width:0;">
+              
+            <div class="card" style="margin-bottom:12px">
+              <div class="card-header">
+                <div class="card-title"><i class="fa-solid fa-user-plus"></i> Đề xuất nhân sự (tuyển / bổ sung người)</div>
+                <button class="btn btn-sm btn-secondary" onclick="AppModules.quytrinhduyet.suaThang('de_xuat_nhan_su')"><i class="fa-solid fa-pen"></i> Sửa</button>
+              </div>
+              <div style="margin:4px 0 8px"><span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Đang áp dụng</span></div>
+              <p style="margin:6px 0">Thang duyệt: <span class="badge badge-purple">Trưởng phòng</span> <span style="color:#94a3b8">→</span> <span class="badge badge-purple">HC (Hành chính – Nhân sự)</span> <span style="color:#94a3b8">→</span> <span class="badge badge-purple">Giám đốc</span> &nbsp;|&nbsp; Chốt cuối: <strong>Giám đốc</strong></p>
+              <p class="text-muted" style="font-size:12.5px;margin:4px 0">Phòng ban thiếu người → đề xuất tuyển. ĐANG CHẠY đúng thang này.</p>
+              <div style="background:var(--bg-hover);padding:8px 12px;border-radius:8px;margin-top:6px">
+                <div class="text-muted" style="font-size:12px;margin-bottom:2px">Ví dụ theo cấp người tạo:</div>
+                <div style="margin:4px 0"><span class="badge badge-info">Nhân viên tạo</span> <span style="color:#94a3b8">→</span> Trưởng phòng → HC (Hành chính – Nhân sự) → Giám đốc <strong>(chốt)</strong></div><div style="margin:4px 0"><span class="badge badge-info">Trưởng phòng tạo</span> <span style="color:#94a3b8">→</span> HC (Hành chính – Nhân sự) → Giám đốc <strong>(chốt)</strong></div><div style="margin:4px 0"><span class="badge badge-info">HC (Hành chính – Nhân sự) tạo</span> <span style="color:#94a3b8">→</span> Giám đốc <strong>(chốt)</strong></div>
+              </div>
+            </div>
+            </div>
+          </div>
+        </div>
+        </div>
 
         <!-- Nhóm 6: Cài đặt ứng dụng -->
         <div id="tab-guide" class="tab-content" style="display:none"></div>
@@ -3160,7 +3768,7 @@
               <div style="background:var(--bg-surface);border:1px solid var(--border-color);border-radius:12px;padding:10px;box-shadow:var(--shadow-sm);position:sticky;top:10px;">
                 <div style="font-size:11.5px;font-weight:700;color:var(--text-secondary);padding:2px 6px 8px;"><i class="fa-brands fa-google-drive"></i> KẾT NỐI GOOGLE SHEETS (0đ)</div>
 
-                <button type="button" class="cfg62-mi cfg64-mi " data-sec="s1" onclick="AppModules.settings.chon64('s1')">
+                <button type="button" class="cfg62-mi cfg64-mi" data-sec="s1" onclick="AppModules.settings.chon64('s1')">
                   <span style="width:26px;text-align:center;flex-shrink:0;"><span style="display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--primary-main);color:#fff;font-size:12px;font-weight:700;align-items:center;justify-content:center;">1</span></span>
                   <span style="min-width:0;"><span style="display:block;">Tạo bảng tính</span><span class="mi-mota">Mở Google Sheets, tạo file mới</span></span>
                 </button>
@@ -3168,7 +3776,7 @@
                   <span style="width:26px;text-align:center;flex-shrink:0;"><span style="display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--primary-main);color:#fff;font-size:12px;font-weight:700;align-items:center;justify-content:center;">2</span></span>
                   <span style="min-width:0;"><span style="display:block;">Dán mã Backend</span><span class="mi-mota">Copy mã (kèm mã bí mật) vào Apps Script</span></span>
                 </button>
-                <button type="button" class="cfg62-mi cfg64-mi " data-sec="s3" onclick="AppModules.settings.chon64('s3')">
+                <button type="button" class="cfg62-mi cfg64-mi" data-sec="s3" onclick="AppModules.settings.chon64('s3')">
                   <span style="width:26px;text-align:center;flex-shrink:0;"><span style="display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--primary-main);color:#fff;font-size:12px;font-weight:700;align-items:center;justify-content:center;">3</span></span>
                   <span style="min-width:0;"><span style="display:block;">Triển khai Web App</span><span class="mi-mota">Deploy → Anyone → lấy link /exec</span></span>
                 </button>
@@ -3193,7 +3801,7 @@
               <div style="display:flex;flex-direction:column;gap:14px;min-width:0;">
 
                 <!-- ── BƯỚC 1 ── -->
-                <div class="cfg62-sec cfg64-sec" id="cfg64-s1" style="display:none;">
+                <div class="cfg62-sec cfg64-sec" id="cfg64-s1" style="display: none;">
                   <div class="cfg-card">
                     <div class="cfg-card-hdr" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
                       <div class="hdr-ico"><i class="fa-solid fa-table"></i></div>
@@ -3621,7 +4229,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 </div>
 
                 <!-- ── BƯỚC 3 ── -->
-                <div class="cfg62-sec cfg64-sec" id="cfg64-s3" style="display:none;">
+                <div class="cfg62-sec cfg64-sec" id="cfg64-s3" style="display: none;">
                   <div class="cfg-card">
                     <div class="cfg-card-hdr" style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
                       <div class="hdr-ico"><i class="fa-solid fa-rocket"></i></div>
@@ -3726,7 +4334,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                       <div style="background:var(--bg-surface);border:1px solid var(--border-color);border-radius:10px;padding:12px;margin-bottom:12px;">
                         <div style="font-weight:700;color:var(--text-primary);font-size:13px;margin-bottom:6px;"><i class="fa-solid fa-link"></i> ② Dán link cổng nhân viên vào đây</div>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                          <input type="text" id="linkCongNVInp" class="form-control" style="flex:1;min-width:220px;font-family:var(--font-mono);font-size:12px;" placeholder="https://tên-tài-khoản.github.io/tên-kho/" value="">
+                          <input type="text" id="linkCongNVInp" class="form-control" style="flex:1;min-width:220px;font-family:var(--font-mono);font-size:12px;" placeholder="https://tên-tài-khoản.github.io/tên-kho/" value="https://rdnewlab.github.io/HCNS/">
                           <button class="btn btn-sm btn-primary" style="flex-shrink:0;" onclick="AppModules.settings.luuLinkCongNV()"><i class="fa-solid fa-floppy-disk"></i> Lưu link</button>
                         </div>
                         <div style="font-size:11.5px;color:var(--text-secondary);margin-top:6px;line-height:1.65;">
@@ -4489,6 +5097,21 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (CAP_BAC_NEN.indexOf(roleMa) >= 0) return roleMa;
         return "employee"; // an toàn: không rõ → coi như nhân viên
       },
+
+      /* [THÊM MỚI 05/09/2026] LOẠI TÀI KHOẢN NÀY CÓ ĐANG BỊ KHOÁ ĐỔI MÃ PIN KHÔNG?
+         Nhận vào: mã vai trò (vd "director", "hr", "sx"). Trả ra: true = đang khoá.
+
+         Quy tắc: không có tên trong bảng ⇒ KHOÁ. Nhờ vậy bảng rỗng = khoá hết, và
+         vai trò mới tạo cũng tự khoá — không lọt vì quên khai báo.
+         Ví dụ: bảng đang là { director: false } thì Ban Giám Đốc ĐƯỢC đổi PIN,
+         17 loại còn lại vẫn khoá.
+
+         ⚠️ Mọi chỗ trong app phải hỏi qua hàm này, đừng tự đọc thẳng thiết lập —
+         sau này đổi cách lưu thì chỉ sửa một chỗ. */
+      khoaDoiMKCua(roleMa) {
+        const bang = getCompanySettings().khoaDoiMKVaiTro || {};
+        return bang[roleMa] !== false;   // chỉ MỞ khi ghi rõ false
+      },
       /* ===== [THÊM MỚI 04/09/2026] QUẢN LÝ PHỤ TRÁCH NHIỀU PHÒNG BAN =====
          VÌ SAO: trước đây mỗi người chỉ có 1 ô "phongBan", nên chỗ nào cũng so sánh
          `nv.phongBan === u.phongBan`. Thực tế 1 trưởng phòng có thể KIÊM NHIỆM nhiều bộ phận
@@ -4851,6 +5474,28 @@ function writeSheet(ss, sheetName, headers, rowsData){
         /* [THÊM MỚI 04/09/2026 — V3] Rải việc gửi lên máy chủ trong bao nhiêu phút.
            0 = gửi ngay lập tức (chỉ nên dùng khi ít người). Xem chú thích ở DataService. */
         gianGuiPhut: 30,
+        /* [THÊM MỚI 05/09/2026] KHOÁ KHÔNG CHO NHÂN VIÊN TỰ ĐỔI MÃ PIN.
+           VÌ SAO: lúc khách dùng thử, người này đổi PIN, người kia đổi PIN, chủ app
+           không còn biết ai đang dùng PIN nào → gọi điện hỏi nhau loạn cả lên, có
+           người tự khoá mình ra ngoài. Khoá lại thì mã PIN chỉ do quản trị cấp và
+           đặt lại, một đầu mối duy nhất.
+           true  = KHOÁ (mặc định, đúng yêu cầu chủ app)
+           false = cho nhân viên tự đổi PIN như trước
+           ⚠️ KHÔNG ảnh hưởng nút "Đặt lại mã PIN" của quản trị — quản trị vẫn cấp
+           lại PIN cho người quên bình thường.
+
+           [SỬA 05/09/2026 lần 2] TRƯỚC: một công tắc chung cho cả công ty.
+           NAY: khoá RIÊNG TỪNG LOẠI TÀI KHOẢN theo yêu cầu chủ app — ví dụ mở cho
+           Ban Giám Đốc tự đổi PIN, còn Sản xuất / Kho thì vẫn khoá.
+
+           Cách đọc bảng dưới: { "mã vai trò": true = KHOÁ, false = CHO ĐỔI }.
+           Vai trò KHÔNG có tên trong bảng ⇒ coi như ĐANG KHOÁ.
+           Vì thế để bảng RỖNG nghĩa là KHOÁ HẾT (đúng ý chủ app), lại không phải
+           liệt kê sẵn 18 dòng, và vai trò tự tạo thêm sau này cũng tự khoá luôn —
+           an toàn hơn là mặc định mở rồi quên khoá.
+           ⚠️ Đừng đổi thành mặc định MỞ: quên một vai trò là lọt, người dùng đổi
+           PIN lung tung đúng thứ chủ app muốn tránh. */
+        khoaDoiMKVaiTro: {},
         khoaPhucHoi: true
       };
       try {
@@ -6024,7 +6669,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
               <div style="font-size:11px;font-weight:700;color:var(--text-secondary,#475569);margin-bottom:4px">MÃ MÁY (HWID)</div>
               <div style="display:flex;gap:6px;align-items:center">
                 <code style="flex:1;font-size:12px;word-break:break-all">${hw}</code>
-                <button class="btn btn-sm btn-primary" onclick="LicenseService.copyHWID()">📋 Copy</button>
+                <button class="btn btn-primary" onclick="LicenseService.copyHWID()"
+                        style="min-height:44px;padding:10px 16px;font-weight:600;white-space:nowrap;">📋 Sao chép mã máy</button>
               </div>
             </div>
             <input id="gateKeyTrial" class="form-control" placeholder="Key dùng thử (Trial)" style="text-align:center;margin-bottom:6px">
@@ -7928,7 +8574,12 @@ function writeSheet(ss, sheetName, headers, rowsData){
         this.switchTab(tabDau);
         // [THÊM MỚI 01/09/2026] PIN do admin tự sinh/cấp lại chỉ dùng 1 lần → BẮT nhân viên đổi PIN riêng
         //   ngay lần đăng nhập đầu. Bỏ qua ở khung Xem Trước Điện Thoại (tránh hiện 2 lần).
-        if (this.currentUser && this.currentUser.phaiDoiPin && !this.laXemTruocDT) setTimeout(() => this._batBuocDoiPin(), 450);
+        /* [SỬA 05/09/2026] Thêm điều kiện "đang KHÔNG khoá đổi mật khẩu".
+           TRƯỚC: PIN do quản trị cấp thì lần đăng nhập đầu app BẮT nhân viên đổi PIN ngay.
+           NAY: nếu chủ app đã bật khoá đổi mật khẩu thì BỎ QUA bước bắt buộc đó — nếu không
+           thì vừa khoá không cho đổi, vừa bắt phải đổi, nhân viên kẹt cứng không vào được app. */
+        const _khoaMK = PhanQuyenService.khoaDoiMKCua((this.currentUser || {}).role);
+        if (this.currentUser && this.currentUser.phaiDoiPin && !this.laXemTruocDT && !_khoaMK) setTimeout(() => this._batBuocDoiPin(), 450);
       },
 
       // [THÊM MỚI 01/09/2026] Modal BẮT BUỘC đổi PIN lần đầu (không có nút Hủy). Đổi xong: bỏ cờ phaiDoiPin.
@@ -8057,6 +8708,16 @@ function writeSheet(ss, sheetName, headers, rowsData){
          Đọc 3 ô: PIN cũ, PIN mới, nhập lại PIN mới. Kiểm tra xong thì ghi
          PIN mới vào hồ sơ nhân viên và lưu xuống bộ nhớ máy. */
       handleChangePin() {
+        /* [THÊM MỚI 05/09/2026] CHẶN KHI CHỦ APP ĐÃ BẬT KHOÁ ĐỔI MẬT KHẨU.
+           ⚠️ Vì sao chặn ở ĐÂY chứ không chỉ ẩn cái form ngoài giao diện: ẩn form chỉ là
+           che mắt — người biết chút kỹ thuật vẫn gọi thẳng hàm này từ bảng gỡ lỗi của
+           trình duyệt và đổi được PIN. Chặn ngay chỗ ghi dữ liệu mới thật sự khoá. */
+        /* [SỬA 05/09/2026 lần 2] Trước xét công tắc chung; nay xét theo LOẠI TÀI KHOẢN
+           của chính người đang đăng nhập. */
+        if (PhanQuyenService.khoaDoiMKCua((this.currentUser || {}).role)) {
+          this.showToast("🔒 Chức năng đổi mã PIN đang bị khóa. Liên hệ quản trị để được cấp lại mã PIN.", "warning");
+          return;
+        }
         const oldPin = (document.getElementById("cfgOldPinInp") || {}).value || "";
         const newPin = (document.getElementById("cfgNewPinInp") || {}).value || "";
         const confirmPin = (document.getElementById("cfgConfirmPinInp") || {}).value || "";
@@ -24658,7 +25319,15 @@ function writeSheet(ss, sheetName, headers, rowsData){
                   </div>
 
                   <!-- Form Đổi Mã PIN -->
-                  <form id="formChangePin" onsubmit="event.preventDefault(); CoreService.handleChangePin();" style="background:var(--bg-hover);padding:10px 12px;border-radius:10px;border:1px solid var(--border-light);">
+                  <!-- [THÊM MỚI 05/09/2026] Đang khoá thì ẨN hẳn form và nói rõ lý do, để nhân viên
+                       biết phải làm gì tiếp (liên hệ quản trị) chứ không ngồi bấm mãi không được. -->
+                  ${PhanQuyenService.khoaDoiMKCua((CoreService.currentUser || {}).role) ? `
+                  <div style="background:#fef9c3;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;font-size:11.5px;color:#92400e;">
+                    <div style="font-weight:700;margin-bottom:3px;"><i class="fa-solid fa-lock"></i> ĐỔI MÃ PIN ĐANG BỊ KHÓA</div>
+                    Quản trị đã khóa chức năng tự đổi mã PIN. Nếu bạn quên mã PIN hoặc muốn đổi,
+                    hãy liên hệ <strong>bộ phận Hành chính Nhân sự / Quản trị</strong> để được cấp lại.
+                  </div>` : ""}
+                  <form id="formChangePin" onsubmit="event.preventDefault(); CoreService.handleChangePin();" style="background:var(--bg-hover);padding:10px 12px;border-radius:10px;border:1px solid var(--border-light);${PhanQuyenService.khoaDoiMKCua((CoreService.currentUser || {}).role) ? "display:none;" : ""}">
                     <div style="font-size:11px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">
                       <i class="fa-solid fa-lock" style="color:#4f46e5;"></i> ĐỔI MÃ PIN ĐĂNG NHẬP:
                     </div>
@@ -27596,6 +28265,57 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
     // [THÊM MỚI 28/08/2026] ĐỔI MẬT KHẨU QUẢN TRỊ (nhập mật khẩu cũ → đặt mật khẩu mới) — làm BÊN TRONG
     //   khu Phân Quyền (đã mở khóa). Khác với "Quên mật khẩu → Đặt lại" ở màn khóa (không cần mật khẩu cũ).
+    /* [THÊM MỚI 05/09/2026 lần 2] BẢNG CHỌN: loại tài khoản nào được tự đổi mã PIN.
+       Mỗi vai trò một dòng, gạt công tắc rồi bấm Lưu. Mặc định KHOÁ HẾT.
+       Ví dụ dùng thật: mở cho "Ban Giám Đốc" và "HCNS" tự đổi PIN, 16 loại còn lại
+       vẫn khoá → nhân viên xưởng không tự đổi PIN lung tung nữa. */
+    AppModules.rbac.moBangKhoaDoiMK = function () {
+      const ds = PhanQuyenService.getVaiTro();
+      const esc = x => String(x == null ? "" : x).replace(/[&<>"]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
+      const dong = ds.map(v => {
+        const khoa = PhanQuyenService.khoaDoiMKCua(v.ma);
+        return '<label style="display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 10px;border-bottom:1px solid var(--border-light);cursor:pointer;">'
+          + '<input type="checkbox" class="kdmk-o" data-ma="' + esc(v.ma) + '" ' + (khoa ? "checked" : "") + ' style="width:18px;height:18px;flex-shrink:0;">'
+          + '<span style="flex:1;min-width:0;font-size:12.5px;">' + esc(v.ten || v.ma) + '</span>'
+          + '<span class="badge" style="background:#f1f5f9;color:#64748b;font-size:10.5px;">' + esc(v.ma) + '</span>'
+          + '</label>';
+      }).join("");
+      const body =
+        '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:9px 12px;font-size:12px;color:#1e40af;margin-bottom:10px;">'
+        + 'Đánh dấu ☑ = loại tài khoản đó <strong>KHÔNG được tự đổi mã PIN</strong>. Bỏ dấu = cho phép tự đổi.<br>'
+        + 'Quản trị vẫn <strong>đặt lại mã PIN</strong> cho mọi người bình thường, không phụ thuộc bảng này.'
+        + '</div>'
+        + '<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">'
+        + '<button class="btn btn-sm btn-secondary" onclick="AppModules.rbac._danhDauKhoaDoiMK(true)"><i class="fa-solid fa-lock"></i> Khóa tất cả</button>'
+        + '<button class="btn btn-sm btn-secondary" onclick="AppModules.rbac._danhDauKhoaDoiMK(false)"><i class="fa-solid fa-lock-open"></i> Mở tất cả</button>'
+        + '</div>'
+        + '<div style="border:1px solid var(--border-color);border-radius:10px;overflow:hidden;max-height:46vh;overflow-y:auto;">' + dong + '</div>';
+      CoreService.openModal("🔐 Khóa Đổi Mã PIN Theo Loại Tài Khoản", body, [
+        { text: "Hủy", class: "btn-secondary" },
+        { text: "<i class='fa-solid fa-floppy-disk'></i> Lưu", class: "btn-primary", close: false, onClick: () => AppModules.rbac._luuBangKhoaDoiMK() }
+      ]);
+    };
+
+    /* Bấm "Khóa tất cả" / "Mở tất cả" — chỉ tick/bỏ tick trên màn, CHƯA ghi.
+       Phải bấm Lưu mới ăn, để lỡ tay còn bấm Hủy được. */
+    AppModules.rbac._danhDauKhoaDoiMK = function (khoa) {
+      document.querySelectorAll(".kdmk-o").forEach(o => { o.checked = !!khoa; });
+    };
+
+    /* Đọc các ô đã tick → ghi bảng xuống bộ nhớ máy → vẽ lại danh sách tài khoản
+       để con số trên nút đổi theo ngay. */
+    AppModules.rbac._luuBangKhoaDoiMK = function () {
+      const st = getCompanySettings();
+      const bang = {};
+      document.querySelectorAll(".kdmk-o").forEach(o => { bang[o.getAttribute("data-ma")] = !!o.checked; });
+      st.khoaDoiMKVaiTro = bang;
+      localStorage.setItem(CONFIG.STORAGE_KEY_SETTINGS, JSON.stringify(st));
+      const soKhoa = Object.keys(bang).filter(k => bang[k]).length;
+      CoreService.closeModal();
+      CoreService.showToast("✅ Đã lưu: " + soKhoa + "/" + Object.keys(bang).length + " loại tài khoản đang bị khóa đổi mã PIN.", "success");
+      if (AppModules.taikhoan && document.getElementById("tab-taikhoan")) AppModules.taikhoan.render();
+    };
+
     AppModules.rbac.doiMatKhau = function () {
       // [SỬA 01/09/2026] Bỏ chặn "chưa đặt mật khẩu": app luôn có mật khẩu (mặc định hoặc riêng),
       //   nên người đang dùng MẶC ĐỊNH vẫn đổi được (nhập mật khẩu mặc định làm "hiện tại").
@@ -28928,6 +29648,21 @@ function writeSheet(ss, sheetName, headers, rowsData){
               <!-- [SỬA 03/09/2026 lần 3] Menu Nhập/Xuất (cấp tài khoản hàng loạt từ Excel/CSV) đứng CÙNG HÀNG
                    với các nút sẵn có — trước đây nằm riêng 1 hàng phía dưới, tốn chỗ. -->
               ${DataIO.thanhCongCu("nhanVien")}
+              <!-- [THÊM MỚI 05/09/2026] Công tắc KHÓA / MỞ việc nhân viên tự đổi mã PIN.
+                   Đặt ngay đây vì đây đúng là màn quản lý tài khoản, và khu này đã có mật khẩu
+                   quản trị canh cửa nên chỉ người có quyền mới bấm được. -->
+              ${(function () {
+                // [SỬA 05/09/2026 lần 2] Nút nay MỞ BẢNG CHỌN theo từng loại tài khoản,
+                // và hiện luôn con số "đang khoá mấy / tổng mấy loại" để nhìn là biết.
+                const ds = PhanQuyenService.getVaiTro();
+                const soKhoa = ds.filter(v => PhanQuyenService.khoaDoiMKCua(v.ma)).length;
+                const khoaHet = soKhoa === ds.length;
+                return '<button class="btn btn-sm btn-secondary" onclick="AppModules.rbac.moBangKhoaDoiMK()"'
+                  + ' title="Chọn loại tài khoản nào được tự đổi mã PIN, loại nào bị khóa.">'
+                  + '<i class="fa-solid ' + (soKhoa ? "fa-lock" : "fa-lock-open") + '" style="color:' + (khoaHet ? "#dc2626" : (soKhoa ? "#d97706" : "#16a34a")) + '"></i> '
+                  + 'Khóa Đổi Mã PIN: ' + soKhoa + '/' + ds.length + ' loại'
+                  + '</button>';
+              })()}
               <button class="btn btn-sm btn-secondary" onclick="AppModules.rbac.guiDanhThiepHangLoat()"><i class="fa-solid fa-envelopes-bulk"></i> Gửi Danh Thiếp Hàng Loạt</button>
               <button class="btn btn-sm btn-primary" onclick="AppModules.rbac.openCreateAccountModal()"><i class="fa-solid fa-user-plus"></i> Cấp Tài Khoản Mới</button>
             </div>
