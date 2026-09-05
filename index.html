@@ -1356,6 +1356,32 @@
       box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
     }
 
+    
+    .thanh-nhac-dulieu {
+      position: fixed; right: 16px; bottom: 20px; left: auto; z-index: 9998;
+      max-width: 420px;
+      background: #fef9c3; color: #713f12; border: 2px solid #eab308; border-radius: 10px;
+      padding: 12px 14px; font-size: 13px; display: flex; align-items: center;
+      gap: 10px; flex-wrap: wrap; box-shadow: 0 6px 20px rgba(0,0,0,.18);
+    }
+    .thanh-nhac-dulieu .tn-chu { flex: 1 1 100%; min-width: 0; line-height: 1.45; }
+    .thanh-nhac-dulieu button {
+      border: 0; border-radius: 6px; padding: 7px 12px; font-size: 13px;
+      font-weight: 600; cursor: pointer; min-height: 36px;
+    }
+    .thanh-nhac-dulieu .tn-tai { background: #ca8a04; color: #fff; }
+    .thanh-nhac-dulieu .tn-bo  { background: transparent; color: #713f12; text-decoration: underline; }
+    
+    @media (max-width: 768px) {
+      
+      .thanh-nhac-dulieu {
+        left: 10px; right: 10px; max-width: none;
+        bottom: calc(86px + env(safe-area-inset-bottom));
+        font-size: 12.5px; padding: 11px 12px;
+      }
+      .thanh-nhac-dulieu button { min-height: 44px; flex: 1 1 auto; }
+    }
+
     .toast-container { position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: var(--space-sm); }
     .toast {
       background-color: var(--bg-surface);
@@ -3484,6 +3510,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
      
     var CAU_HINH_PHAT_HANH = { gasUrl: "", batDongBo: false };
 
+    const CAU_HINH_NHUNG = {"gasUrl":"https://script.google.com/macros/s/AKfycbyvNdhHVNtQdaqmde565RB13iXm7-hy0o4wewHeAeqLzx9e91te2xW-eAf8dxmn7sOy/exec","sheetSyncBat":true};
+
     function getCompanySettings() {
       const defaults = {
         companyName: "Công Ty TNHH Doanh Nghiệp Mẫu",
@@ -3650,7 +3678,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
       };
       try {
         const saved = localStorage.getItem(CONFIG.STORAGE_KEY_SETTINGS);
-        return saved ? { ...defaults, ...JSON.parse(saved) } : defaults;
+         
+        return saved ? { ...defaults, ...CAU_HINH_NHUNG, ...JSON.parse(saved) }
+                     : { ...defaults, ...CAU_HINH_NHUNG };
       } catch (e) {
         return defaults;
       }
@@ -4678,7 +4708,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.44" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.46" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -4907,7 +4937,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.44"
+                version: "4.0.46"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -6597,7 +6627,40 @@ function writeSheet(ss, sheetName, headers, rowsData){
         window.addEventListener("focus", () => { try { _wq01x._wq02x(); } catch (e) {} });
       },
 
+      _ngheCuaSoKhac() {
+        if (this._daNgheCuaSoKhac) return;          
+        this._daNgheCuaSoKhac = true;
+        try {
+          window.addEventListener("storage", (e) => {
+            try {
+               
+              const k = e && e.key;
+              const laKhoDuLieu = (k === null) || (k === CONFIG.STORAGE_KEY_DATA) || (k === CONFIG.STORAGE_KEY_SETTINGS);
+              if (!laKhoDuLieu) return;             
+              this._hienThanhNhacTaiLai();
+            } catch (e2) {}
+          });
+        } catch (e) {   }
+      },
+
+      _hienThanhNhacTaiLai() {
+        if (document.getElementById("thanhNhacDuLieu")) return;    
+        const el = document.createElement("div");
+        el.id = "thanhNhacDuLieu";
+        el.className = "thanh-nhac-dulieu";
+        el.innerHTML =
+          '<span class="tn-chu">🔄 <b>Một cửa sổ khác vừa thay đổi dữ liệu.</b> '
+          + 'Bấm Tải lại để xem số liệu mới nhất — nếu đang nhập dở thì lưu lại trước đã.</span>'
+          + '<button class="tn-tai" type="button">↻ Tải lại ngay</button>'
+          + '<button class="tn-bo" type="button">Để sau</button>';
+        document.body.appendChild(el);
+
+        el.querySelector(".tn-tai").onclick = function () { location.reload(); };
+        el.querySelector(".tn-bo").onclick = function () { el.remove(); };
+      },
+
       _batKiemTraDangXuatTuXa() {
+        try { this._ngheCuaSoKhac(); } catch (eN) {}   
         try { this._wq14x(); } catch (eK2) {}   
         if (this._dxtxTimer) return;
         this._dxtxTimer = setInterval(async () => {
@@ -27297,6 +27360,20 @@ function writeSheet(ss, sheetName, headers, rowsData){
                     + "hãy xuất lại từ bản EXE để chắc chắn tệp không dính dữ liệu công ty.";
           }
 
+           
+          let daNhungDiaChi = false;
+          try {
+            const stCT = getCompanySettings();
+            const diaChi = String(stCT.gasUrl || "").trim();
+            if (diaChi) {
+              const nhung = JSON.stringify({ gasUrl: diaChi, sheetSyncBat: true });
+              const truocNhung = goc;
+              goc = goc.replace("const CAU_HINH_NHUNG = {};",
+                                "const CAU_HINH_NHUNG = " + nhung + ";");
+              daNhungDiaChi = (goc !== truocNhung);
+            }
+          } catch (eNh) {}
+
           const truocKhiGo = goc;
           goc = goc.replace(
             /_k1: "[^"]*", _k2: "[^"]*", _k3: "[^"]*", _k4: "[^"]*",\s*\n\s*_m1: "[^"]*", _m2: "[^"]*", _m3: "[^"]*", _m4: "[^"]*",/,
@@ -27304,7 +27381,11 @@ function writeSheet(ss, sheetName, headers, rowsData){
           );
           const daGoKhoa = (goc !== truocKhiGo);
 
-          return { html: goc, daGoKhoa, tuTepGoc: dungLaApp, canhBao };
+          if (!daNhungDiaChi) {
+            canhBao += " ⚠️ CHƯA nhúng địa chỉ Google Sheet — nhân viên sẽ KHÔNG đăng nhập được. "
+                     + "Hãy làm xong mục 6.4 (Bước 1→4) rồi tải lại tệp này.";
+          }
+          return { html: goc, daGoKhoa, daNhungDiaChi, tuTepGoc: dungLaApp, canhBao };
         },
 
         async chepMaHtml() {
