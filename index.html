@@ -3414,7 +3414,21 @@ function writeSheet(ss, sheetName, headers, rowsData){
       timVaiTro(ma) {
         return this.getVaiTro().find(v => v.ma === ma) || null;
       },
-      
+       
+      duyetDuocChungTu(u, maChungTu, phongNguoiGui) {
+        try {
+          if (!u) return false;
+          const cap = this.capBacCua(u.role || "employee");
+          if (cap === "it_admin") return true;
+          const thang = (AppModules.quytrinhduyet && AppModules.quytrinhduyet.thangCua)
+            ? (AppModules.quytrinhduyet.thangCua(maChungTu) || []) : [];
+          if (!thang.length) return false;
+          if (thang.indexOf(cap) < 0) return false;
+          if (cap === "manager") return this.phuTrachPhong(u, phongNguoiGui);
+          return true;
+        } catch (e) { return false; }
+      },
+
       capBacCua(roleMa) {
         const v = this.timVaiTro(roleMa);
         if (v && v.capBac) return v.capBac;
@@ -4766,7 +4780,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.52" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.57" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -4995,7 +5009,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.52"
+                version: "4.0.57"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -6523,6 +6537,16 @@ function writeSheet(ss, sheetName, headers, rowsData){
         return { ok: true, dangCho: this.soDangCho() };
       },
 
+       
+      maChungTuCuaYeuCau(y) {
+        try {
+          const loai = (y || {}).loai;
+          if (loai === "cap_phat_ts") return "cap_phat_taisan";
+          if (((AppModules.yeucau || {}).TRUONG_MOI || {})[loai]) return loai;   
+          return "yeu_cau_khac";
+        } catch (e) { return "yeu_cau_khac"; }
+      },
+
       dsNguoiDuyetCho(phongBan, boQuaId) {
         try {
           const ds = (this.getData().nhanVien || []).filter(n => {
@@ -6534,6 +6558,25 @@ function writeSheet(ss, sheetName, headers, rowsData){
           }).map(n => n.id);
           return [...new Set(ds)];
         } catch (e) { return []; }
+      },
+
+      dsNguoiDuyetTheoThang(ma, phongBan, boQuaId) {
+        try {
+          const thang = (typeof AppModules !== "undefined" && AppModules.quytrinhduyet && AppModules.quytrinhduyet.thangCua)
+            ? (AppModules.quytrinhduyet.thangCua(ma) || []) : [];
+          if (!thang.length) return this.dsNguoiDuyetCho(phongBan, boQuaId);
+          const ds = this.getData().nhanVien || [];
+          for (let b = 0; b < thang.length; b++) {
+            const cap = thang[b];
+            const nhan = ds.filter(n => {
+              if (!n || n.id === boQuaId || n.trangThai === "dinh_chi") return false;
+              if (PhanQuyenService.capBacCua(n.role || "employee") !== cap) return false;
+              return cap === "manager" ? PhanQuyenService.phuTrachPhong(n, phongBan) : true;
+            }).map(n => n.id);
+            if (nhan.length) return [...new Set(nhan)];
+          }
+          return this.dsNguoiDuyetCho(phongBan, boQuaId);
+        } catch (e) { return this.dsNguoiDuyetCho(phongBan, boQuaId); }
       },
        
       nhanTBToanBo(maNV) {
@@ -6922,6 +6965,75 @@ function writeSheet(ss, sheetName, headers, rowsData){
         localStorage.setItem("hcns_dn_epoch", String((j.user && j.user.buocDangNhapLai) || 0));
         this.loginAs(j.user);
         this.showToast("Chào mừng " + (j.user.hoTen || "") + " đã đăng nhập!", "success");
+      },
+
+      batDauDungThat() {
+        const u = this.currentUser || {};
+        const cap = PhanQuyenService.capBacCua(u.role || "employee");
+        if (cap !== "director" && cap !== "it_admin") {
+          this.showToast("Chỉ Giám đốc hoặc Quản trị IT được dùng chức năng này.", "danger"); return;
+        }
+        const data = DataService.getData();
+        const ds = data.nhanVien || [];
+        
+        const laMau = n => /^NV00[1-5]$/.test(String(n.id || "")) && String(n.pin) === "123456";
+        const dsMau = ds.filter(laMau);
+        const dsThat = ds.filter(n => !laMau(n));
+        
+        const quanTriThat = dsThat.filter(n => ["director", "hr", "it_admin"].indexOf(PhanQuyenService.capBacCua(n.role || "employee")) >= 0);
+        if (!quanTriThat.length) {
+          this.showToast("⛔ CHƯA THỂ DỌN: chưa có tài khoản quản trị THẬT nào. "
+            + "Hãy vào Hồ Sơ Nhân Viên tạo tài khoản Giám đốc/HCNS của công ty bạn (đặt mã PIN riêng) rồi quay lại.", "danger");
+          return;
+        }
+        
+        const dem = {
+          "Chấm công": (data.bangCong || []).length, "Đơn từ": (data.donTu || []).length,
+          "Công việc": (data.congViec || []).length, "Tin tức": (data.tinTuc || []).length,
+          "Dự trù VPP": (data.ordersVPP || []).length, "Yêu cầu khác": (data.yeuCauKhac || []).length,
+          "Đề xuất nhân sự": (data.deXuatNhanSu || []).length, "Thưởng/phạt": (data.thuongPhatThang || []).length,
+          "Thông báo": (data.thongBao || []).length
+        };
+        const bang = Object.keys(dem).filter(k => dem[k] > 0).map(k => "• " + k + ": <strong>" + dem[k] + "</strong> dòng").join("<br>") || "• (chưa có dữ liệu nghiệp vụ nào)";
+        const body =
+          '<div style="background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12.5px;line-height:1.6">'
+          + '<strong>⚠️ VIỆC NÀY KHÔNG HOÀN TÁC ĐƯỢC.</strong><br>Hãy bấm <strong>“Xuất tệp sao lưu”</strong> ở ngay mục này trước khi làm, để lỡ có gì còn lấy lại.</div>'
+          + '<div style="font-size:13px;line-height:1.7">'
+          + '<strong>SẼ XOÁ:</strong><br>' + bang + '<br>'
+          + '• Tài khoản mẫu còn PIN 123456: <strong>' + dsMau.length + '</strong> tài khoản'
+          + (dsMau.length ? ' (' + dsMau.map(n => n.id).join(", ") + ')' : '')
+          + '<br><br><strong>GIỮ NGUYÊN:</strong><br>'
+          + '• Cài đặt công ty (tên, logo, ca làm, thang lương, quy trình duyệt, địa chỉ Google Sheet)<br>'
+          + '• Vai trò &amp; ma trận phân quyền<br>'
+          + '• <strong>' + dsThat.length + '</strong> tài khoản thật của công ty bạn'
+          + (quanTriThat.length ? ' (quản trị: ' + quanTriThat.map(n => n.id).join(", ") + ')' : '')
+          + '</div>'
+          + '<div class="form-group" style="margin-top:14px"><label class="form-label">Gõ đúng chữ <strong>DUNG THAT</strong> để xác nhận</label>'
+          + '<input type="text" id="bdtXacNhan" class="form-control" placeholder="DUNG THAT" autocomplete="off"></div>';
+        this.openModal("🚀 Bắt Đầu Dùng Thật — Dọn Dữ Liệu Mẫu", body, [
+          { text: "Hủy", class: "btn-secondary" },
+          {
+            text: "<i class='fa-solid fa-broom'></i> Dọn & Bắt Đầu Dùng Thật", class: "btn-danger", close: false,
+            onClick: () => {
+              const go = ((document.getElementById("bdtXacNhan") || {}).value || "").trim().toUpperCase();
+              if (go !== "DUNG THAT") { this.showToast("Gõ đúng chữ DUNG THAT để xác nhận.", "warning"); return; }
+              const d2 = DataService.getData();
+              
+              ["bangCong", "donTu", "congViec", "tinTuc", "tinTucNhom", "ordersVPP", "poVPP", "khoVPP",
+               "yeuCauKhac", "deXuatNhanSu", "kaizen", "kpiData", "congViecSanLuong", "phieuKiemTra",
+               "thuongPhatThang", "khauTruThang", "doanhSoThang", "luongChuyenThang", "dieuChinhCong",
+               "thongBao", "yeuCauCapKey", "bienBanHop", "gopY", "taiSan", "nhatKyKho"].forEach(k => { d2[k] = []; });
+              d2.nhanVien = (d2.nhanVien || []).filter(n => !laMau(n));
+              DataService.saveData(d2);
+              try { PhanQuyenService.ghiNhatKy("Bắt đầu dùng thật", "Đã dọn dữ liệu mẫu · xoá " + dsMau.length + " tài khoản mẫu · giữ " + d2.nhanVien.length + " tài khoản thật"); } catch (e) {}
+              
+              const conToi = (d2.nhanVien || []).some(n => n.id === u.id);
+              this.closeModal();
+              this.showToast("✅ Đã dọn xong. App giờ chỉ còn dữ liệu THẬT của công ty bạn.", "success");
+              setTimeout(() => { if (!conToi) { try { this.logout(); } catch (e) {} } location.reload(); }, 1200);
+            }
+          }
+        ]);
       },
 
       resetDefaultData() {
@@ -8303,7 +8415,18 @@ function writeSheet(ss, sheetName, headers, rowsData){
             { k: "ngayTao", label: "Ngày tạo", kw: ["ngày tạo"] }
           ]
         },
-        
+
+        thongBao: {
+          ten: "Thông báo đã gửi", tenFile: "ThongBao", mang: "thongBao", khoa: "id",
+          capBac: ["hr", "director", "it_admin"], chiJSON: true,
+          cot: [
+            { k: "id", label: "Mã thông báo", req: true, kw: ["mã"] },
+            { k: "tieuDe", label: "Tiêu đề", kw: ["tiêu đề"] },
+            { k: "noiDung", label: "Nội dung", kw: ["nội dung"] },
+            { k: "loai", label: "Loại", kw: ["loại"] },
+            { k: "luc", label: "Thời điểm gửi", kw: ["lúc", "thời điểm"] }
+          ]
+        },
         yeuCauKhac: {
           ten: "Yêu cầu khác", tenFile: "YeuCauKhac", mang: "yeuCauKhac", khoa: "id",
           capBac: ["manager", "hr", "director", "it_admin"],
@@ -8354,10 +8477,10 @@ function writeSheet(ss, sheetName, headers, rowsData){
             { k: "trangThai", label: "Trạng thái", kw: ["trạng thái"] }
           ]
         },
-        
+
         deXuatNhanSu: {
           ten: "Đề xuất nhân sự (tuyển dụng)", tenFile: "DeXuatNhanSu", mang: "deXuatNhanSu", khoa: "id",
-          capBac: ["manager", "hr", "director", "it_admin"],
+          capBac: ["manager", "hr", "director", "it_admin"], chiJSON: true,
           cot: [
             { k: "id", label: "Mã đề xuất", req: true, kw: ["mã đề xuất", "mã"] },
             { k: "ngayTao", label: "Ngày tạo", kw: ["ngày tạo"] },
@@ -12215,8 +12338,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 data.donTu.unshift(newDon);
                 DataService.saveData(data);
 
+                
                 DataService.guiThongBaoDen(
-                  DataService.dsNguoiDuyetCho(currentUser.phongBan, currentUser.id),
+                  DataService.dsNguoiDuyetTheoThang("don_tu", currentUser.phongBan, currentUser.id),
                   "📩 Đơn " + (newDon.tenLoaiDon || "mới") + " chờ BẠN duyệt",
                   `${currentUser.hoTen} (${currentUser.phongBan || "—"}) gửi đơn ${newDon.tenLoaiDon || ""}${newDon.tuNgay ? " từ " + formatDateDisplay(newDon.tuNgay) : ""}${newDon.soNgay ? " (" + newDon.soNgay + " ngày)" : ""}.`,
                   "request");
@@ -13663,7 +13787,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
           });
           DataService.saveData(data);
           try {
-            DataService.guiThongBaoDen(DataService.dsNguoiDuyetCho(u.phongBan, u.id), "🛒 Đề xuất mua bổ sung tồn kho",
+            
+            DataService.guiThongBaoDen(DataService.dsNguoiDuyetTheoThang("du_tru_vpp", u.phongBan, u.id), "🛒 Đề xuất mua bổ sung tồn kho",
               (u.hoTen || u.id) + " tạo phiếu mua " + items.length + " món đang dưới định mức (tạm tính " + formatCurrency(tien) + ").", "request");
           } catch (e) {}
           CoreService.showToast("✅ Đã tạo phiếu đề xuất mua " + items.length + " món — đang chờ duyệt ở màn Dự Trù VPP.", "success");
@@ -14612,9 +14737,10 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
                 DataService.saveData(data);
                 CoreService.closeModal();
+
                 
                 DataService.guiThongBaoDen(
-                  DataService.dsNguoiDuyetCho(currentUser.phongBan, currentUser.id),
+                  DataService.dsNguoiDuyetTheoThang("du_tru_vpp", currentUser.phongBan, currentUser.id),
                   "🧾 Đơn VPP mới chờ BẠN duyệt",
                   `${currentUser.hoTen} (${currentUser.phongBan || "—"}) đặt ${this.tempOrderItems.length} món VPP.`,
                   "request");
@@ -23674,7 +23800,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 DataService.saveData(data);
                  
                 try {
-                  const _nhan = DataService.dsNguoiDuyetCho(u.phongBan, u.id);
+                  const _nhan = DataService.dsNguoiDuyetTheoThang("kaizen", u.phongBan, u.id);
                   if (_nhan && _nhan.length) DataService.guiThongBaoDen(_nhan, "💡 Sáng kiến Kaizen mới chờ duyệt",
                     (u.hoTen || u.id) + " gửi sáng kiến: " + tieuDe + ". Xem ở màn Sáng Kiến Kaizen hoặc Trung tâm Ghi Nhận & Phê Duyệt.", "request");
                 } catch (eKZ) {}
@@ -24199,9 +24325,11 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const laQuanLy = ["manager", "hr", "director", "it_admin"].indexOf(capBac) >= 0;
           const L = this.LOAI;
 
+          
           const ds0 = (data.yeuCauKhac || []).slice()
             .sort((a, b) => String(b.ngayGui).localeCompare(String(a.ngayGui)))
-            .filter(y => laQuanLy || y.nguoiGui === u.id);
+
+            .filter(y => laQuanLy || y.nguoiGui === u.id || this._duocDuyetPhieu(y));
 
           const demTab = k => ds0.filter(y => k === "tat_ca" || y.loai === k).length;
           const tabs = [["tat_ca", "📋", "Tất cả"]].concat(Object.keys(L).map(k => [k, L[k].icon, L[k].ten]));
@@ -24390,7 +24518,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
               const badge = y.trangThai === "da_duyet" ? '<span class="badge badge-success">✔ Đã duyệt</span>'
                 : y.trangThai === "tu_choi" ? `<span class="badge badge-danger" title="${(y.lyDoTuChoi || "").replace(/"/g, "&quot;")}">✕ Từ chối</span>`
                 : '<span class="badge badge-warning">⏳ Chờ duyệt</span>';
-              const nutDuyet = (laQuanLy && y.trangThai === "cho_duyet")
+              // [SỬA 06/09/2026 — V4 đợt 66] Nút duyệt hiện cho cả người có tên trong THANG
+              // của chính loại phiếu này (kế toán duyệt phiếu tiền), không chỉ 4 vai cứng.
+              const nutDuyet = (AppModules.yeucau._duocDuyetPhieu(y) && y.trangThai === "cho_duyet")
                 ? `<button class="btn btn-sm btn-success" style="padding:3px 8px;" onclick="AppModules.yeucau.duyet('${y.id}')" title="Duyệt"><i class="fa-solid fa-check"></i></button>
                    <button class="btn btn-sm btn-danger" style="padding:3px 8px;" onclick="AppModules.yeucau.tuChoi('${y.id}')" title="Từ chối"><i class="fa-solid fa-xmark"></i></button>` : "";
               const nutXoa = ((y.nguoiGui === u.id && y.trangThai === "cho_duyet") || laQuanLy)
@@ -24709,13 +24839,36 @@ function writeSheet(ss, sheetName, headers, rowsData){
           data.yeuCauKhac.unshift(yc);
           DataService.saveData(data);
           // [THÊM 07/09/2026 — V4 đợt 37] Báo đích danh người duyệt được — khớp đúng câu toast bên dưới.
+          // [SỬA 06/09/2026 — V4 đợt 65] Theo ĐÚNG THANG của từng loại yêu cầu (tra y hệt cách
+          // trung tâm phê duyệt tra: cấp phát TS → "cap_phat_taisan"; loại mới có thang riêng
+          // → chính mã loại đó; còn lại → thang chung "yeu_cau_khac").
           DataService.guiThongBaoDen(
-            DataService.dsNguoiDuyetCho((CoreService.currentUser || {}).phongBan, (CoreService.currentUser || {}).id),
+            DataService.dsNguoiDuyetTheoThang(
+              yc.loai === "cap_phat_ts" ? "cap_phat_taisan"
+                : (((AppModules.yeucau || {}).TRUONG_MOI || {})[yc.loai] ? yc.loai : "yeu_cau_khac"),
+              (CoreService.currentUser || {}).phongBan, (CoreService.currentUser || {}).id),
             "📨 Yêu cầu khác chờ BẠN duyệt",
             `${(CoreService.currentUser || {}).hoTen || ""} gửi yêu cầu "${((this.LOAI || {})[yc.loai] || {}).ten || yc.loai || ""}". Vào Gửi Yêu Cầu Khác để duyệt.`,
             "request");
           CoreService.showToast("✅ Đã gửi yêu cầu — chờ HCNS/Quản lý duyệt.", "success");
           this.render();
+        },
+
+        /* [THÊM MỚI 06/09/2026 — V4 đợt 66] NGƯỜI ĐANG ĐĂNG NHẬP CÓ ĐƯỢC KÝ PHIẾU NÀY KHÔNG.
+           Dùng cho cả nút Duyệt và nút Từ chối — kiểm ngay lúc bấm để không lách được.
+           Đúng thẩm quyền = 4 vai quản lý cũ, HOẶC cấp bậc có tên trong THANG của loại phiếu
+           đó (kế toán duyệt phiếu tiền). Người GỬI không tự duyệt phiếu của mình. */
+        _duocDuyetPhieu(y) {
+          try {
+            const u = CoreService.currentUser || {};
+            if (!u.id) return false;
+            if (y && y.nguoiGui === u.id) return false;              // không tự ký đơn của mình
+            const cap = PhanQuyenService.capBacCua(u.role || "employee");
+            if (["manager", "hr", "director", "it_admin"].indexOf(cap) >= 0) return true;
+            const data = DataService.getData();
+            const nguoiGui = (data.nhanVien || []).find(n => n.id === y.nguoiGui) || {};
+            return PhanQuyenService.duyetDuocChungTu(u, DataService.maChungTuCuaYeuCau(y), y.phongBan || nguoiGui.phongBan || "");
+          } catch (e) { return false; }
         },
 
         // Tóm tắt nội dung để hiện trên bảng (mỗi loại 1 kiểu).
@@ -24753,6 +24906,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
         duyet(id) {
           const data = DataService.getData(); const y = this._tim(data, id); if (!y) return;
+           
+          if (!this._duocDuyetPhieu(y)) { CoreService.showToast("Bạn không có thẩm quyền duyệt loại phiếu này (xem Phân Quyền ▸ Quy Trình Duyệt).", "danger"); return; }
           y.trangThai = "da_duyet"; y.nguoiDuyet = (CoreService.currentUser || {}).id; y.ngayDuyet = new Date().toISOString();
           DataService.saveData(data);
           
@@ -24846,6 +25001,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
         tuChoi(id) {
           const data = DataService.getData(); const y = this._tim(data, id); if (!y) return;
+           
+          if (!this._duocDuyetPhieu(y)) { CoreService.showToast("Bạn không có thẩm quyền xử lý loại phiếu này (xem Phân Quyền ▸ Quy Trình Duyệt).", "danger"); return; }
           const lyDo = prompt("Lý do từ chối (sẽ hiện khi rê chuột vào trạng thái):", "");
           if (lyDo === null) return;
           y.trangThai = "tu_choi"; y.lyDoTuChoi = lyDo; y.nguoiDuyet = (CoreService.currentUser || {}).id; y.ngayDuyet = new Date().toISOString();
@@ -28869,6 +29026,25 @@ function writeSheet(ss, sheetName, headers, rowsData){
                   <div style="border:1px solid ${_nhacSaoLuu.mau};background:${_nhacSaoLuu.nen};color:${_nhacSaoLuu.mau};border-radius:10px;padding:9px 12px;margin-bottom:12px;font-size:12px;line-height:1.5;">
                     ${_nhacSaoLuu.chu}
                   </div>
+                  <!-- [THÊM MỚI 06/09/2026 — V4 đợt 69] KHỐI "BẮT ĐẦU DÙNG THẬT".
+                       Chỉ hiện khi máy CÒN tài khoản mẫu PIN 123456 — dọn xong là khối tự biến mất.
+                       Vì sao đặt ở đây: cạnh nút Xuất tệp sao lưu, để chủ app sao lưu ngay trước khi dọn. -->
+                  ${(() => {
+                    try {
+                      const _cap = PhanQuyenService.capBacCua((CoreService.currentUser || {}).role || "employee");
+                      if (_cap !== "director" && _cap !== "it_admin") return "";
+                      const _mau = (DataService.getData().nhanVien || []).filter(n => /^NV00[1-5]$/.test(String(n.id || "")) && String(n.pin) === "123456");
+                      if (!_mau.length) return "";
+                      return '<div style="border:2px solid #f59e0b;background:#fffbeb;border-radius:10px;padding:12px;margin-bottom:14px;">'
+                        + '<div style="font-size:12.5px;font-weight:700;color:#b45309;margin-bottom:6px;">🚀 CHUYỂN SANG DÙNG THẬT</div>'
+                        + '<div style="font-size:12px;color:#92400e;line-height:1.6;margin-bottom:10px;">'
+                        + 'Máy này còn <strong>' + _mau.length + ' tài khoản MẪU dùng chung mã PIN 123456</strong> (' + _mau.map(n => n.id).join(", ") + ') — '
+                        + 'trong đó có quyền <strong>Giám đốc xem được lương cả công ty</strong>.<br>'
+                        + 'Trước khi nhập dữ liệu thật, hãy dọn sạch dữ liệu mẫu. Cài đặt công ty và tài khoản thật của bạn được giữ nguyên.</div>'
+                        + '<button class="btn btn-sm" style="background:#d97706;color:#fff;border:none;min-height:40px" onclick="CoreService.batDauDungThat()">🚀 Bắt Đầu Dùng Thật (dọn dữ liệu mẫu)</button>'
+                        + '</div>';
+                    } catch (e) { return ""; }
+                  })()}
                   <div style="background:var(--bg-hover);border:1px solid var(--border-light);border-radius:10px;padding:12px;margin-bottom:14px;">
                     <div style="font-size:11.5px;font-weight:700;color:var(--text-primary);margin-bottom:6px;">
                       📊 THỐNG KÊ DỮ LIỆU ĐANG LƯU TRÊN MÁY:
@@ -30035,7 +30211,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
         const u = CoreService.currentUser || {};
         const cap = (typeof PhanQuyenService !== "undefined") ? PhanQuyenService.capBacCua(u.role || "employee") : (u.role || "employee");
         const toanCty = ["hr", "director", "it_admin"].indexOf(cap) >= 0;   
-        const laQL = ["manager", "hr", "director", "it_admin"].indexOf(cap) >= 0;
+         
+        const laQL = ["manager", "hr", "director", "it_admin", "accountant"].indexOf(cap) >= 0;
         const phong = u.phongBan || "";
         const nvMap = {}; (data.nhanVien || []).forEach(n => { nvMap[n.id] = n; });
         const deptCua = maNV => (nvMap[maNV] || {}).phongBan || "";
@@ -30248,7 +30425,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
         const u = CoreService.currentUser || {};
         const cap = (typeof PhanQuyenService !== "undefined") ? PhanQuyenService.capBacCua(u.role || "employee") : (u.role || "employee");
         const toanCty = ["hr", "director", "it_admin"].indexOf(cap) >= 0;
-        const laQL = ["manager", "hr", "director", "it_admin"].indexOf(cap) >= 0;
+
+        const laQL = ["manager", "hr", "director", "it_admin", "accountant"].indexOf(cap) >= 0;
         const phong = u.phongBan || "";
         const nvMap = {}; (data.nhanVien || []).forEach(n => { nvMap[n.id] = n; });
         const tenNguoi = id => (nvMap[id] || {}).hoTen || id || "—";
@@ -30391,6 +30569,21 @@ function writeSheet(ss, sheetName, headers, rowsData){
         return this.layThang().filter(c => this.bacSo(c) > bacTao);
       },
 
+      thangCuaDon(item) {
+        try {
+          if (item && Array.isArray(item.thangLucTao) && item.thangLucTao.length) return item.thangLucTao.slice();
+        } catch (e) {}
+        return this.thangHieuLuc((item || {}).capBacNguoiTao);
+      },
+
+      choDuyetVuot(maChungTu) {
+        try {
+          const st = getCompanySettings();
+          const qt = st.quyTrinhDuyet && st.quyTrinhDuyet[maChungTu];
+          return !!(qt && qt.duyetVuot);
+        } catch (e) { return false; }
+      },
+
       dsPhongBan() {
         const data = DataService.getData();
         const s = new Set();
@@ -30402,19 +30595,27 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
       canApprove(u, item) {
         if (!u || item.trangThai !== "cho_duyet") return false;
-        const eff = this.thangHieuLuc(item.capBacNguoiTao);
+        
+        const eff = this.thangCuaDon(item);
         if (!eff.length) return false;
-        const capBuoc = eff[item.buoc];                 
+         
+        const viTri = Math.min(Math.max(Number(item.buoc) || 0, 0), eff.length - 1);
+        const capBuoc = eff[viTri];                      
         const myCap = PhanQuyenService.capBacCua(u.role);
         if (myCap === "it_admin") return true;           
-        if (myCap !== capBuoc) return false;
-        
-        if (capBuoc === "manager") return u.phongBan === item.phongBanNguoiTao;
-        return true; 
+        if (myCap === capBuoc) {
+          
+          if (capBuoc === "manager") return u.phongBan === item.phongBanNguoiTao;
+          return true; 
+        }
+         
+        if (this.choDuyetVuot("de_xuat_nhan_su")
+            && eff.indexOf(myCap) > viTri) return true;
+        return false;
       },
 
       veTienTrinh(item) {
-        const eff = this.thangHieuLuc(item.capBacNguoiTao);
+        const eff = this.thangCuaDon(item);   
         if (!eff.length) return `<span class="badge badge-success"><i class="fa-solid fa-check"></i> Tự động duyệt (người tạo là cấp cao nhất)</span>`;
         if (item.trangThai === "tu_choi") {
           const ls = (item.lichSu || []).slice(-1)[0] || {};
@@ -30606,6 +30807,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
           nguoiTaoId: u.id,
           tenNguoiTao: u.hoTen,
           capBacNguoiTao: myCap,
+           
+          thangLucTao: eff.slice(),
           phongBanNguoiTao: u.phongBan || "",
           phongBanCanTuyen: document.getElementById("dxPhongBan").value.trim() || u.phongBan || "",
           viTri: viTri,
@@ -30660,18 +30863,27 @@ function writeSheet(ss, sheetName, headers, rowsData){
               
               if (!this.canApprove(u, item)) { CoreService.showToast("Bạn không có quyền duyệt bước này!", "danger"); return; }
               const yKien = document.getElementById("dxYkien").value.trim();
-              const eff = this.thangHieuLuc(item.capBacNguoiTao);
+              const eff = this.thangCuaDon(item);            
+              const viTri = Math.min(Math.max(Number(item.buoc) || 0, 0), eff.length - 1);
+              const myCap = PhanQuyenService.capBacCua(u.role);
+               
+              const viTriToi = eff.indexOf(myCap);
+              const laVuotCap = laDuyet && viTriToi > viTri;
+              const buocThay = laVuotCap ? eff.slice(viTri, viTriToi).map(c => this.tenCapBac(c)) : [];
               item.lichSu = item.lichSu || [];
               item.lichSu.push({
-                capBac: eff[item.buoc], tenNguoiDuyet: u.hoTen, chucVu: u.chucVu || "",
-                ngay: new Date().toLocaleString("vi-VN"), ketQua: laDuyet ? "duyet" : "tu_choi", yKien: yKien
+                capBac: laVuotCap ? myCap : eff[viTri], tenNguoiDuyet: u.hoTen, chucVu: u.chucVu || "",
+                ngay: new Date().toLocaleString("vi-VN"), ketQua: laDuyet ? "duyet" : "tu_choi",
+                yKien: yKien + (laVuotCap ? " · [Duyệt vượt cấp — thông qua luôn bước: " + buocThay.join(", ") + "]" : "")
               });
               if (!laDuyet) {
                 item.trangThai = "tu_choi";
-              } else if (item.buoc >= eff.length - 1) {
-                item.trangThai = "da_duyet";   
+              } else if (laVuotCap || viTri >= eff.length - 1) {
+                
+                item.trangThai = "da_duyet";
+                item.buoc = eff.length - 1;
               } else {
-                item.buoc += 1;                
+                item.buoc = viTri + 1;         
               }
               DataService.saveData(data);
               CoreService.closeModal();
@@ -30980,6 +31192,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
         const cur = this.thangCua(ma);
         
         this._thuTuChon = cur.slice();
+        
+        const _qtDaLuu = (getCompanySettings().quyTrinhDuyet || {})[ma] || null;
         const ungVien = ct.ungVien || ["manager", "hr", "accountant", "director"];
         const canhBao = ct.trangThai === "da_ap" ? ""
           : `<div style="background:#fef9c3;color:#b45309;padding:8px 10px;border-radius:6px;font-size:12px;margin-bottom:10px"><i class="fa-solid fa-triangle-exclamation"></i> Chứng từ này ${ct.trangThai === "co_dinh" ? "đang chạy duyệt 1 cấp cố định" : "chưa có bước duyệt trong app"}. Lưu thang ở đây là <strong>khai báo chuẩn bị</strong> — module sẽ chạy theo khi được nối ở bước sau.</div>`;
@@ -30993,6 +31207,19 @@ function writeSheet(ss, sheetName, headers, rowsData){
                (đợt 59 chỉ xem, thứ tự bị ép theo thang cấp bậc). Tick thêm cấp nào thì cấp đó
                vào CUỐI thang; muốn đưa lên duyệt sớm hơn thì bấm ▲. -->
           <div id="qtdThuTuXem" style="margin-top:10px;background:var(--primary-lighter,#dbeafe);border:1px solid #bfdbfe;border-radius:8px;padding:9px 12px;font-size:12.5px;color:var(--primary-dark,#1e3a8a);line-height:1.5"></div>
+
+          <!-- [THÊM MỚI 06/09/2026 — V4 đợt 67] CÔNG TẮC DUYỆT VƯỢT CẤP.
+               TẮT (mặc định) = đơn leo ĐÚNG THỨ TỰ từng bước, không ai ký thay ai.
+               BẬT = cấp cao hơn ký là XONG luôn, các bước dưới được thông qua và ghi rõ
+               trong lịch sử ký (lệ doanh nghiệp: giám đốc ký thì khỏi xin chữ ký cấp dưới). -->
+          <label style="display:flex;align-items:flex-start;gap:10px;margin-top:10px;padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;cursor:pointer;background:var(--bg-hover)">
+            <input type="checkbox" id="qtdDuyetVuot" style="margin-top:3px" ${_qtDaLuu && _qtDaLuu.duyetVuot ? "checked" : ""}>
+            <span style="font-size:12.5px;line-height:1.5">
+              <strong>⏫ Cho phép cấp cao hơn duyệt vượt (ký là xong)</strong><br>
+              <span class="text-muted">Bật: đang chờ Trưởng phòng mà Giám đốc ký thì đơn <strong>hoàn tất luôn</strong>, lịch sử ghi rõ đã thông qua bước nào.<br>
+              Tắt (mặc định): đơn phải leo <strong>đúng thứ tự từng bước</strong>, không ai ký thay ai.</span>
+            </span>
+          </label>
         `;
         CoreService.openModal("Sửa Quy Trình Duyệt — " + ct.ten, body, [
           { text: "Hủy", class: "btn-secondary" },
@@ -31004,9 +31231,14 @@ function writeSheet(ss, sheetName, headers, rowsData){
               if (!chon.length) { CoreService.showToast("Phải chọn ít nhất 1 cấp duyệt!", "warning"); return; }
               const settings = getCompanySettings();
               settings.quyTrinhDuyet = settings.quyTrinhDuyet || {};
-              settings.quyTrinhDuyet[ma] = { ten: ct.ten, thang: chon };
+              
+              const _vuot = !!((document.getElementById("qtdDuyetVuot") || {}).checked);
+              settings.quyTrinhDuyet[ma] = { ten: ct.ten, thang: chon, duyetVuot: _vuot };
               localStorage.setItem(CONFIG.STORAGE_KEY_SETTINGS, JSON.stringify(settings));
-              if (PhanQuyenService.ghiNhatKy) PhanQuyenService.ghiNhatKy("Sửa quy trình duyệt", ct.ten + ": thang = " + chon.map(x => dx.tenCapBac(x)).join(" → "));
+              
+              if (PhanQuyenService.ghiNhatKy) PhanQuyenService.ghiNhatKy("Sửa quy trình duyệt",
+                ct.ten + ": thang = " + chon.map(x => dx.tenCapBac(x)).join(" → ")
+                + " · chế độ: " + (_vuot ? "CHO cấp cao duyệt vượt" : "tuần tự từng bước"));
               CoreService.closeModal();
               CoreService.showToast("Đã lưu quy trình duyệt cho " + ct.ten + "!", "success");
               AppModules.quytrinhduyet.render();
