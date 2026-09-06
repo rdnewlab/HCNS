@@ -5114,7 +5114,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.68" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.69" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -5343,7 +5343,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.68"
+                version: "4.0.69"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -6625,7 +6625,13 @@ function writeSheet(ss, sheetName, headers, rowsData){
       async keoTuServer() {
          
         if (this._conNoGui()) {
-          try { await this._guiMotDot(); } catch (e) {}
+           
+          try {
+            const hd = this._docHangDoi();
+            hd.forEach(x => { if (x && x.loai === "ghiDong") x.hen = 0; });
+            this._ghiHangDoi(hd);
+            await this._guiMotDot();
+          } catch (e) {}
           if (this._conNoGui()) return { ok: false, err: "còn " + this._conNoGui() + " mục chưa gửi lên kho — hoãn kéo về để không ghi đè mất" };
         }
         const s = getCompanySettings();
@@ -7265,6 +7271,22 @@ function writeSheet(ss, sheetName, headers, rowsData){
       _batKiemTraDangXuatTuXa() {
         try { this._ngheCuaSoKhac(); } catch (eN) {}   
         try { this._wq14x(); } catch (eK2) {}   
+         
+        if (!this._daNgheHienLai) {
+          this._daNgheHienLai = true;
+          document.addEventListener("visibilitychange", async () => {
+            try {
+              if (document.visibilityState !== "visible") return;
+              if (!this.currentUser || !DataService.syncBat()) return;
+              const nay = Date.now();
+              if (nay - (this._lanKeoHienLai || 0) < 5000) return;   
+              this._lanKeoHienLai = nay;
+              await DataService.keoTuServer();
+              try { this._veLaiSauKhiKeo(); } catch (eV) {}
+              try { NotificationService.capNhatHieuChung && NotificationService.capNhatHieuChung(); } catch (eH) {}
+            } catch (e) {}
+          });
+        }
         if (this._dxtxTimer) return;
         this._dxtxTimer = setInterval(async () => {
           try {
@@ -29379,15 +29401,29 @@ function writeSheet(ss, sheetName, headers, rowsData){
                       <div><div class="hdr-title">Bước 5 · Thiết lập trang tính & Đồng bộ</div><div class="hdr-subtitle">Chạy lần đầu — app tự tạo bảng chuẩn</div></div>
                     </div>
                     <div class="cfg-card-body">
-                      <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.7;margin-bottom:10px;">Bấm nút dưới để app <strong>tự tạo 6 bảng chuẩn</strong> (NhanVien, BangCong, DonTu, CongViec, DanhMucCongViec, OrdersVPP) + tab hướng dẫn, kẻ khung tô màu đẹp — bạn khỏi tạo cột thủ công.</div>
+                      <!-- [SỬA 06/09/2026 — V4 đợt 85] Chủ app hỏi "chức năng của màn Bước 5 là gì" — trước đây màn
+                           chỉ mô tả 1 trong 3 nút, còn 2 nút kia và ô tick không nói dùng lúc nào. Nay nói rõ
+                           từng nút, theo đúng thứ tự người mới làm lần đầu. -->
+                      <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.7;margin-bottom:10px;">
+                        Màn này là <strong>bảng điều khiển đồng bộ</strong> giữa app và kho Google Sheets — xong Bước 1–4 thì mọi việc với kho nằm cả ở đây:<br>
+                        <strong>🪄 Thiết lập trang tính lần đầu</strong> — bấm <u>một lần duy nhất</u> khi mới nối: app tự tạo 6 bảng chuẩn (NhanVien, BangCong, DonTu, CongViec, DanhMucCongViec, OrdersVPP) + tab hướng dẫn, kẻ khung tô màu — khỏi tạo cột thủ công.<br>
+                        <strong>📤 Đẩy dữ liệu lên</strong> — chép toàn bộ dữ liệu của MÁY NÀY lên kho (dùng sau lần thiết lập đầu, hoặc khi muốn ép kho theo bản máy này).<br>
+                        <strong>📥 Kéo dữ liệu về</strong> — lấy bản mới nhất từ kho về máy (máy mới cài, hoặc muốn xem ngay thứ người khác vừa gửi).<br>
+                        <strong>Ô tick bên dưới</strong> — bật là app TỰ đẩy/kéo ở nền, không phải bấm tay hai nút trên nữa.
+                      </div>
                       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
                         <button class="btn btn-sm btn-success" onclick="AppModules.settings.thietLapTrangTinh()"><i class="fa-solid fa-wand-magic-sparkles"></i> 🎨 Thiết lập trang tính lần đầu</button>
                         <button class="btn btn-sm btn-primary" onclick="AppModules.settings.dayDuLieuLen()"><i class="fa-solid fa-cloud-arrow-up"></i> ☁️ Đẩy dữ liệu lên</button>
                         <button class="btn btn-sm btn-secondary" onclick="AppModules.settings.keoDuLieuVe()"><i class="fa-solid fa-cloud-arrow-down"></i> 📥 Kéo dữ liệu về</button>
                       </div>
+                      <!-- [SỬA 06/09/2026 — V4 đợt 85] Ô tick TỰ LƯU NGAY khi bấm.
+                           TRƯỚC: tick xong phải quay lại Bước 4 bấm "Lưu cấu hình" mới ăn — người
+                           dùng tick rồi tưởng đã bật, đóng màn, hoá ra chưa lưu gì (chủ app hỏi
+                           thẳng: "tại sao về Bước 4 mới lưu được, sao không có lưu ở đây"). -->
                       <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:600;">
-                        <input type="checkbox" id="sheetSyncBatChk" ${companySettings.sheetSyncBat ? 'checked' : ''}>
-                        <span>BẬT đồng bộ dùng chung (nhiều máy/điện thoại dùng chung 1 nguồn). Bấm "Lưu cấu hình" ở Bước 4 để lưu.</span>
+                        <input type="checkbox" id="sheetSyncBatChk" ${companySettings.sheetSyncBat ? 'checked' : ''}
+                          onchange="AppModules.settings.batTatDongBo(this.checked)">
+                        <span>BẬT đồng bộ dùng chung (nhiều máy / điện thoại dùng chung 1 nguồn) — <em>tick là lưu ngay, không phải bấm gì thêm</em>.</span>
                       </label>
                     </div>
                   </div>
@@ -30209,7 +30245,19 @@ function writeSheet(ss, sheetName, headers, rowsData){
           if (kq.ok) CoreService.showToast("✅ Đã đẩy toàn bộ dữ liệu lên server dùng chung.", "success");
           else CoreService.showToast("❌ Đẩy thất bại: " + kq.err, "danger");
         },
-        
+
+        batTatDongBo(bat) {
+          try {
+            const st = getCompanySettings();
+            st.sheetSyncBat = !!bat;
+            localStorage.setItem("AUTO_HCNS_V2_COMPANY_SETTINGS", JSON.stringify(st));
+            CoreService.showToast(bat
+              ? "✅ ĐÃ BẬT đồng bộ dùng chung — máy này sẽ đẩy/kéo dữ liệu với kho Google Sheets."
+              : "Đã TẮT đồng bộ — máy này làm việc một mình, không đẩy/kéo với kho chung nữa.",
+              bat ? "success" : "warning");
+          } catch (e) { CoreService.showToast("Không lưu được cài đặt: " + e.message, "danger"); }
+        },
+
         async keoDuLieuVe() {
           if (!DataService.syncBat()) { CoreService.showToast("Hãy nhập URL + mã bí mật, BẬT đồng bộ rồi Lưu trước.", "warning"); return; }
           CoreService.showToast("Đang kéo dữ liệu chung về...", "info");
