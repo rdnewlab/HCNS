@@ -3728,9 +3728,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
         };
         
         const theoCapBac = CAP_BAC.map(ma => ds.find(v => v.ma === ma)).filter(Boolean);
-        return (theoCapBac.length ? '<optgroup label="① Theo cấp bậc (chọn cái này)">' + theoCapBac.map(the).join("") + "</optgroup>" : "")
-          + nhom("② Theo chức năng", v => CHUC_NANG.indexOf(v.ma) >= 0)
-          + nhom("③ Theo bộ phận (bản cũ — giữ cho dữ liệu cũ)", v => CAP_BAC.indexOf(v.ma) < 0 && CHUC_NANG.indexOf(v.ma) < 0);
+        return (theoCapBac.length ? '<optgroup label="Cấp bậc quản lý &amp; nhân sự">' + theoCapBac.map(the).join("") + "</optgroup>" : "")
+          + nhom("Vai trò chức năng", v => CHUC_NANG.indexOf(v.ma) >= 0)
+          + nhom("Vai trò theo bộ phận", v => CAP_BAC.indexOf(v.ma) < 0 && CHUC_NANG.indexOf(v.ma) < 0);
       },
       
       timVaiTro(ma) {
@@ -5114,7 +5114,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.67" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.68" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -5343,7 +5343,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.67"
+                version: "4.0.68"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -21714,7 +21714,11 @@ function writeSheet(ss, sheetName, headers, rowsData){
               <div class="form-row">
                 <div class="form-group">
                   <label class="form-label">Mã Nhân Viên</label>
-                  <input type="text" id="inpNewAccId" class="form-control" value="NV00${(data.nhanVien || []).length + 1}">
+                  <!-- [SỬA 06/09/2026 — V4 đợt 84] TRƯỚC: mã sinh bằng SỐ NGƯỜI + 1 nên trùng ngay khi có
+                                         người đã nghỉ. Danh sách NV001·NV002·NV004 có 3 người ⇒ gợi ý "NV004",
+                                         trùng người đang làm, tạo ra hai người cùng mã (đo thật 06/09).
+                                         NAY: lấy số lớn nhất đang có rồi +1 (xem maNhanVienTiepTheo). -->
+                                    <input type="text" id="inpNewAccId" class="form-control" value="${AppModules.rbac.maNhanVienTiepTheo()}">
                 </div>
                 <div class="form-group">
                   <label class="form-label">Họ Và Tên</label>
@@ -21766,7 +21770,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                   ${PhanQuyenService.optionVaiTro("employee", true)}
                 </select>
                 <small class="text-muted" style="display:block;margin-top:4px;">
-                  Chọn ở <strong>nhóm ① Theo cấp bậc</strong>. Phòng ban đã khai ở ô trên rồi, không
+                  Nên chọn ở nhóm <strong>Cấp bậc quản lý &amp; nhân sự</strong>. Phòng ban đã khai ở ô trên rồi, không
                   cần chọn lại ở đây. Muốn chỉnh chi tiết ai xem được gì thì vào tab
                   <strong>Ma Trận Phân Quyền</strong>.
                 </small>
@@ -30615,6 +30619,119 @@ function writeSheet(ss, sheetName, headers, rowsData){
     };
 
      
+     
+    AppModules.rbac.maNhanVienTiepTheo = function () {
+      try {
+        const ds = (DataService.getData().nhanVien || []);
+        let max = 0;
+        ds.forEach(n => {
+          const so = parseInt(String((n && n.id) || "").replace(/\D/g, ""), 10);
+          if (!isNaN(so) && so > max) max = so;
+        });
+        return "NV" + String(max + 1).padStart(3, "0");
+      } catch (e) { return "NV" + Date.now().toString().slice(-4); }
+    };
+
+    AppModules.rbac.moSuaHoSo = function (userId) {
+      const data = DataService.getData();
+      const user = (data.nhanVien || []).find(n => n.id === userId);
+      if (!user) return;
+      const kt = PhanQuyenService.duocDungTaiKhoan(user);
+      if (!kt.duoc) { CoreService.showToast(kt.lyDo, "danger"); return; }
+      const goiYPB = PhanQuyenService.goiY("phongBan");
+      const goiYCV = PhanQuyenService.goiY("chucVu");
+      const esc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+      const o = (nhan, id, giaTri, list, kieu) =>
+        '<div class="form-group"><label class="form-label">' + nhan + '</label>'
+        + '<input type="' + (kieu || "text") + '" id="' + id + '" class="form-control" value="' + esc(giaTri || "") + '"'
+        + (list ? ' list="' + list + '"' : "") + "></div>";
+      const dsGoiY = (id, ds) => '<datalist id="' + id + '">'
+        + ds.map(x => '<option value="' + esc(x) + '">').join("") + "</datalist>";
+      const body =
+        '<form onsubmit="return false;">'
+        + '<div style="background:var(--primary-lighter);padding:8px 12px;border-radius:6px;font-size:12.5px;margin-bottom:12px">'
+        + "Mã nhân viên <strong>" + esc(user.id) + "</strong> không đổi được — mã là thứ mọi dữ liệu "
+        + "(chấm công, lương, việc giao) bám vào. Cần đổi mã thì tạo tài khoản mới rồi chuyển dữ liệu."
+        + "</div>"
+        + '<div class="form-row">' + o("Họ và tên", "shsTen", user.hoTen) + o("Email", "shsEmail", user.email, null, "email") + "</div>"
+        + '<div class="form-row">' + o("Phòng ban", "shsPB", user.phongBan, "shsDsPB") + o("Chức vụ", "shsCV", user.chucVu, "shsDsCV") + "</div>"
+        + dsGoiY("shsDsPB", goiYPB) + dsGoiY("shsDsCV", goiYCV)
+        + '<div class="form-row">' + o("Số điện thoại", "shsSDT", user.soDienThoai) + o("Ngày vào làm", "shsNgayVao", user.ngayVaoLam, null, "date") + "</div>"
+        + '<div class="form-row"><div class="form-group"><label class="form-label">Loại hợp đồng</label>'
+        + '<input type="text" id="shsHopDong" class="form-control" value="' + esc(user.hopDong || "") + '" list="shsDsHD">'
+        + '<datalist id="shsDsHD"><option value="Thử việc"><option value="Chính thức"><option value="Thời vụ"><option value="Cộng tác viên"></datalist></div>'
+        + '<div class="form-group"><label class="form-label">Trạng thái làm việc</label>'
+        + '<select id="shsTrangThai" class="form-control">'
+        + '<option value="dang_lam"' + (user.trangThai !== "dinh_chi" ? " selected" : "") + ">Đang làm việc</option>"
+        + '<option value="dinh_chi"' + (user.trangThai === "dinh_chi" ? " selected" : "") + ">Đã nghỉ / đình chỉ</option>"
+        + "</select></div></div>"
+        + '<small class="text-muted">Vai trò phân quyền và mã PIN sửa ở hai nút riêng bên cạnh.</small>'
+        + "</form>";
+      CoreService.openModal("Sửa hồ sơ — " + user.hoTen, body, [
+        { text: "Hủy", class: "btn-secondary" },
+        { text: "<i class='fa-solid fa-floppy-disk'></i> Lưu hồ sơ", class: "btn-primary", close: false,
+          onClick: function () {
+            const g = id => (document.getElementById(id) || {}).value;
+            const ten = String(g("shsTen") || "").trim();
+            if (!ten) { CoreService.showToast("Chưa nhập họ và tên.", "warning"); return; }
+            const d2 = DataService.getData();
+            const u2 = (d2.nhanVien || []).find(n => n.id === userId);
+            if (!u2) { CoreService.showToast("Không tìm thấy tài khoản.", "danger"); return; }
+            u2.hoTen = ten;
+            u2.email = String(g("shsEmail") || "").trim();
+            u2.phongBan = String(g("shsPB") || "").trim();
+            u2.chucVu = String(g("shsCV") || "").trim();
+            u2.soDienThoai = String(g("shsSDT") || "").trim();
+            u2.ngayVaoLam = String(g("shsNgayVao") || "").trim();
+            u2.hopDong = String(g("shsHopDong") || "").trim();
+            u2.trangThai = g("shsTrangThai") === "dinh_chi" ? "dinh_chi" : "dang_lam";
+            DataService.saveData(d2);
+            PhanQuyenService.ghiNhatKy("Sửa hồ sơ tài khoản", "Sửa hồ sơ " + userId + " (" + ten + ")");
+            CoreService.closeModal();
+            CoreService.showToast("Đã lưu hồ sơ " + ten + ".", "success");
+            AppModules.rbac.veLai();
+          } }
+      ]);
+    };
+
+    AppModules.rbac.xoaTaiKhoan = function (userId) {
+      const data = DataService.getData();
+      const user = (data.nhanVien || []).find(n => n.id === userId);
+      if (!user) return;
+      const toi = CoreService.currentUser || {};
+      if (user.id === toi.id) { CoreService.showToast("Không thể xoá tài khoản của chính mình.", "danger"); return; }
+      const kt = PhanQuyenService.duocDungTaiKhoan(user);
+      if (!kt.duoc) { CoreService.showToast(kt.lyDo, "danger"); return; }
+      const esc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+      const body =
+        '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 12px;margin-bottom:12px;color:#b91c1c;font-size:13px">'
+        + "<strong>Xoá vĩnh viễn tài khoản:</strong><br>" + esc(user.hoTen) + " — " + esc(user.id)
+        + " (" + esc(user.phongBan || "chưa có phòng") + ")</div>"
+        + '<div style="font-size:12.5px;line-height:1.6;margin-bottom:12px">'
+        + "Xoá tài khoản <strong>KHÔNG xoá</strong> chấm công, bảng lương hay việc đã giao của người này — "
+        + "những dữ liệu đó gắn theo mã nhân viên và sẽ thành dữ liệu không có chủ.<br>"
+        + "👉 Người <strong>nghỉ việc</strong> thì nên bấm <em>Sửa hồ sơ</em> → đổi trạng thái sang "
+        + "<strong>“Đã nghỉ / đình chỉ”</strong>, giữ được lịch sử để đối chiếu về sau."
+        + "</div>"
+        + '<div class="form-group"><label class="form-label">Gõ đúng mã <strong>' + esc(user.id) + "</strong> để xác nhận xoá</label>"
+        + '<input type="text" id="xoaXacNhan" class="form-control" placeholder="Gõ mã nhân viên"></div>';
+      CoreService.openModal("Xoá tài khoản?", body, [
+        { text: "Không xoá", class: "btn-secondary" },
+        { text: "<i class='fa-solid fa-trash'></i> Xoá vĩnh viễn", class: "btn-danger", close: false,
+          onClick: function () {
+            const go = String(((document.getElementById("xoaXacNhan") || {}).value) || "").trim().toUpperCase();
+            if (go !== String(user.id).toUpperCase()) { CoreService.showToast("Mã xác nhận chưa đúng — chưa xoá gì cả.", "warning"); return; }
+            const d2 = DataService.getData();
+            d2.nhanVien = (d2.nhanVien || []).filter(n => n.id !== userId);
+            DataService.saveData(d2);
+            PhanQuyenService.ghiNhatKy("Xoá tài khoản", "Xoá tài khoản " + userId + " (" + (user.hoTen || "") + ")");
+            CoreService.closeModal();
+            CoreService.showToast("Đã xoá tài khoản " + (user.hoTen || userId) + ".", "success");
+            AppModules.rbac.veLai();
+          } }
+      ]);
+    };
+
     AppModules.rbac.khoaLaiCoHoi = function () {
       CoreService.openModal("Khoá khu quản trị?",
         "<p style='margin:0'>Khoá xong, lần sau vào lại phải <strong>nhập mật khẩu quản trị</strong>."
@@ -32208,12 +32325,19 @@ function writeSheet(ss, sheetName, headers, rowsData){
                       <td class="col-action">
                         <!-- [SỬA 28/08/2026] Hàng nút CHỈ ICON, đều nhau, gọn — rê chuột hiện tên. -->
                         <div style="display:flex;gap:6px;justify-content:center;flex-wrap:nowrap;">
+                          <!-- [THÊM MỚI 06/09/2026 — V4 đợt 84] Nút SỬA HỒ SƠ. Trước đây màn này chỉ đổi được vai trò
+                               và mã PIN — nhân viên đổi phòng, lên chức, đổi số điện thoại đều chịu. -->
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.rbac.moSuaHoSo('${user.id}')" title="Sửa hồ sơ (tên · phòng ban · chức vụ · email · SĐT · trạng thái)" aria-label="Sửa hồ sơ"><i class="fa-solid fa-id-badge" style="color:#0891b2"></i></button>
                           <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.rbac.openEditRoleModal('${user.id}')" title="Đổi vai trò / quyền" aria-label="Đổi quyền"><i class="fa-solid fa-user-pen" style="color:#2563eb"></i></button>
                           <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.rbac.resetPinModal('${user.id}')" title="Đặt lại mã PIN" aria-label="Đổi PIN"><i class="fa-solid fa-key" style="color:#64748b"></i></button>
                           <!-- [THÊM MỚI 01/09/2026] Danh thiếp: thẻ đẹp để gửi mã đăng nhập + PIN cho nhân viên. -->
                           <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.rbac.danhThiepTaiKhoan('${user.id}')" title="Danh thiếp tài khoản (gửi mã ĐN + PIN)" aria-label="Danh thiếp"><i class="fa-solid fa-id-card" style="color:#7c3aed"></i></button>
                           ${nutKhoa}
                           ${nutDXTX}
+                          <!-- [THÊM MỚI 06/09/2026 — V4 đợt 84] Nút XOÁ tài khoản — chức năng cơ bản
+                               trước đây thiếu hẳn. Đặt CUỐI hàng và màu đỏ để không bấm nhầm;
+                               bấm vào còn phải gõ đúng mã nhân viên mới xoá (xem xoaTaiKhoan). -->
+                          <button class="btn btn-sm btn-secondary" style="padding:6px 9px;" onclick="AppModules.rbac.xoaTaiKhoan('${user.id}')" title="Xoá tài khoản (phải gõ mã để xác nhận)" aria-label="Xoá tài khoản"><i class="fa-solid fa-trash" style="color:#dc2626"></i></button>
                         </div>
                       </td>
                     </tr>`;
