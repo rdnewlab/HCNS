@@ -2810,7 +2810,7 @@ var CHUNK         = 45000;               // 1 ô Sheet tối đa ~50.000 ký t�
    mã CŨ và không có dấu hiệu nào để biết — đã dính lỗi này nhiều lần. Nay mọi phản hồi đều
    kèm số bản; nút "Kiểm tra kết nối" ở mục 6.4 hiện số đó ra để đối chiếu.
    ⚠️ MỖI LẦN SỬA MÃ NÀY PHẢI TĂNG SỐ (r1 → r2 …). */
-var CODE_VERSION  = "HCNS-BE-2026-09-06-r12";   // [SỬA đợt 86] r11 → r12: nhân viên cũng giao việc được từ điện thoại (kho congViec mở mọi cấp, kèm hàng rào chỉ đụng việc mình giao/mình nhận)   // [SỬA đợt 80c] r7 → r10: THÊM lệnh ghiDong dùng chung (trước đây gần như MỌI chức năng — đơn từ, góp ý, sáng kiến, dự trù, KPI… — đều không lưu được lên kho khi làm từ điện thoại) · CHẶN nhân viên tự duyệt đơn của chính mình · và sửa lỗi DUYỆT TRÊN MÁY QUẢN TRỊ KHÔNG ĂN (dòng cũ trong tab đè ngược bản vừa duyệt)
+var CODE_VERSION  = "HCNS-BE-2026-09-06-r13";   // [SỬA đợt 89] r12 → r13: chấm công giữ đủ trường phụ khi gộp (ảnh, cờ ra ca, nguồn, IP, GPS) — hết "dữ liệu chấm công bị mất bị nhảy"   // [SỬA đợt 80c] r7 → r10: THÊM lệnh ghiDong dùng chung (trước đây gần như MỌI chức năng — đơn từ, góp ý, sáng kiến, dự trù, KPI… — đều không lưu được lên kho khi làm từ điện thoại) · CHẶN nhân viên tự duyệt đơn của chính mình · và sửa lỗi DUYỆT TRÊN MÁY QUẢN TRỊ KHÔNG ĂN (dòng cũ trong tab đè ngược bản vừa duyệt)
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    [THÊM MỚI 05/09/2026 — V4 đợt 51] BẤM ▶ CHẠY THÌ CHẠY HÀM NÀY (KIEM_TRA_NHANH).
@@ -2926,10 +2926,26 @@ function _conLuot(khoa, toiDa){
    (vì tab xếp theo thứ tự thời gian, quét từ trên xuống thì cái sau đè cái trước).
    Ví dụ thật: anh A chấm VÀO lúc 7h50 ra một dòng, chấm RA lúc 17h30 ra dòng thứ hai;
    gộp xong còn MỘT bản ghi ngày đó, có cả giờ vào lẫn giờ ra. */
+/* [THÊM MỚI 06/09/2026 — V4 đợt 89] Rút gọn bản ghi chấm công thành chuỗi JSON để cất vào cột
+   "Chi tiết": BỎ ảnh base64 (quá nặng cho ô bảng tính) nhưng GIỮ mọi trường còn lại (cờ đã
+   ra ca, nguồn app/máy, IP, khoảng cách GPS, toạ độ…). Có ảnh thì ghi cờ coAnhVao/coAnhRa. */
+function _jsonGon(bg){
+  try {
+    var o = {};
+    for (var t in bg){
+      if (t === "anhCheckIn" || t === "anhCheckOut" || t === "token" || t === "session") continue;
+      o[t] = bg[t];
+    }
+    if (bg.anhCheckIn) o.coAnhVao = true;
+    if (bg.anhCheckOut) o.coAnhRa = true;
+    var s = JSON.stringify(o);
+    return s.length > 40000 ? "" : s;
+  } catch (e){ return ""; }
+}
 function _gopBangCong(ss, nen){
   var sh = ss.getSheetByName("BangCong");
   if (!sh || sh.getLastRow() < 2) return nen;
-  var v = sh.getRange(2, 1, sh.getLastRow() - 1, 13).getValues();
+  var v = sh.getRange(2, 1, sh.getLastRow() - 1, 14).getValues();   // [SỬA đợt 89] đọc thêm cột 14 "Chi tiết (JSON)"
   var m = {};
   for (var i = 0; i < nen.length; i++){
     var r0 = nen[i];
@@ -2940,20 +2956,31 @@ function _gopBangCong(ss, nen){
     if (!r[1] || !r[2]) continue;                  // thiếu mã NV hoặc ngày thì bỏ
     var k = r[1] + "|" + _ngayChuoi(r[2]);
     var cu = m[k] || {};
-    // Chỉ ghi đè ô CÓ giá trị — dòng "chấm ra" không được xoá mất giờ vào của dòng trước.
-    m[k] = {
-      maNV: r[1], ngay: _ngayChuoi(r[2]),
-      caLam: r[3] || cu.caLam || "",
-      gioVao: r[4] || cu.gioVao || "",
-      gioRa: r[5] || cu.gioRa || "",
-      gioOT: (r[6] !== "" && r[6] != null) ? r[6] : (cu.gioOT || 0),
-      hinhThuc: r[7] || cu.hinhThuc || "",
-      diaChi: r[8] || cu.diaChi || "",
-      ghiChu: r[9] || cu.ghiChu || "",
-      trangThai: r[10] || cu.trangThai || "",
-      coAnhVao: (r[11] === "x") || !!cu.coAnhVao,
-      coAnhRa: (r[12] === "x") || !!cu.coAnhRa
-    };
+    /* [SỬA 06/09/2026 — V4 đợt 89] GIỮ NGUYÊN mọi trường của bản gốc rồi mới đè ô tab CÓ giá trị.
+       TRƯỚC: dựng lại đúng 13 cột → ảnh chấm công, cờ đã-ra-ca, nguồn app/máy, IP, khoảng cách
+       GPS… của bản gốc BAY MẤT mỗi lần gộp — đúng cái "dữ liệu chấm công bị mất bị nhảy" chủ
+       app cảm nhận. Cột 14 (JSON chi tiết, có từ r13) tin cậy nhất nên đè sau cùng. */
+    var moi = {};
+    for (var tC in cu) moi[tC] = cu[tC];               // giữ ảnh, cờ, nguồn, IP… của bản gốc
+    moi.maNV = r[1]; moi.ngay = _ngayChuoi(r[2]);
+    if (r[3]) moi.caLam = r[3];
+    if (r[4]) moi.gioVao = r[4];
+    if (r[5]) moi.gioRa = r[5];
+    if (r[6] !== "" && r[6] != null) moi.gioOT = r[6];
+    if (r[7]) moi.hinhThuc = r[7];
+    if (r[8]) moi.diaChi = r[8];
+    if (r[9]) moi.ghiChu = r[9];
+    if (r[10]) moi.trangThai = r[10];
+    if (r[11] === "x") moi.coAnhVao = true;
+    if (r[12] === "x") moi.coAnhRa = true;
+    try {
+      if (r[13]) {
+        var ct = JSON.parse(r[13]);
+        for (var tJ in ct){ if (tJ === "anhCheckIn" || tJ === "anhCheckOut") continue; moi[tJ] = ct[tJ]; }
+        moi.maNV = r[1]; moi.ngay = _ngayChuoi(r[2]);   // khoá gộp không cho JSON đổi
+      }
+    } catch (eJ) {}
+    m[k] = moi;
   }
   var ra = [];
   for (var kk in m) ra.push(m[kk]);
@@ -3445,11 +3472,13 @@ function doPost(e){
       var shC = ss.getSheetByName("BangCong") || ss.insertSheet("BangCong");
       if (shC.getLastRow() === 0) {
         shC.appendRow(["Thời gian ghi", "Mã NV", "Ngày", "Ca Làm Việc", "Giờ Vào", "Giờ Ra", "Giờ OT",
-                       "Hình Thức", "Địa Chỉ/GPS", "Ghi Chú", "Trạng Thái", "Có ảnh vào", "Có ảnh ra"]);
+                       "Hình Thức", "Địa Chỉ/GPS", "Ghi Chú", "Trạng Thái", "Có ảnh vào", "Có ảnh ra", "Chi tiết (JSON)"]);   // [SỬA đợt 89] thêm cột chi tiết
       }
       shC.appendRow([new Date(), bg.maNV, bg.ngay, bg.caLam || "", bg.gioVao || "", bg.gioRa || "",
                      bg.gioOT || 0, bg.hinhThuc || bg.nguon || "", bg.diaChi || bg.toaDo || "",
-                     bg.ghiChu || "", bg.trangThai || "", bg.coAnhVao ? "x" : "", bg.coAnhRa ? "x" : ""]);
+                     bg.ghiChu || "", bg.trangThai || "",
+                     (bg.anhCheckIn || bg.coAnhVao) ? "x" : "", (bg.anhCheckOut || bg.coAnhRa) ? "x" : "",
+                     _jsonGon(bg)]);   // [SỬA đợt 89] cột 14: JSON đầy đủ (bỏ ảnh) — gộp không mất trường phụ nữa
       return _json({ status: "success", message: "Đã ghi nhận chấm công." });
     });   // [SỬA đợt 49] đóng hàm bọc khoá ghi
 
@@ -5120,7 +5149,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.72" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.73" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -5349,7 +5378,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.72"
+                version: "4.0.73"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -6846,7 +6875,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
             const bo = {}; loGhi.forEach(x => { bo[x.id] = 1; });
             ds2 = ds2.filter(x => !bo[x.id]);
             if (j && j.tuChoi && j.tuChoi.length) {
-              try { CoreService.showToast("⚠️ Kho chung không nhận " + j.tuChoi.length + " mục: " + (j.tuChoi[0].viSao || "không đủ quyền"), "warning"); } catch (e) {}
+              this._baoTuChoi(j.tuChoi);   
             }
           } else {
             
@@ -6879,7 +6908,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
             ok = !!(j && j.status === "success");
              
             if (ok && m.loai === "ghiDong" && j.tuChoi && j.tuChoi.length) {
-              try { CoreService.showToast("⚠️ Kho chung không nhận 1 mục: " + (j.tuChoi[0].viSao || "không đủ quyền"), "warning"); } catch (e) {}
+              this._baoTuChoi(j.tuChoi);   
             }
           } catch (e) { ok = false; }
 
@@ -6934,6 +6963,22 @@ function writeSheet(ss, sheetName, headers, rowsData){
       },
 
       
+
+       
+      _baoTuChoi(tuChoi) {
+        try {
+          if (!tuChoi || !tuChoi.length) return;
+          const vi = tuChoi[0].viSao || "không đủ quyền";
+          CoreService.showToast("⛔ Kho chung TỪ CHỐI " + tuChoi.length + " thay đổi: " + vi + " — app đang khôi phục các mục đó về đúng bản trên kho.", "warning");
+          const S89 = this;
+          clearTimeout(this._henKhoiPhuc89);
+          this._henKhoiPhuc89 = setTimeout(function () {
+            S89.keoTuServer().then(function () {
+              try { CoreService._veLaiSauKhiKeo(); } catch (e) {}
+            }).catch(function () {});
+          }, 1200);
+        } catch (e) {}
+      },
 
       async guiChamCong(banGhi) {
         const s = getCompanySettings();
@@ -7069,10 +7114,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 if (j && j.status === "success") {
                   S.chupAnhKho(DataService.getData());
                   
-                  if (j.tuChoi && j.tuChoi.length) {
-                    const vi = j.tuChoi[0].viSao || "không đủ quyền";
-                    CoreService.showToast("⚠️ " + j.tuChoi.length + " mục KHÔNG lưu được lên kho chung: " + vi, "warning");
-                  }
+                  if (j.tuChoi && j.tuChoi.length) S._baoTuChoi(j.tuChoi);   
                 } else {
                   CoreService.showToast("⚠️ Chưa gửi được lên kho chung ("
                     + ((j && j.error) || "máy chủ từ chối") + "). Dữ liệu vẫn nằm trong máy này.", "danger");
@@ -16472,6 +16514,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
                   ${getGiaiDoanCV().map(g => `<button class="btn btn-sm ${gdHienTai === g.id ? "btn-primary" : "btn-secondary"}" onclick="AppModules.tasks.datGiaiDoan('${cv.id}','${g.id}')">${g.ten} <span style="opacity:0.7">(${g.pt}%)</span></button>`).join("")}
                 </div>
                 ${isManager ? `<button class="btn btn-sm btn-danger" onclick="AppModules.tasks.dinhChiCongViec('${cv.id}')"><i class="fa-solid fa-ban"></i> Đình chỉ công việc này</button>` : ``}
+                <!-- [THÊM MỚI 06/09/2026 — V4 đợt 89] Nút XOÁ việc: người giao hoặc cấp quản lý (chủ app đòi chức năng xoá cơ bản). -->
+                ${(isManager || String(cv.nguoiGiaoId || "") === String((CoreService.currentUser || {}).id)) ? `<button class="btn btn-sm btn-secondary" style="margin-top:8px;margin-left:6px;color:#b91c1c;border-color:#fecaca;" onclick="AppModules.tasks.xoaCongViec('${cv.id}')"><i class="fa-solid fa-trash"></i> Xoá việc này</button>` : ``}
               `}
             </div>
 
@@ -16639,6 +16683,14 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const data = DataService.getData();
           const cv = (data.congViec || []).find(c => c.id === cvId);
           if (!cv || !cv.checklist) return;
+          
+          const _chan89b = this.duocDongViec(cv);
+          if (_chan89b) {
+            const _o89 = document.getElementById("chk_" + checkId);
+            if (_o89) _o89.checked = !isDone;
+            CoreService.showToast("🔒 " + _chan89b, "warning");
+            return;
+          }
 
           const item = cv.checklist.find(c => c.id === checkId);
           if (item) item.done = isDone;
@@ -16666,6 +16718,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const cv = (data.congViec || []).find(c => c.id === cvId);
           if (!cv) return;
 
+          const _chan89c = this.duocDongViec(cv);
+          if (_chan89c) { CoreService.showToast("🔒 " + _chan89c, "warning"); return; }
           const noiDung = document.getElementById("inpDrawerNoiDung").value.trim();
           if (!noiDung) {
             CoreService.showToast("Vui lòng nhập nội dung thực hiện!", "warning");
@@ -16740,11 +16794,40 @@ function writeSheet(ss, sheetName, headers, rowsData){
         },
 
         
-        
+
+        xoaCongViec(id) {
+          const data = DataService.getData();
+          const i = (data.congViec || []).findIndex(c => c.id === id);
+          if (i < 0) return;
+          const cv = data.congViec[i];
+          const u = CoreService.currentUser || {};
+          const cap = (typeof PhanQuyenService !== "undefined") ? PhanQuyenService.capBacCua(u.role || "employee") : "employee";
+          const laQL = ["manager", "hr", "director", "it_admin"].indexOf(cap) >= 0;
+          if (!laQL && String(cv.nguoiGiaoId || "") !== String(u.id)) {
+            CoreService.showToast("Chỉ NGƯỜI GIAO việc này hoặc cấp trưởng phòng trở lên mới xoá được.", "warning"); return;
+          }
+          if (cv.trangThai === "hoan_thanh") {
+            CoreService.showToast("Việc ĐÃ NGHIỆM THU — không xoá được. Cần huỷ kết quả thì dùng ↩️ Trả Lại trong khối nghiệm thu.", "warning"); return;
+          }
+          if (!confirm('XOÁ HẲN việc "' + cv.tenCV + '"?\n\nViệc sẽ biến mất trên MỌI máy (người nhận được báo tin). Muốn giữ hồ sơ mà ngừng làm thì dùng "Đình chỉ" thay vì xoá.')) return;
+          data.congViec.splice(i, 1);
+          DataService.saveData(data);
+          try {
+            if (cv.nguoiNhan && cv.nguoiNhan !== u.id)
+              DataService.guiThongBaoDen([cv.nguoiNhan], "🗑 Việc đã bị xoá: " + cv.tenCV, (u.hoTen || "") + " đã xoá việc này khỏi hệ thống.", "task");
+          } catch (eB) {}
+          try { this.closeDrawer(); } catch (eD) {}
+          CoreService.showToast('🗑 Đã xoá việc "' + cv.tenCV + '".', "success");
+          this.render();
+        },
+
         datGiaiDoan(cvId, gd, khongMoDrawer) {
           const data = DataService.getData();
           const cv = (data.congViec || []).find(c => c.id === cvId);
           if (!cv) return;
+          
+          const _chan89 = this.duocDongViec(cv);
+          if (_chan89) { CoreService.showToast("🔒 " + _chan89, "warning"); return; }
           const gdObj = timGiaiDoan(gd);
           if (!gdObj) return;
           cv.giaiDoan = gd;
@@ -17551,6 +17634,14 @@ function writeSheet(ss, sheetName, headers, rowsData){
           { ma: "ke_toan",    ten: "Tài Chính Kế Toán",  tuKhoa: /kế toán|ke toan|tài chính|tai chinh|kiểm soát|kiem soat/ },
           { ma: "kinh_doanh", ten: "Kinh Doanh & CSKH",  tuKhoa: /kinh doanh|bán hàng|ban hang|cskh|sale|thị trường|thi truong/ }
         ],
+
+        duocDongViec(cv) {
+          const u = CoreService.currentUser || {};
+          const cap = (typeof PhanQuyenService !== "undefined") ? PhanQuyenService.capBacCua(u.role || "employee") : "employee";
+          if (cap !== "employee" || !cv) return "";
+          if (String(cv.nguoiNhan || "") === String(u.id) || String(cv.nguoiGiaoId || "") === String(u.id)) return "";
+          return 'Việc này của "' + (cv.tenNguoiNhan || cv.nguoiNhan || "người khác") + '" — vai trò của bạn thuộc hạng NHÂN VIÊN nên chỉ thao tác được việc mình NHẬN hoặc mình GIAO (kho chung sẽ từ chối thay đổi này). Nếu bạn là trưởng nhóm cần thao tác hộ, nhờ quản trị nâng vai trò của bạn lên hạng Trưởng phòng trong Phân Quyền.';
+        },
 
         _hangSo(role) {
           const cap = (typeof PhanQuyenService !== "undefined") ? PhanQuyenService.capBacCua(role || "employee") : (role || "employee");
@@ -21691,7 +21782,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
         async verifyMasterKey(event) {
           if (event) event.preventDefault();
-          const o = document.getElementById("inpMasterKey");
+          
+          const o = (event && event.target && event.target.querySelector && event.target.querySelector('input[type="password"]'))
+            || document.getElementById("inpMasterKey");
           const matKhau = (o ? o.value : "").trim();
           const cauHinh = getCompanySettings();
           const daDatKhoa = !!cauHinh.rbacMasterKeyHash;
@@ -30623,7 +30716,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
     AppModules.rbac.xacThucMoKhoa = async function (event) {
       if (event) event.preventDefault();
-      const o = document.getElementById("inpMasterKey");
+       
+      const o = (event && event.target && event.target.querySelector && event.target.querySelector('input[type="password"]'))
+        || document.getElementById("inpMasterKey");
       const matKhau = (o ? o.value : "").trim();
       const cauHinh = getCompanySettings();
 
@@ -32569,11 +32664,16 @@ function writeSheet(ss, sheetName, headers, rowsData){
             <!-- CỘT TRÁI: DANH SÁCH VAI TRÒ (menu) -->
             <div style="background:var(--bg-surface);border:1px solid var(--border-color);border-radius:12px;padding:10px;box-shadow:var(--shadow-sm);position:sticky;top:10px;">
               <div style="font-size:11.5px;font-weight:700;color:var(--text-secondary);padding:2px 6px 6px;"><i class="fa-solid fa-user-tag"></i> VAI TRÒ (${dsVaiTro.length})</div>
+              <!-- [THÊM MỚI 06/09/2026 — V4 đợt 89] Ô TÌM + KHUNG CUỘN cho danh sách vai trò (chủ app:
+                   "bảng vai trò dài thế không có thanh kéo và tìm như Quy trình duyệt"). Gõ không dấu vẫn ra. -->
+              <input type="text" class="form-control" placeholder="🔎 Tìm vai trò (gõ không dấu cũng ra)..." value="${String(this.tuKhoaVaiTro || "").replace(/"/g, "&quot;")}" oninput="AppModules.matran.locVaiTro(this.value)" style="font-size:12px;padding:5px 9px;margin-bottom:8px;">
+              <div id="mtDsVaiTro" style="max-height:52vh;overflow-y:auto;overscroll-behavior:contain;">
               ${dsVaiTro.map(v => `
                 <button type="button" class="cfg62-mi ${v.ma === this.vaiTroChon ? "active" : ""}" onclick="AppModules.matran.chonVaiTro('${v.ma}')">
                   <span style="width:24px;text-align:center;font-size:13px;flex-shrink:0;"><i class="fa-solid fa-user-shield"></i></span>
                   <span style="min-width:0;flex:1;"><span style="display:block;">${v.ten} ${v.heThong ? '<span class="badge badge-secondary" style="font-size:9px;padding:1px 4px;">hệ thống</span>' : ''}</span><span class="mi-mota">${capBacTen[v.capBac] || v.capBac} · ${demTheoVaiTro[v.ma] || 0} tài khoản</span></span>
                 </button>`).join("")}
+              </div><!-- hết khung cuộn vai trò [đợt 89] -->
               <div style="border-top:1px solid var(--border-light);margin:8px 4px;"></div>
               <button type="button" class="btn btn-sm btn-primary" style="width:100%;margin-bottom:6px;" onclick="AppModules.matran.themVaiTro()"><i class="fa-solid fa-plus"></i> Thêm Vai Trò</button>
               <!-- [THÊM MỚI 07/09/2026 — V4 đợt 37] Nạp các vai trò MẪU còn thiếu (đợt 37 bổ sung 10 bộ
@@ -32639,7 +32739,16 @@ function writeSheet(ss, sheetName, headers, rowsData){
         this.render();
       },
 
-      chonVaiTro(ma) { this.vaiTroChon = ma; this.render(); },
+      chonVaiTro(ma) { this.vaiTroChon = ma; this.render(); if (this.tuKhoaVaiTro) this.locVaiTro(this.tuKhoaVaiTro); },
+
+      locVaiTro(tu) {
+        this.tuKhoaVaiTro = tu || "";
+        const bo = x => String(x || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d");
+        const t = bo(tu);
+        document.querySelectorAll("#mtDsVaiTro .cfg62-mi").forEach(b => {
+          b.style.display = (!t || bo(b.textContent).indexOf(t) >= 0) ? "" : "none";
+        });
+      },
 
       xemNhatKy() {
         const ds = (DataService.getData().nhatKyQuyen || []);
