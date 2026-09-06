@@ -2778,7 +2778,7 @@ var CHUNK         = 45000;               // 1 ô Sheet tối đa ~50.000 ký t�
    mã CŨ và không có dấu hiệu nào để biết — đã dính lỗi này nhiều lần. Nay mọi phản hồi đều
    kèm số bản; nút "Kiểm tra kết nối" ở mục 6.4 hiện số đó ra để đối chiếu.
    ⚠️ MỖI LẦN SỬA MÃ NÀY PHẢI TĂNG SỐ (r1 → r2 …). */
-var CODE_VERSION  = "HCNS-BE-2026-09-06-r3";   // [SỬA đợt 52] r2 → r3: vá lỗi thoát ký tự làm hỏng cú pháp mã r2
+var CODE_VERSION  = "HCNS-BE-2026-09-06-r4";   // [SỬA đợt 61] r3 → r4: chuyển lệnh xinKey lên TRƯỚC cổng chặn (người quên PIN không có vé phiên — nằm sau cổng là bị từ chối 100%)
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    [THÊM MỚI 05/09/2026 — V4 đợt 51] BẤM ▶ CHẠY THÌ CHẠY HÀM NÀY (KIEM_TRA_NHANH).
@@ -3066,6 +3066,27 @@ function doPost(e){
       return _json({ status: "success", user: an, session: _taoPhien(nv.id), maCongTy: _maCongTy() });
     }
 
+    /* [SỬA đợt 61] CHUYỂN LỆNH xinKey LÊN TRƯỚC CỔNG CHẶN. VÌ SAO: người xin key là người
+       QUÊN PIN — chưa đăng nhập, không có vé phiên, không có mã bí mật. Trước đây lệnh này
+       nằm SAU cổng chặn (đợt 49 gói các lệnh ghi vô tình kéo xuống) → máy chủ từ chối 100%,
+       yêu cầu không bao giờ tới tay quản trị. Lệnh chỉ THÊM 1 DÒNG vào tab XinKey, không
+       đọc/ghi khối dữ liệu gốc nên đứng ngoài cổng vẫn an toàn (thiết kế gốc đợt 40). */
+    /* [THÊM MỚI 07/09/2026 — V4 đợt 40] GHI YÊU CẦU "XIN CẤP LẠI KEY/PIN" — KHÔNG cần đăng nhập.
+       VÌ SAO: người quên PIN thì không đăng nhập được → không có vé phiên → mọi lệnh khác đều bị
+       chặn. Lệnh này chỉ THÊM 1 DÒNG vào tab XinKey (appendRow nguyên tử, như chấm công), không
+       đọc/ghi khối dữ liệu gốc nên không lộ gì và không đè ai. */
+    if (action === "xinKey") return _ghiCoKhoa(function(){   // [SỬA đợt 49] xếp hàng khi nhiều người cùng xin key
+      var bgXK = payload.banGhi || payload;
+      if (!bgXK || !bgXK.maNV) return _json({ status: "error", error: "Thiếu mã nhân viên." });
+      try {
+        var shXK = ss.getSheetByName("XinKey");
+        // [SỬA đợt 41] Thêm cột SỐ ĐIỆN THOẠI (đứng sau Tên) — đường liên hệ để quản trị gọi lại.
+        if (!shXK){ shXK = ss.insertSheet("XinKey"); shXK.appendRow(["Ngày","Mã NV","Tên","SĐT","Nội dung","Ghi chú","ID"]); }
+        shXK.appendRow([String(bgXK.ngay||new Date().toISOString()), String(bgXK.maNV||""), String(bgXK.tenNV||""), String(bgXK.sdt||""), String(bgXK.noiDung||"Xin cấp lại key / mã PIN"), String(bgXK.ghiChu||""), String(bgXK.id||("XK"+Date.now()))]);
+      } catch (eXK){ return _json({ status: "error", error: String(eXK) }); }
+      return _json({ status: "success", message: "Đã ghi yêu cầu cấp lại key." });
+    });   // [SỬA đợt 49] đóng hàm bọc khoá ghi
+
     // Từ đây trở đi phải có mã bí mật HOẶC vé phiên còn hạn.
     if (!_ok(token, payload.session)) return _json({ status: "error", error: "Chưa đăng nhập hoặc sai mã bí mật." });
 
@@ -3132,21 +3153,6 @@ function doPost(e){
 
        LƯU Ý: một người một ngày có thể ra NHIỀU dòng (chấm vào rồi chấm ra). Đó là CỐ Ý —
        lệnh getData bên dưới sẽ gộp lại, dòng ghi SAU thắng dòng ghi trước. */
-    /* [THÊM MỚI 07/09/2026 — V4 đợt 40] GHI YÊU CẦU "XIN CẤP LẠI KEY/PIN" — KHÔNG cần đăng nhập.
-       VÌ SAO: người quên PIN thì không đăng nhập được → không có vé phiên → mọi lệnh khác đều bị
-       chặn. Lệnh này chỉ THÊM 1 DÒNG vào tab XinKey (appendRow nguyên tử, như chấm công), không
-       đọc/ghi khối dữ liệu gốc nên không lộ gì và không đè ai. */
-    if (action === "xinKey") return _ghiCoKhoa(function(){   // [SỬA đợt 49] xếp hàng khi nhiều người cùng xin key
-      var bgXK = payload.banGhi || payload;
-      if (!bgXK || !bgXK.maNV) return _json({ status: "error", error: "Thiếu mã nhân viên." });
-      try {
-        var shXK = ss.getSheetByName("XinKey");
-        // [SỬA đợt 41] Thêm cột SỐ ĐIỆN THOẠI (đứng sau Tên) — đường liên hệ để quản trị gọi lại.
-        if (!shXK){ shXK = ss.insertSheet("XinKey"); shXK.appendRow(["Ngày","Mã NV","Tên","SĐT","Nội dung","Ghi chú","ID"]); }
-        shXK.appendRow([String(bgXK.ngay||new Date().toISOString()), String(bgXK.maNV||""), String(bgXK.tenNV||""), String(bgXK.sdt||""), String(bgXK.noiDung||"Xin cấp lại key / mã PIN"), String(bgXK.ghiChu||""), String(bgXK.id||("XK"+Date.now()))]);
-      } catch (eXK){ return _json({ status: "error", error: String(eXK) }); }
-      return _json({ status: "success", message: "Đã ghi yêu cầu cấp lại key." });
-    });   // [SỬA đợt 49] đóng hàm bọc khoá ghi
 
     if (action === "chamCong") return _ghiCoKhoa(function(){   // [SỬA đợt 49] xếp hàng khi nhiều người cùng chấm
       var bg = payload.banGhi || payload;
@@ -4187,7 +4193,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
       _layCucBo() {
         try {
           const l = localStorage.getItem(this.STORAGE_LIST_KEY);
-          return l ? JSON.parse(l) : this.getDefaultNotifications();
+          if (l) return JSON.parse(l);
+           
+          return localStorage.getItem("hcns4_ban_kho_luc") ? [] : this.getDefaultNotifications();
         } catch (e) {
           return this.getDefaultNotifications();
         }
@@ -4371,14 +4379,43 @@ function writeSheet(ss, sheetName, headers, rowsData){
         this.updateHeaderBadge();
       },
 
+      datCheDoQuyTrinh(v) {
+        try {
+          const toi = (CoreService.currentUser || {}).id;
+          const data = DataService.getData();
+          const nv = (data.nhanVien || []).find(n => n.id === toi);
+          if (!nv) { CoreService.showToast("Chưa đăng nhập — không lưu được tuỳ chọn.", "warning"); return; }
+          nv.nhanTBQuyTrinh = v === "toan_bo" ? "toan_bo" : "toi_luot";
+          DataService.saveData(data);
+          CoreService.showToast(v === "toan_bo"
+            ? "Sẽ báo TỪNG BƯỚC của các quy trình bạn tham gia (để biết đơn đang tới đâu)."
+            : "Chỉ báo khi tới lượt bạn xử lý hoặc có kết quả cuối — đỡ ồn.", "success");
+        } catch (e) {}
+      },
+
       openNotifDropdown() {
         const notifs = this.getNotifications();
+        
+        let _cdQT = "toi_luot";
+        try {
+          const _nvQT = (DataService.getData().nhanVien || []).find(n => n.id === (CoreService.currentUser || {}).id);
+          if (_nvQT && _nvQT.nhanTBQuyTrinh === "toan_bo") _cdQT = "toan_bo";
+        } catch (e) {}
         const bodyHtml = `
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border-light);">
             <div style="font-size:12px; color:var(--text-secondary);"><i class="fa-solid fa-bell" style="color:var(--primary-main);"></i> Danh sách thông báo mới nhất</div>
             <button class="btn btn-sm btn-secondary" onclick="NotificationService.markAllAsRead(); CoreService.closeModal(); CoreService.showToast('Đã đánh dấu đã đọc tất cả!', 'success');" style="font-size:11px; padding:3px 8px;">
               <i class="fa-solid fa-check-double"></i> Đánh Dấu Đã Đọc
             </button>
+          </div>
+          <!-- [THÊM MỚI 06/09/2026 — V4 đợt 62] Tuỳ chọn CÁ NHÂN: quy trình duyệt báo kiểu nào.
+               "Chỉ khi tới lượt tôi" = đỡ ồn (mặc định) · "Toàn bộ" = biết đơn mình đang tới bước nào. -->
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; background:var(--bg-hover); border:1px solid var(--border-light); border-radius:8px; padding:8px 10px;">
+            <span style="font-size:11.5px; color:var(--text-secondary); white-space:nowrap;">🔁 Quy trình duyệt:</span>
+            <select class="form-control" style="font-size:12px; padding:4px 8px;" onchange="NotificationService.datCheDoQuyTrinh(this.value)">
+              <option value="toi_luot" ${_cdQT !== "toan_bo" ? "selected" : ""}>Chỉ báo khi tới lượt tôi / có kết quả</option>
+              <option value="toan_bo" ${_cdQT === "toan_bo" ? "selected" : ""}>Theo dõi TOÀN BỘ tiến trình từng bước</option>
+            </select>
           </div>
           <div style="max-height:360px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
             ${notifs.length === 0 ? `
@@ -4714,7 +4751,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.48" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.50" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -4943,7 +4980,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.48"
+                version: "4.0.50"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -6163,6 +6200,11 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
         try { if (typeof tinhLuongThang === "function") tinhLuongThang._memo = null; } catch (e) {}
         localStorage.setItem(CONFIG.STORAGE_KEY_DATA, JSON.stringify(data));
+         
+        try {
+          clearTimeout(this._hieuTimer);
+          this._hieuTimer = setTimeout(function () { try { CoreService.capNhatHieuChung(); } catch (e) {} }, 300);
+        } catch (e) {}
 
         if (!(opts && opts.khongDayLen)) { try { this.dayLenServer(data); } catch (e) {} }
       },
@@ -6239,6 +6281,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
             try { NotificationService.baoMoiChoToi(); } catch (eTB) {}   
              
             try { if (_wq01x.datMaCongTy(j.maCongTy)) _wq01x.refreshStatus(true); } catch (e) {}
+            
+            try { if (typeof CoreService !== "undefined") CoreService.capNhatHieuChung(); } catch (eHS) {}
             return { ok: true };
           }
           
@@ -6476,6 +6520,14 @@ function writeSheet(ss, sheetName, headers, rowsData){
           return [...new Set(ds)];
         } catch (e) { return []; }
       },
+       
+      nhanTBToanBo(maNV) {
+        try {
+          const nv = (this.getData().nhanVien || []).find(n => n.id === maNV);
+          return !!(nv && nv.nhanTBQuyTrinh === "toan_bo");
+        } catch (e) { return false; }
+      },
+
       guiThongBaoDen(dsMaNV, tieuDe, noiDung, loai) {
         try {
           const ds = [...new Set((dsMaNV || []).filter(Boolean))];
@@ -6762,6 +6814,18 @@ function writeSheet(ss, sheetName, headers, rowsData){
         } catch (e) {}
       },
 
+      capNhatHieuChung() {
+        try {
+          const el = document.getElementById("bdgDuyetTong");
+          if (el) {
+            const n = AppModules.duyettong._tongCanDuyet();
+            if (n) { el.textContent = n; el.style.display = "inline-flex"; }
+            else el.style.display = "none";
+          }
+        } catch (e) {}
+        try { NotificationService.updateHeaderBadge(); } catch (e) {}
+      },
+
       _veLaiSauKhiKeo() {
         try {
           if (!this.currentUser) return;                       
@@ -7021,13 +7085,33 @@ function writeSheet(ss, sheetName, headers, rowsData){
           DataService.guiThongBaoDen(nhan, "🔑 Yêu cầu cấp lại key / mã PIN",
             maNV + (bg.tenNV ? " — " + bg.tenNV : "") + " báo quên mã PIN · SĐT " + sdt + (ghiChu ? " (" + ghiChu + ")" : "") + ". Xem ở Phân Quyền ▸ Danh Sách Xin Key.", "request");
         } catch (e) {}
-        
+         
+        this.closeModal();
         try {
           const s = getCompanySettings();
-          if (s.gasUrl) fetch(s.gasUrl, { method: "POST", body: JSON.stringify({ action: "xinKey", payload: { banGhi: bg } }) }).catch(() => {});
-        } catch (e) {}
-        this.closeModal();
-        this.showToast("✅ Đã gửi yêu cầu cấp lại. Quản trị sẽ xem ở màn Phân Quyền — bạn cũng có thể gọi trực tiếp cho HCNS.", "success");
+          if (s.gasUrl) {
+            this.showToast("Đang gửi yêu cầu lên hệ thống công ty...", "info");
+            fetch(s.gasUrl, { method: "POST", body: JSON.stringify({ action: "xinKey", payload: { banGhi: bg } }) })
+              .then(r => r.json())
+              .then(j => {
+                if (j && j.status === "success") {
+                  this.showToast("✅ Đã gửi yêu cầu tới công ty. Quản trị sẽ thấy ở Phân Quyền ▸ Danh Sách Xin Key.", "success");
+                } else {
+                  
+                  this.showToast("⚠️ Hệ thống công ty CHƯA NHẬN được yêu cầu ("
+                    + ((j && j.error) || "máy chủ từ chối")
+                    + "). Hãy GỌI trực tiếp cho HCNS. Quản trị lưu ý: cần dán mã backend MỚI rồi Triển khai lại (mục 6.4).", "warning");
+                }
+              })
+              .catch(() => {
+                this.showToast("⚠️ Không nối được hệ thống công ty (mất mạng?). Yêu cầu đã lưu tại máy này — hãy GỌI trực tiếp cho HCNS.", "warning");
+              });
+          } else {
+            this.showToast("✅ Đã ghi yêu cầu tại máy này. Máy chưa nối hệ thống công ty — hãy GỌI trực tiếp cho HCNS.", "success");
+          }
+        } catch (e) {
+          this.showToast("⚠️ Không gửi được lên hệ thống công ty. Yêu cầu đã lưu tại máy này — hãy GỌI trực tiếp cho HCNS.", "warning");
+        }
       },
       loginAs(user) {
         this.currentUser = user;
@@ -7298,7 +7382,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                    về 1 chỗ (badge đỏ = số việc đang chờ). Bấm vào từng việc là nhảy tới đúng màn để duyệt. -->
               <a href="javascript:void(0)" class="menu-item" data-tab="duyettong" onclick="CoreService.switchTab('duyettong')">
                 <i class="fa-solid fa-clipboard-check"></i> <span>Ghi Nhận & Phê Duyệt</span>
-                ${(() => { try { const n = AppModules.duyettong._tongCanDuyet(); return n ? `<span class="badge badge-danger" style="margin-left:auto;font-size:10px;">${n}</span>` : ""; } catch (e) { return ""; } })()}
+                ${(() => { try { const n = AppModules.duyettong._tongCanDuyet(); return `<span class="badge badge-danger" id="bdgDuyetTong" style="margin-left:auto;font-size:10px;${n ? "" : "display:none;"}">${n || ""}</span>`; } catch (e) { return ""; } })()}<!-- [SỬA đợt 62] luôn vẽ span (ẩn khi 0) để capNhatHieuChung cập số ngay không cần vẽ lại menu -->
               </a>
             </div>
           </div>
@@ -14972,15 +15056,20 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const _vtTask = (typeof PhanQuyenService !== "undefined") ? PhanQuyenService.timVaiTro(currentUser.role) : null;
           const xemToanCty = ["hr", "director", "it_admin"].indexOf(capBacTask) >= 0 || !!(_vtTask && _vtTask.xemCVToanCty);
           const phongToi = currentUser.phongBan || "";
-          
-          const _pbCuaViec = (t) => { const nv = (data.nhanVien || []).find(n => n.id === t.nguoiNhan); return nv ? (nv.phongBan || "") : ""; };
+
+          const _pbCuaViec = (t) => { if (t.giaoChoPhong) return t.giaoChoPhong; const nv = (data.nhanVien || []).find(n => n.id === t.nguoiNhan); return nv ? (nv.phongBan || "") : ""; };
           const allEmployees0 = (data.nhanVien || []).filter(n => n.trangThai !== "dinh_chi");
-          
-          const allEmployees = xemToanCty ? allEmployees0 : allEmployees0.filter(n => (n.phongBan || "") === phongToi);
+
+          const laQuanLyPhong = capBacTask === "manager";
+          const allEmployees = xemToanCty ? allEmployees0
+            : laQuanLyPhong ? allEmployees0.filter(n => (n.phongBan || "") === phongToi)
+            : allEmployees0.filter(n => n.id === currentUser.id);
 
           const baseList = xemToanCty
             ? (data.congViec || [])
-            : (data.congViec || []).filter(t => _pbCuaViec(t) === phongToi || t.nguoiNhan === currentUser.id || t.nguoiGiao === currentUser.hoTen);
+            : laQuanLyPhong
+              ? (data.congViec || []).filter(t => _pbCuaViec(t) === phongToi || t.nguoiNhan === currentUser.id || t.nguoiGiao === currentUser.hoTen)
+              : (data.congViec || []).filter(t => t.nguoiNhan === currentUser.id || t.nguoiGiao === currentUser.hoTen || (t.giaoChoPhong || "") === phongToi);
           let taskList = baseList;
 
           if (this.selectedUserFilter !== "all") {
@@ -15799,8 +15888,20 @@ function writeSheet(ss, sheetName, headers, rowsData){
             </div><!-- hết .drawer-grid (2 cột) -->
           `;
 
+           
+          const _uD = CoreService.currentUser || {};
+          const _capD = PhanQuyenService.capBacCua(_uD.role || "employee");
+          const _phongViecD = cv.giaoChoPhong || (((DataService.getData().nhanVien || []).find(n => n.id === cv.nguoiNhan) || {}).phongBan || "");
+          const _hienGiaoLai = (["hr", "director", "it_admin"].indexOf(_capD) >= 0
+            || (_capD === "manager" && (_uD.phongBan || "") === _phongViecD)
+            || (!cv.giaoChoPhong && cv.nguoiGiao === _uD.hoTen))
+            && cv.trangThai !== "hoan_thanh" && cv.trangThai !== "dinh_chi";
+          const nutGiaoLai = _hienGiaoLai
+            ? '<button type="button" class="btn btn-sm" style="background:#f59e0b;color:#fff;border:none" onclick="AppModules.tasks.moGiaoLai(\'' + cv.id + '\')"><i class="fa-solid fa-share"></i> ' + (cv.giaoChoPhong ? "Chuyển Tiếp Cho Người Làm" : "Giao Lại Việc") + '</button>'
+            : "";
           const footerHtml = `
             <button type="button" class="btn btn-secondary btn-sm" onclick="AppModules.tasks.closeDrawer()">Đóng</button>
+            ${nutGiaoLai}
             <button type="button" class="btn btn-primary btn-sm" onclick="AppModules.tasks.submitDrawerCompletion('${cv.id}')">
               <i class="fa-solid fa-paper-plane"></i> Nộp Nghiệm Thu 100%
             </button>
@@ -16488,16 +16589,20 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const defaultGio = templateData ? templateData.gioChuan : 8;
           const defaultTieuChuan = templateData ? templateData.tieuChuan : "";
 
-          
-
-          
           const _uGiao = CoreService.currentUser || {};
           const _capGiao = (typeof PhanQuyenService !== "undefined") ? PhanQuyenService.capBacCua(_uGiao.role || "employee") : (_uGiao.role || "employee");
-          const _giaoToanCty = ["hr", "director", "it_admin"].indexOf(_capGiao) >= 0;
+          const _vtGiao = (typeof PhanQuyenService !== "undefined") ? PhanQuyenService.timVaiTro(_uGiao.role) : null;
+          const _giaoToanCty = ["manager", "hr", "director", "it_admin"].indexOf(_capGiao) >= 0 || !!(_vtGiao && _vtGiao.xemCVToanCty);
           const _phongGiao = _uGiao.phongBan || "";
           const dsNguoiNhan = (data.nhanVien || [])
             .filter(n => n.trangThai !== "dinh_chi")
             .filter(n => _giaoToanCty || (n.phongBan || "") === _phongGiao);
+          
+          const _dsPhongGiao = [...new Set(dsNguoiNhan.map(n => n.phongBan || "").filter(Boolean))];
+          const optionsNguoiNhan =
+            _dsPhongGiao.map(p => '<optgroup label="' + p + '">' + dsNguoiNhan.filter(n => (n.phongBan || "") === p).map(n => '<option value="' + n.id + '" data-pb="' + (n.phongBan || "") + '">' + n.hoTen + ' (' + n.chucVu + ')</option>').join("") + '</optgroup>').join("")
+            + dsNguoiNhan.filter(n => !(n.phongBan || "")).map(n => '<option value="' + n.id + '" data-pb="">' + n.hoTen + ' (' + n.chucVu + ')</option>').join("")
+            + (_giaoToanCty ? '<optgroup label="🏢 GIAO CHO CẢ PHÒNG (trưởng phòng đó sẽ chuyển tiếp)">' + _dsPhongGiao.map(p => '<option value="PB::' + p + '" data-pb="' + p + '">🏢 Cả phòng ' + p + '</option>').join("") + '</optgroup>' : "");
 
           
           
@@ -16521,7 +16626,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 <div class="form-group" style="margin-bottom:0">
                   <label class="form-label">Giao cho nhân viên <span class="text-danger">*</span></label>
                   <select id="inpNguoiNhan" class="form-control" onchange="AppModules.tasks.dongBoNhomTheoNV()">
-                    ${dsNguoiNhan.map(n => `<option value="${n.id}" data-pb="${n.phongBan || ''}">${n.hoTen} (${n.chucVu} - ${n.phongBan})</option>`).join("")}
+                    ${optionsNguoiNhan}
                   </select>
                 </div>
                 <div class="form-group" style="margin-bottom:0">
@@ -16598,7 +16703,11 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 const _han = (document.getElementById("inpDeadline") || {}).value;
                 if (!_han) { CoreService.showToast("Vui lòng chọn Hạn hoàn thành công việc!", "warning"); return; }
                 const nvId = document.getElementById("inpNguoiNhan").value;
-                const nvObj = data.nhanVien.find(n => n.id === nvId);
+
+                
+                const laGiaoCaPhong = String(nvId).indexOf("PB::") === 0;
+                const tenPhongGiao = laGiaoCaPhong ? String(nvId).slice(4) : "";
+                const nvObj = laGiaoCaPhong ? null : data.nhanVien.find(n => n.id === nvId);
                 
                 const _mau = (data.danhMucCongViec || []).find(m => m.id === ((document.getElementById("inpChonMauCV") || {}).value));
 
@@ -16606,8 +16715,10 @@ function writeSheet(ss, sheetName, headers, rowsData){
                   id: "CV" + Date.now().toString().slice(-6),
                   tenCV,
                   nguoiGiao: CoreService.currentUser.hoTen,
-                  nguoiNhan: nvId,
-                  tenNguoiNhan: nvObj ? nvObj.hoTen : nvId,
+                  
+                  nguoiNhan: laGiaoCaPhong ? "" : nvId,
+                  tenNguoiNhan: laGiaoCaPhong ? ("🏢 Cả phòng " + tenPhongGiao) : (nvObj ? nvObj.hoTen : nvId),
+                  giaoChoPhong: laGiaoCaPhong ? tenPhongGiao : "",
                   nhomCV: document.getElementById("inpNhomCV").value,
                   uuTien: document.getElementById("inpUuTien").value,
                   trongSoKPI: parseInt(document.getElementById("inpTrongSoKPI").value) || 3,
@@ -16645,6 +16756,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 if (!data.congViec) data.congViec = [];
                 data.congViec.unshift(newCV);
                 DataService.saveData(data);
+
+                try { AppModules.tasks.baoGiaoViec(newCV, "giao_moi"); } catch (eB) {}
                 CoreService.closeModal();
                 CoreService.showToast("Đã giao việc thành công!", "success");
                 AppModules.tasks.render();
@@ -16669,6 +16782,98 @@ function writeSheet(ss, sheetName, headers, rowsData){
           else if (/kế toán|ke toan|tài chính|tai chinh|kiểm soát|kiem soat/.test(pb)) g = "ke_toan";
           else if (/kinh doanh|bán hàng|ban hang|cskh|sale|thị trường|thi truong/.test(pb)) g = "kinh_doanh";
           if (g) nhom.value = g;
+        },
+
+        baoGiaoViec(cv, boiCanh) {
+          const data = DataService.getData();
+          const toi = (CoreService.currentUser || {}).id;
+          const han = String(cv.deadline || "").split("-").reverse().join("/");
+          const duoi = " · hạn " + (han || "—") + (cv.uuTien === "cao" ? " · 🔥 GẤP" : "");
+          if (cv.giaoChoPhong) {
+            const nhanPB = (data.nhanVien || [])
+              .filter(n => n.trangThai !== "dinh_chi" && (n.phongBan || "") === cv.giaoChoPhong && n.id !== toi)
+              .map(n => n.id);
+            if (nhanPB.length) DataService.guiThongBaoDen(nhanPB,
+              "📋 Phòng " + cv.giaoChoPhong + " có việc mới: " + cv.tenCV,
+              (cv.nguoiGiao || "") + " giao cho CẢ PHÒNG" + duoi + ". Trưởng phòng sẽ chuyển tiếp cho người phụ trách.", "task");
+            return;
+          }
+          const nv = (data.nhanVien || []).find(n => n.id === cv.nguoiNhan);
+          if (!nv) return;
+          const nhan = [nv.id];
+          const capNhan = PhanQuyenService.capBacCua(nv.role || "employee");
+
+          if (capNhan === "employee" || capNhan === "accountant") {
+            (data.nhanVien || []).forEach(q => {
+              if (q.trangThai !== "dinh_chi" && (q.phongBan || "") === (nv.phongBan || "")
+                  && PhanQuyenService.capBacCua(q.role || "employee") === "manager") nhan.push(q.id);
+            });
+          }
+          DataService.guiThongBaoDen([...new Set(nhan)].filter(id => id !== toi),
+            (boiCanh === "giao_lai" ? "🔄 Việc được giao lại: " : "📋 Việc mới: ") + cv.tenCV,
+            (CoreService.currentUser && CoreService.currentUser.hoTen ? CoreService.currentUser.hoTen : cv.nguoiGiao) + " giao cho " + nv.hoTen + duoi, "task");
+        },
+
+        moGiaoLai(id) {
+          const data = DataService.getData();
+          const cv = (data.congViec || []).find(t => t.id === id);
+          if (!cv) return;
+          const u = CoreService.currentUser || {};
+          const cap = PhanQuyenService.capBacCua(u.role || "employee");
+          const capCao = ["hr", "director", "it_admin"].indexOf(cap) >= 0;
+          const phongViec = cv.giaoChoPhong || (((data.nhanVien || []).find(n => n.id === cv.nguoiNhan) || {}).phongBan || "");
+          const laQLPhongViec = cap === "manager" && (u.phongBan || "") === phongViec;
+          const duocPhep = cv.giaoChoPhong ? (capCao || laQLPhongViec) : (capCao || laQLPhongViec || cv.nguoiGiao === u.hoTen);
+          if (!duocPhep) {
+            CoreService.showToast(cv.giaoChoPhong
+              ? "Việc giao cho cả phòng — chỉ TRƯỞNG PHÒNG đó (hoặc cấp cao) được chuyển tiếp."
+              : "Chỉ người giao việc, trưởng phòng của việc hoặc cấp cao mới được giao lại.", "warning");
+            return;
+          }
+          
+          const toanCty = capCao || cap === "manager";
+          const ds = (data.nhanVien || []).filter(n => n.trangThai !== "dinh_chi")
+            .filter(n => toanCty || (n.phongBan || "") === (u.phongBan || ""))
+            .filter(n => n.id !== cv.nguoiNhan);
+          if (!ds.length) { CoreService.showToast("Không còn ai phù hợp để giao lại.", "info"); return; }
+          const body = '<p style="font-size:13px" class="text-muted">Việc: <strong>' + this._esc(cv.tenCV) + '</strong><br>'
+            + 'Đang ở: <strong>' + this._esc(cv.giaoChoPhong ? ("Cả phòng " + cv.giaoChoPhong) : (cv.tenNguoiNhan || "—")) + '</strong> · tiến độ ' + (Number(cv.tienDo) || 0) + '% (giữ nguyên khi chuyển)</p>'
+            + '<div class="form-group"><label class="form-label">Giao lại cho <span class="text-danger">*</span></label>'
+            + '<select id="glNguoiMoi" class="form-control">'
+            + ds.map(n => '<option value="' + n.id + '">' + n.hoTen + ' (' + n.chucVu + ' - ' + (n.phongBan || "—") + ')</option>').join("")
+            + '</select></div>'
+            + '<div class="form-group"><label class="form-label">Lý do / lời nhắn (tuỳ chọn)</label>'
+            + '<input type="text" id="glLyDo" class="form-control" placeholder="VD: bạn phụ trách mảng này phù hợp hơn..."></div>';
+          CoreService.openModal("🔄 Giao Lại Việc", body, [
+            { text: "Hủy", class: "btn-secondary" },
+            {
+              text: "<i class='fa-solid fa-share'></i> Giao Lại", class: "btn-primary", close: false,
+              onClick: () => {
+                const idMoi = document.getElementById("glNguoiMoi").value;
+                const nvMoi = (data.nhanVien || []).find(n => n.id === idMoi);
+                if (!nvMoi) { CoreService.showToast("Chưa chọn người nhận mới!", "warning"); return; }
+                const tenCu = cv.giaoChoPhong ? ("Cả phòng " + cv.giaoChoPhong) : (cv.tenNguoiNhan || cv.nguoiNhan || "—");
+                const nguoiNhanCu = cv.nguoiNhan;
+                cv.nguoiNhan = nvMoi.id;
+                cv.tenNguoiNhan = nvMoi.hoTen;
+                cv.giaoChoPhong = "";   
+                cv.lichSuGiao = (cv.lichSuGiao || []).concat({
+                  tu: tenCu, den: nvMoi.hoTen, boi: u.hoTen || u.id,
+                  luc: new Date().toISOString(), lyDo: ((document.getElementById("glLyDo") || {}).value || "").trim()
+                });
+                DataService.saveData(data);
+                try { AppModules.tasks.baoGiaoViec(cv, "giao_lai"); } catch (eB) {}
+                if (nguoiNhanCu && nguoiNhanCu !== nvMoi.id) {
+                  DataService.guiThongBaoDen([nguoiNhanCu], "↪️ Việc đã chuyển cho người khác: " + cv.tenCV,
+                    (u.hoTen || "") + " đã giao lại việc này cho " + nvMoi.hoTen + ".", "task");
+                }
+                CoreService.closeModal();
+                try { AppModules.tasks.closeDrawer(); } catch (eD) {}
+                CoreService.showToast("Đã giao lại việc cho " + nvMoi.hoTen + "!", "success");
+                AppModules.tasks.render();
+              }
+            }
+          ]);
         },
 
         handleSelectTemplateChange(tmpId) {
@@ -18649,7 +18854,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
             r.nguoiDuyetTP = u.id; r.ngayDuyetTP = new Date().toLocaleString("vi-VN");
             DataService.saveData(data);
              
-          try { if (r.maNV) DataService.guiThongBaoDen([r.maNV], "🏭 Công sản lượng đã qua bước 1",
+          try { if (r.maNV && DataService.nhanTBToanBo(r.maNV)) DataService.guiThongBaoDen([r.maNV], "🏭 Công sản lượng đã qua bước 1",
             "Ngày " + (r.ngay || "") + " · " + (r.maCV || "") + " — Trưởng bộ phận đã duyệt, đang chờ HCNS duyệt lần 2.", "request"); } catch (e1) {}
           CoreService.showToast("✅ Bước 1 xong — Trưởng bộ phận đã duyệt. Đang chờ HCNS duyệt lần 2.", "success");
           } else if (tt === "cho_hcns") {
@@ -24767,6 +24972,13 @@ function writeSheet(ss, sheetName, headers, rowsData){
           if (ok && p.trangThai === "cho_hcns") {
             const nhan = (data.nhanVien || []).filter(n => { try { return this.canApprove(n, p); } catch (e) { return false; } }).map(n => n.id);
             DataService.guiThongBaoDen(nhan, "➡️ Phiếu kiểm tra chờ HCNS duyệt", `${p.tenNV} — Quản lý đã duyệt, đến lượt HCNS ghi nhận.`, "request");
+            
+            try {
+              if (p.nguoiGuiId !== u.id && DataService.nhanTBToanBo(p.nguoiGuiId)) {
+                DataService.guiThongBaoDen([p.nguoiGuiId], "⏩ Phiếu kiểm tra của bạn đã qua bước Quản lý",
+                  "Đang chờ HCNS ghi nhận — kỳ " + (p.thang || "—") + ".", "request");
+              }
+            } catch (eTB) {}
           } else {
             DataService.guiThongBaoDen([p.nguoiGuiId],
               ok ? "✅ Phiếu kiểm tra của bạn đã được GHI NHẬN" : "❌ Phiếu kiểm tra của bạn bị từ chối",
@@ -30453,6 +30665,13 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 const dsBuocSau = (data.nhanVien || []).filter(n => { try { return this.canApprove(n, item); } catch (e) { return false; } }).map(n => n.id);
                 DataService.guiThongBaoDen(dsBuocSau, "➡️ Đề xuất nhân sự chờ BẠN duyệt",
                   `${item.viTri} (${item.phongBanCanTuyen}) — ${u.hoTen} đã duyệt bước trước, đến lượt ${this.tenCapBac(eff[item.buoc])}.`, "request");
+                 
+                try {
+                  if (item.nguoiTaoId !== u.id && DataService.nhanTBToanBo(item.nguoiTaoId)) {
+                    DataService.guiThongBaoDen([item.nguoiTaoId], "⏩ Đề xuất của bạn đã qua một bước duyệt",
+                      `${item.viTri} (${item.phongBanCanTuyen}) — ${u.hoTen} đã duyệt, đang chờ ${this.tenCapBac(eff[item.buoc])}.`, "request");
+                  }
+                } catch (eTB) {}
               } else {
                 DataService.guiThongBaoDen([item.nguoiTaoId],
                   laDuyet ? "✅ Đề xuất nhân sự của bạn đã DUYỆT XONG" : "❌ Đề xuất nhân sự của bạn bị từ chối",
