@@ -1286,6 +1286,12 @@
         display: flex !important; align-items: center !important; justify-content: center !important;
         word-break: break-word; hyphens: auto; }
 
+      .qtd-chu-dan { flex: 1 1 100% !important; }
+      .hang-chip-loc { max-height: 118px !important; }
+      .hang-chot-cong { width: 100%; }
+      .hang-chot-cong > input[type="month"] { flex: 1 1 42% !important; width: auto !important; }
+      .hang-chot-cong > .btn { flex: 1 1 52% !important; }
+
       .filter-btn {
         min-height: 44px;
         padding: 8px 14px;
@@ -4708,7 +4714,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.46" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.48" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -4937,7 +4943,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.46"
+                version: "4.0.48"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -6562,14 +6568,26 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
         
         if (DataService.syncBat() && (getCompanySettings().sheetToken || DataService.layVePhien())) {
-          const bao = this._baoTaiDuLieu(true);
-          DataService.keoTuServer().then((kq) => {
-            this._baoTaiDuLieu(false, bao);
-            
-            if (kq.hetPhien) { DataService.xoaVePhien(); try { localStorage.removeItem(CONFIG.STORAGE_KEY_SESSION); } catch (e) {} this.showLoginScreen(); return; }
-            if (!kq.ok) this.showToast("⚠️ Chưa tải được dữ liệu chung — đang dùng dữ liệu trên máy.", "warning");
+           
+          const coKhoCu = !!localStorage.getItem(CONFIG.STORAGE_KEY_DATA);
+          if (coKhoCu) {
             this._tiepTucKhoiDong();
-          });
+            DataService.keoTuServer().then((kq) => {
+              
+              if (kq.hetPhien) { this.logout(); this.showToast("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.", "warning"); return; }
+              if (!kq.ok) { this.showToast("⚠️ Chưa tải được dữ liệu mới — đang dùng dữ liệu trên máy.", "warning"); return; }
+              this._veLaiSauKhiKeo();
+            });
+          } else {
+            const bao = this._baoTaiDuLieu(true);
+            DataService.keoTuServer().then((kq) => {
+              this._baoTaiDuLieu(false, bao);
+              
+              if (kq.hetPhien) { DataService.xoaVePhien(); try { localStorage.removeItem(CONFIG.STORAGE_KEY_SESSION); } catch (e) {} this.showLoginScreen(); return; }
+              if (!kq.ok) this.showToast("⚠️ Chưa tải được dữ liệu chung — đang dùng dữ liệu trên máy.", "warning");
+              this._tiepTucKhoiDong();
+            });
+          }
         } else {
           this._tiepTucKhoiDong();
         }
@@ -6744,10 +6762,67 @@ function writeSheet(ss, sheetName, headers, rowsData){
         } catch (e) {}
       },
 
+      _veLaiSauKhiKeo() {
+        try {
+          if (!this.currentUser) return;                       
+          const modal = document.getElementById("modalBackdrop");
+          if (modal && modal.classList.contains("show")) return;
+          const m = AppModules[this.activeTab];
+          if (m && typeof m.render === "function") m.render();
+        } catch (e) {   }
+      },
+
+      _timNguoiTrenMay(userInp, pinInp) {
+        try {
+          if (!localStorage.getItem(CONFIG.STORAGE_KEY_DATA)) return null;   
+           
+          if (!localStorage.getItem("hcns4_ban_kho_luc")) return null;
+          const u = (DataService.getData().nhanVien || []).find(n =>
+            (String(n.id || "").toLowerCase() === userInp.toLowerCase()
+             || String(n.email || "").toLowerCase() === userInp.toLowerCase()));
+          if (!u) return null;
+          if (u.trangThai === "dinh_chi" || u.khoaDN) return null;   
+          if (!u.pin || u.pin !== pinInp) return null;   
+          return u;
+        } catch (e) { return null; }
+      },
+
+      async _xacThucLaiONen(userInp, pinInp) {
+        const st = getCompanySettings();
+        let j = null;
+        try {
+          const r = await fetch(st.gasUrl, { method: "POST", body: JSON.stringify({ action: "login", payload: { maNV: userInp, pin: pinInp } }) });
+          j = await r.json();
+        } catch (e) {
+          this.showToast("⚠️ Chưa nối được máy chủ công ty — đang dùng dữ liệu đã lưu trên máy.", "warning");
+          return;
+        }
+        if (!j || j.status !== "success" || !j.user) {
+          this.showToast((j && j.error) || "Tài khoản không còn hợp lệ trên máy chủ công ty. Đã đăng xuất.", "danger");
+          this.logout();
+          return;
+        }
+        DataService.luuVePhien(j.session || "");
+        try { if (_wq01x.datMaCongTy(j.maCongTy)) { await _wq01x.refreshStatus(true); } } catch (e) {}
+        localStorage.setItem("hcns_dn_epoch", String((j.user && j.user.buocDangNhapLai) || 0));
+        const kq = await DataService.keoTuServer();
+        if (kq && kq.ok) this._veLaiSauKhiKeo();
+      },
+
       
       async _dangNhapQuaServer(userInp, pinInp) {
         const st = getCompanySettings();
-        this.showToast("Đang đăng nhập...", "info");
+         
+        const nhanh = this._timNguoiTrenMay(userInp, pinInp);
+        if (nhanh) {
+          localStorage.setItem("hcns_dn_epoch", String(nhanh.buocDangNhapLai || 0));
+          this.loginAs(nhanh);
+          this.showToast("Chào mừng " + (nhanh.hoTen || "") + "! Đang cập nhật dữ liệu mới ở nền...", "success");
+          this._xacThucLaiONen(userInp, pinInp);
+          return;
+        }
+        
+        this.showToast("🔑 Đang kiểm tra tài khoản trên máy chủ công ty (mất vài giây)...", "info");
         let j = null;
         try {
           const r = await fetch(st.gasUrl, { method: "POST", body: JSON.stringify({ action: "login", payload: { maNV: userInp, pin: pinInp } }) });
@@ -6760,6 +6835,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
           if (_wq01x.datMaCongTy(j.maCongTy)) { await _wq01x.refreshStatus(true); }
         } catch (e) {}
         
+        this.showToast("✓ Đúng tài khoản. Đang tải dữ liệu công ty về máy (5–10 giây lần đầu)...", "info");
         const kq = await DataService.keoTuServer();
         if (!kq.ok) this.showToast("Đăng nhập OK nhưng chưa tải được dữ liệu chung (" + (kq.err || "") + ").", "warning");
 
@@ -6773,6 +6849,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (confirm("Khôi phục toàn bộ 5 tài khoản mẫu (Mã PIN: 123456) và xóa sạch cache cũ?")) {
           localStorage.removeItem(CONFIG.STORAGE_KEY_DATA);
           localStorage.removeItem(CONFIG.STORAGE_KEY_SESSION);
+
+          try { localStorage.removeItem("hcns4_ban_kho_luc"); } catch (e) {}
           DataService.initDefaultData();
           this.showToast("✅ Đã khôi phục dữ liệu mẫu thành công!", "success");
           setTimeout(() => location.reload(), 300);
@@ -9018,8 +9096,15 @@ function writeSheet(ss, sheetName, headers, rowsData){
           !c.chiJSON && co("nhapCSV") ? m("nhapCSV", "📥 Nhập CSV", "Nhập từ .csv — dòng đầu là tên cột") : ""
         ].filter(Boolean);
         if (!muc.length) return "";
+         
+        const TEN_NUT = {
+          nhanVien: "Hồ sơ NV", danhMucVPP: "DM vật tư", bangCong: "Bảng công",
+          congViecSanLuong: "Sản lượng", thuongPhatThang: "Thưởng/Phạt",
+          khauTruThang: "Khấu trừ", doanhSoThang: "Doanh số",
+          luongChuyenThang: "Lương chuyến", dieuChinhCong: "Đ.chỉnh công"
+        };
         return `<div class="dio-wrap">
-          <button type="button" class="btn btn-sm btn-secondary dio-nut" title="Nhập / xuất dữ liệu bảng ${c.ten}" onclick="DataIO.moMenu(this)">📂 Nhập / Xuất <span style="font-size:9px;">▾</span></button>
+          <button type="button" class="btn btn-sm btn-secondary dio-nut" title="Nhập / xuất dữ liệu bảng ${c.ten}" onclick="DataIO.moMenu(this)">📂 ${TEN_NUT[ma] || "Nhập / Xuất"} <span style="font-size:9px;">▾</span></button>
           <div class="dio-menu" hidden><div class="dio-tieude">${c.ten}</div>${muc.join("")}</div>
         </div>`;
       },
@@ -14935,7 +15020,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 <!-- [SỬA 31/08/2026] Bỏ giới hạn cứng 6 người (slice(0,6)) — trước đây phòng/công ty > 6 người
                      thì người thứ 7 trở đi KHÔNG có nút lọc. Nay hiện HẾT; thêm max-height + cuộn dọc để
                      khi đông người không đẩy bảng Kanban xuống quá xa. -->
-                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;max-height:74px;overflow-y:auto;">
+                <div class="hang-chip-loc" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;max-height:74px;overflow-y:auto;">
                   <span style="font-size:12px;font-weight:700;color:var(--text-secondary);display:flex;align-items:center;gap:5px;">
                     <i class="fa-solid fa-users" style="color:var(--primary-main);"></i> Nhân sự:
                   </span>
@@ -17757,7 +17842,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
               <div class="card">
                 <div class="card-header">
                   <div class="card-title"><i class="fa-solid fa-code-compare"></i> 5. Đối Chiếu Công 3 Nguồn (Máy ↔ App ↔ Phòng)</div>
-                  ${laHCNS ? `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                  ${laHCNS ? `<div class="hang-chot-cong" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                     <input type="month" id="inpThangChot" class="form-control" value="${thangCC}" style="width:160px;font-size:12px;">
                     <button class="btn btn-sm btn-primary" onclick="AppModules.attendance.chotCongThang()" title="Khóa toàn bộ công của tháng — sau khi chốt các nguồn đến muộn không đổi được nữa"><i class="fa-solid fa-lock"></i> Chốt Công Tháng (HCNS)</button>
                   </div>` : ``}
@@ -30063,12 +30148,12 @@ function writeSheet(ss, sheetName, headers, rowsData){
                   accountant: "Kế toán", director: "Giám đốc", it_admin: "Quản trị IT" })[cb] || cb;
       },
 
-      
+       
       layThang() {
         const st = getCompanySettings();
         const qt = st.quyTrinhDuyet && st.quyTrinhDuyet.de_xuat_nhan_su;
         const thang = qt && Array.isArray(qt.thang) && qt.thang.length ? qt.thang.slice() : ["manager", "hr", "director"];
-        return thang.sort((a, b) => this.bacSo(a) - this.bacSo(b));
+        return thang;
       },
 
       
@@ -30485,7 +30570,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
         const ct = this.timCT(ma);
         const thang = (qt && Array.isArray(qt.thang) && qt.thang.length) ? qt.thang.slice()
                      : (ct ? ct.macDinh.slice() : ["manager", "hr", "director"]);
-        return thang.sort((a, b) => dx.bacSo(a) - dx.bacSo(b));
+        
+        return thang;
       },
 
       thangHieuLucCua(ma, capBacNguoiTao) {
@@ -30565,7 +30651,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         c.innerHTML = `
           <div class="card" style="padding:9px 12px;margin-bottom:12px;">
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-              <div style="flex:1;min-width:240px;font-size:12.5px;color:var(--text-secondary);line-height:1.45;">
+              <div class="qtd-chu-dan" style="flex:1;min-width:240px;font-size:12.5px;color:var(--text-secondary);line-height:1.45;">
                 💡 <strong style="color:var(--text-primary);">Sổ đăng ký quy trình duyệt</strong> — chọn chứng từ bên trái để xem/sửa "thang" cấp duyệt.
                 <a href="javascript:void(0)" onclick="AppModules.quytrinhduyet.bungChuThich(this)" style="font-size:11.5px;">Xem thêm ▾</a>
                 <div class="qtd-themct" hidden style="margin-top:5px;font-size:11.5px;">
@@ -30617,31 +30703,72 @@ function writeSheet(ss, sheetName, headers, rowsData){
         const rong = document.getElementById("qtdRong"); if (rong) rong.hidden = hien > 0;
       },
 
+       
+      _thuTuChon: [],
+      veThuTuXem() {
+        const o = document.getElementById("qtdThuTuXem");
+        if (!o) return;
+        const dx = AppModules.denxuat;
+        const chon = this._thuTuChon || [];
+        if (!chon.length) { o.innerHTML = "⚠️ Chưa chọn cấp nào — phải chọn ít nhất 1 cấp."; return; }
+        const dong = chon.map((c, i) => {
+          
+          const nutLen = i === 0 ? "" : '<button type="button" onclick="AppModules.quytrinhduyet.doiThuTu(' + i + ',-1)" title="Chuyển lên — duyệt sớm hơn" style="min-width:36px;min-height:32px;border:1px solid #93c5fd;border-radius:6px;background:#fff;cursor:pointer;font-size:13px">▲</button>';
+          const nutXuong = i === chon.length - 1 ? "" : '<button type="button" onclick="AppModules.quytrinhduyet.doiThuTu(' + i + ',1)" title="Chuyển xuống — duyệt muộn hơn" style="min-width:36px;min-height:32px;border:1px solid #93c5fd;border-radius:6px;background:#fff;cursor:pointer;font-size:13px">▼</button>';
+          return '<div style="display:flex;align-items:center;gap:6px;margin:5px 0">'
+            + '<span style="flex:1;min-width:0"><strong>' + (i + 1) + '.</strong> ' + dx.tenCapBac(c)
+            + (i === chon.length - 1 ? ' — <em>người chốt cuối</em>' : '') + '</span>'
+            + nutLen + nutXuong + '</div>';
+        }).join("");
+        o.innerHTML = '🔀 <strong>Thứ tự duyệt</strong> — bấm ▲▼ nếu muốn đổi ai trước ai sau:' + dong;
+      },
+
+      capDoiTick(cb) {
+        const v = cb.value;
+        this._thuTuChon = (this._thuTuChon || []).filter(x => x !== v);
+        if (cb.checked) this._thuTuChon.push(v);
+        this.veThuTuXem();
+      },
+
+      doiThuTu(i, huong) {
+        const t = this._thuTuChon || [], j = i + huong;
+        if (i < 0 || j < 0 || i >= t.length || j >= t.length) return;
+        const tam = t[i]; t[i] = t[j]; t[j] = tam;
+        this.veThuTuXem();
+      },
+
       suaThang(ma) {
         const dx = AppModules.denxuat;
         const ct = this.timCT(ma);
         if (!ct) return;
         const cur = this.thangCua(ma);
+        
+        this._thuTuChon = cur.slice();
         const ungVien = ct.ungVien || ["manager", "hr", "accountant", "director"];
         const canhBao = ct.trangThai === "da_ap" ? ""
           : `<div style="background:#fef9c3;color:#b45309;padding:8px 10px;border-radius:6px;font-size:12px;margin-bottom:10px"><i class="fa-solid fa-triangle-exclamation"></i> Chứng từ này ${ct.trangThai === "co_dinh" ? "đang chạy duyệt 1 cấp cố định" : "chưa có bước duyệt trong app"}. Lưu thang ở đây là <strong>khai báo chuẩn bị</strong> — module sẽ chạy theo khi được nối ở bước sau.</div>`;
         const body = `
           ${canhBao}
-          <p class="text-muted" style="font-size:13px">Chọn các CẤP phải duyệt cho "<strong>${ct.ten}</strong>". Đơn leo qua các cấp được chọn (thấp → cao) mà cao hơn người tạo. Cấp cao nhất được chọn = <strong>người chốt cuối</strong>.</p>
+          <p class="text-muted" style="font-size:13px">Tick các CẤP phải duyệt cho "<strong>${ct.ten}</strong>". Thứ tự ai duyệt trước ai duyệt sau <strong>tự xếp ở khung dưới</strong> (bấm ▲▼). Người đứng cuối = <strong>người chốt cuối</strong>. Cấp bằng hoặc thấp hơn người tạo đơn sẽ tự được bỏ qua.</p>
           <div style="margin-top:8px">
-            ${ungVien.map(cc => `<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border-color);border-radius:8px;margin:6px 0;cursor:pointer"><input type="checkbox" class="qtd-cap" value="${cc}" ${cur.includes(cc) ? "checked" : ""}> <span><strong>${dx.tenCapBac(cc)}</strong></span></label>`).join("")}
+            ${ungVien.map(cc => `<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--border-color);border-radius:8px;margin:6px 0;cursor:pointer"><input type="checkbox" class="qtd-cap" value="${cc}" onchange="AppModules.quytrinhduyet.capDoiTick(this)" ${cur.includes(cc) ? "checked" : ""}> <span><strong>${dx.tenCapBac(cc)}</strong></span></label>`).join("")}
           </div>
+          <!-- [SỬA 06/09/2026 — V4 đợt 60] KHUNG THỨ TỰ DUYỆT — nay XẾP ĐƯỢC bằng nút ▲▼
+               (đợt 59 chỉ xem, thứ tự bị ép theo thang cấp bậc). Tick thêm cấp nào thì cấp đó
+               vào CUỐI thang; muốn đưa lên duyệt sớm hơn thì bấm ▲. -->
+          <div id="qtdThuTuXem" style="margin-top:10px;background:var(--primary-lighter,#dbeafe);border:1px solid #bfdbfe;border-radius:8px;padding:9px 12px;font-size:12.5px;color:var(--primary-dark,#1e3a8a);line-height:1.5"></div>
         `;
         CoreService.openModal("Sửa Quy Trình Duyệt — " + ct.ten, body, [
           { text: "Hủy", class: "btn-secondary" },
           {
             text: "<i class='fa-solid fa-check'></i> Lưu Quy Trình", class: "btn-primary", close: false,
             onClick: () => {
-              const chon = Array.from(document.querySelectorAll(".qtd-cap:checked")).map(x => x.value);
+               
+              const chon = (AppModules.quytrinhduyet._thuTuChon || []).slice();
               if (!chon.length) { CoreService.showToast("Phải chọn ít nhất 1 cấp duyệt!", "warning"); return; }
               const settings = getCompanySettings();
               settings.quyTrinhDuyet = settings.quyTrinhDuyet || {};
-              settings.quyTrinhDuyet[ma] = { ten: ct.ten, thang: chon.sort((a, b) => dx.bacSo(a) - dx.bacSo(b)) };
+              settings.quyTrinhDuyet[ma] = { ten: ct.ten, thang: chon };
               localStorage.setItem(CONFIG.STORAGE_KEY_SETTINGS, JSON.stringify(settings));
               if (PhanQuyenService.ghiNhatKy) PhanQuyenService.ghiNhatKy("Sửa quy trình duyệt", ct.ten + ": thang = " + chon.map(x => dx.tenCapBac(x)).join(" → "));
               CoreService.closeModal();
@@ -30650,6 +30777,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
             }
           }
         ]);
+         
+        setTimeout(() => { try { this.veThuTuXem(); } catch (e) {} }, 60);
       }
     };
 
