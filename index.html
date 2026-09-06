@@ -1469,9 +1469,15 @@
     .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border-light); display: flex; align-items: center; justify-content: flex-end; gap: var(--space-sm); background: var(--bg-hover); }
 
     @media (max-width: 768px) {
-      .modal-footer { position: sticky; bottom: 0; z-index: 2; }
+      
+      .modal-footer { position: sticky; bottom: 0; z-index: 2; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
 
       .modal-body { padding-bottom: 48px; }
+      
+      .modal-backdrop { align-items: flex-start; padding-top: calc(56px + env(safe-area-inset-top, 0px)); }
+      .modal-dialog { max-height: calc(100vh - 56px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 12px); }
+      
+      .modal-close { min-width: 44px; min-height: 44px; border-radius: 10px; background: var(--bg-hover); }
       .modal-body input, .modal-body select, .modal-body textarea, .modal-body [contenteditable] { scroll-margin: 90px 0; }
     }
 
@@ -3582,7 +3588,26 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
     
 
+     
+    const PHONG_BAN_MAU = [
+      "Ban Giám Đốc", "Hành Chính Nhân Sự", "Kế Toán - Tài Chính", "Kinh Doanh", "Marketing",
+      "Mua Hàng - Cung Ứng", "Kho Vận", "Sản Xuất", "Kỹ Thuật - Bảo Trì", "QA - QC",
+      "Nghiên Cứu & Phát Triển", "Chăm Sóc Khách Hàng", "Công Nghệ Thông Tin", "An Toàn - Môi Trường"
+    ];
+     
+    const CHUC_VU_MAU = [
+      "Tổng Giám Đốc", "Phó Tổng Giám Đốc", "Giám Đốc", "Phó Giám Đốc",
+      "Trưởng Phòng", "Phó Phòng", "Trưởng Bộ Phận", "Tổ Trưởng", "Trưởng Ca",
+      "Chuyên Viên", "Kỹ Sư", "Kỹ Thuật Viên", "Nhân Viên", "Công Nhân",
+      "Thực Tập Sinh", "Cộng Tác Viên"
+    ];
+
     const VAI_TRO_MAC_DINH = [
+       
+      { ma: "pho_giam_doc",  ten: "Phó Giám Đốc",     capBac: "director",  heThong: false },
+      { ma: "pho_phong",     ten: "Phó Phòng",        capBac: "manager",   heThong: false },
+      { ma: "chuyen_vien",   ten: "Chuyên Viên",      capBac: "employee",  heThong: false },
+      { ma: "thuc_tap_sinh", ten: "Thực Tập Sinh",    capBac: "employee",  heThong: false },
       { ma: "director",   ten: "Ban Giám Đốc",              capBac: "director",   heThong: true },
       { ma: "assistant",  ten: "Trợ Lý",                    capBac: "manager",    heThong: false },
       { ma: "rnd",        ten: "Nghiên Cứu & Phát Triển",   capBac: "employee",   heThong: false },
@@ -3658,7 +3683,54 @@ function writeSheet(ss, sheetName, headers, rowsData){
       getVaiTro() {
         const data = DataService.getData();
         if (!data.vaiTro || !data.vaiTro.length) return VAI_TRO_MAC_DINH.slice();
-        return data.vaiTro;
+         
+        const ds = data.vaiTro.slice();
+        const daCo = {}; ds.forEach(v => { if (v && v.ma) daCo[v.ma] = 1; });
+        VAI_TRO_MAC_DINH.forEach(v => { if (!daCo[v.ma]) ds.push(Object.assign({}, v)); });
+        return ds;
+      },
+
+      goiY(loai) {
+        try {
+          const data = DataService.getData();
+          const truong = (loai === "chucVu") ? "chucVu" : "phongBan";
+          const mau = (loai === "chucVu") ? CHUC_VU_MAU : PHONG_BAN_MAU;
+          const dangDung = [];
+          (data.nhanVien || []).forEach(n => {
+            const v = String((n && n[truong]) || "").trim();
+            if (v && dangDung.indexOf(v) < 0) dangDung.push(v);
+          });
+          return dangDung.concat(mau.filter(x => dangDung.indexOf(x) < 0));
+        } catch (e) { return (loai === "chucVu") ? CHUC_VU_MAU.slice() : PHONG_BAN_MAU.slice(); }
+      },
+
+       
+      duocGanVaiTro(maVaiTro) {
+        try {
+          const toi = CoreService.currentUser || {};
+          const hangToi = this.hangCua(toi.role);
+          const hangGan = this.hangCua(maVaiTro);
+          if (hangToi >= 4) return true;                 
+          return hangGan < hangToi;
+        } catch (e) { return false; }
+      },
+
+      optionVaiTro(maDangChon, locTheoHang) {
+        const CAP_BAC = ["director", "pho_giam_doc", "manager", "pho_phong", "chuyen_vien", "employee", "thuc_tap_sinh"];
+        const CHUC_NANG = ["hr", "accountant", "it_admin", "assistant"];
+         
+        const ds = this.getVaiTro().filter(v => !locTheoHang || this.duocGanVaiTro(v.ma));
+        const esc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+        const the = v => '<option value="' + esc(v.ma) + '"' + (v.ma === maDangChon ? " selected" : "") + ">" + esc(v.ten) + "</option>";
+        const nhom = (ten, loc) => {
+          const con = ds.filter(loc);
+          return con.length ? '<optgroup label="' + ten + '">' + con.map(the).join("") + "</optgroup>" : "";
+        };
+        
+        const theoCapBac = CAP_BAC.map(ma => ds.find(v => v.ma === ma)).filter(Boolean);
+        return (theoCapBac.length ? '<optgroup label="① Theo cấp bậc (chọn cái này)">' + theoCapBac.map(the).join("") + "</optgroup>" : "")
+          + nhom("② Theo chức năng", v => CHUC_NANG.indexOf(v.ma) >= 0)
+          + nhom("③ Theo bộ phận (bản cũ — giữ cho dữ liệu cũ)", v => CAP_BAC.indexOf(v.ma) < 0 && CHUC_NANG.indexOf(v.ma) < 0);
       },
       
       timVaiTro(ma) {
@@ -5042,7 +5114,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.64" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.67" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -5271,7 +5343,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.64"
+                version: "4.0.67"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -9548,6 +9620,32 @@ function writeSheet(ss, sheetName, headers, rowsData){
       
       _ghi(ma, ds, mode) {
         const c = this._cfg(ma), data = DataService.getData();
+
+        if (c && c.mang === "nhanVien" && Array.isArray(ds)) {
+           
+          const _dsCu = data.nhanVien || [];
+          let soChan = 0;
+          ds.forEach(r => {
+            if (!r || !r.role) return;
+            const cu = _dsCu.find(n => n && String(n.id) === String(r.id));
+            
+            if (cu && String(cu.role || "") === String(r.role)) return;
+            if (cu) {
+               
+              const duocDung = PhanQuyenService.duocDungTaiKhoan(cu).duoc;
+              if (!duocDung || !PhanQuyenService.duocGanVaiTro(r.role)) { r.role = cu.role; soChan++; }
+            } else {
+              
+              if (!PhanQuyenService.duocGanVaiTro(r.role)) { r.role = "employee"; soChan++; }
+            }
+          });
+          if (soChan) {
+            try {
+              CoreService.showToast("⚠️ " + soChan + " dòng đổi vai trò vượt quyền của bạn — đã GIỮ NGUYÊN vai trò cũ "
+                + "(người mới thì để \"Nhân viên\"). Nhờ cấp cao hơn nhập lại nếu cần đúng vai trò.", "warning");
+            } catch (e) {}
+          }
+        }
 
         if (c.kieuMap) {
           if (mode === "thay") data[c.mang] = {};
@@ -15919,6 +16017,16 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 <div style="background:${item.tienDo >= 100 ? "var(--success-text)" : "linear-gradient(90deg, #2563eb, #38bdf8)"};width:${item.tienDo}%;height:100%;border-radius:4px;"></div>
               </div>
 
+              <!-- [THÊM MỚI 06/09/2026 — V4 đợt 83b] Dòng "ai giao / ai nghiệm thu" ngay trên thẻ.
+                   VÌ SAO: hai cột đó đợt 82 mới thêm vào chế độ BẢNG, mà trên điện thoại người ta
+                   xem chế độ THẺ là chính — bảng 14 cột phải cuộn ngang rất xa mới tới. Không biết
+                   ai giao, ai chốt thì không quy được trách nhiệm (đúng lời chủ app). -->
+              ${(item.nguoiGiao || item.nguoiNghiemThu) ? `
+                <div style="font-size:10.5px;color:var(--text-muted);margin-bottom:6px;display:flex;flex-wrap:wrap;gap:4px 10px;">
+                  ${item.nguoiGiao ? `<span><i class="fa-solid fa-user-pen"></i> Giao: <strong>${this._esc(item.nguoiGiao)}</strong></span>` : ""}
+                  ${item.nguoiNghiemThu ? `<span style="color:var(--success-text)"><i class="fa-solid fa-circle-check"></i> Nghiệm thu: <strong>${this._esc(item.nguoiNghiemThu)}</strong></span>` : ""}
+                </div>` : ""}
+
               <div class="kanban-footer">
                 <div class="user-avatar-badge" title="Người nhận: ${item.tenNguoiNhan || item.nguoiNhan || "—"}">
                   <span class="user-avatar-circle">${initials}</span>
@@ -16122,7 +16230,11 @@ function writeSheet(ss, sheetName, headers, rowsData){
                       <th class="col-stt" style="width:40px">STT</th>
                       <th class="col-ma" style="width:75px">Mã Việc</th>
                       <th>Tên Công Việc & Tiêu Chuẩn Nghiệm Thu</th>
-                      <th style="width:130px">Người Nhận</th>
+                      <th style="width:120px">Người Giao</th>
+                                <th style="width:130px">Người Nhận</th>
+                                <!-- [THÊM MỚI 06/09/2026 — V4 đợt 82] Hai cột "Người Giao" và "Nghiệm Thu Bởi".
+                                     VÌ SAO: trước bảng chỉ có Người Nhận — mở ra không biết AI GIAO việc này,
+                                     ai là người CHỐT cuối cùng, nên không quy được trách nhiệm cho ai. -->
                       <th style="width:75px;text-align:center">Ưu Tiên</th>
                       <th style="width:95px;text-align:center">Trọng Số KPI</th>
                       <th class="col-ngay" style="width:95px">Hạn Xong</th>
@@ -16131,11 +16243,12 @@ function writeSheet(ss, sheetName, headers, rowsData){
                       <!-- [THÊM MỚI 31/08/2026] Cột Trạng thái thời gian: đúng/trễ theo giờ chuẩn + kéo dài + chờ duyệt. -->
                       <th style="width:170px">Trạng Thái Thời Gian</th>
                       <th style="width:110px;text-align:center">Đánh Giá KPI</th>
-                      <th class="col-action" style="width:110px">Thao Tác</th>
+                      <th style="width:120px">Nghiệm Thu Bởi</th>
+                                <th class="col-action" style="width:110px">Thao Tác</th>
                     </tr>
                   </thead>
                   <tbody>
-                    ${taskList.length === 0 ? `<tr><td colspan="12" class="col-action o-rong">Không có công việc nào</td></tr>` : taskList.map((item, idx) => {
+                    ${taskList.length === 0 ? `<tr><td colspan="14" class="col-action o-rong">Không có công việc nào</td></tr>` : taskList.map((item, idx) => {
                       const isOverdue = new Date(item.deadline) < new Date(new Date().toISOString().split("T")[0]) && item.trangThai !== "hoan_thanh";
                       return `
                         <tr style="${isOverdue ? "background:#fff1f2;" : ""};cursor:pointer" onclick="AppModules.tasks.openTaskDrawer('${item.id}')">
@@ -16147,7 +16260,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
                             <br>
                             <small class="text-muted"><i class="fa-solid fa-circle-info"></i> ${this._esc(item.tieuChuan || item.moTa || "Chưa có tiêu chuẩn")}</small>
                           </td>
-                          <td><strong>${item.tenNguoiNhan}</strong><br><small class="text-muted">${item.nguoiNhan}</small></td>
+                          <td><small>${item.nguoiGiao || "<span class='o-rong'></span>"}</small></td>
+                                                    <td><strong>${item.tenNguoiNhan}</strong><br><small class="text-muted">${item.nguoiNhan}</small></td>
                           <td style="text-align:center">${item.uuTien === "cao" ? `<span class="badge badge-danger">Gấp</span>` : `<span class="badge badge-info">Thường</span>`}</td>
                           <td style="text-align:center;font-size:12px">${"⭐".repeat(item.trongSoKPI || 3)}</td>
                           <td class="col-ngay ${isOverdue ? "text-danger" : ""}" style="font-weight:${isOverdue ? "bold" : "normal"}">${formatDateDisplay(item.deadline)}</td>
@@ -16176,6 +16290,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
                           <td style="text-align:center">
                             ${item.diemDanhGia > 0 ? `<span class="badge badge-success" style="font-weight:bold">${item.diemDanhGia} đ</span>` : `<span class="badge badge-warning">Chưa chấm</span>`}
                           </td>
+                          <td><small>${item.nguoiNghiemThu
+                            ? item.nguoiNghiemThu + (item.ngayNghiemThu ? "<br><span class='text-muted'>" + item.ngayNghiemThu.split("-").reverse().join("/") + "</span>" : "")
+                            : "<span class='o-rong'></span>"}</small></td>
                           <td class="col-action" onclick="event.stopPropagation()">
                             <!-- [THÊM MỚI 02/09/2026] Nút "Giai đoạn kế" ngay trên bảng Danh Sách: đổi giai đoạn
                                  KHÔNG cần mở ngăn chi tiết (bảng phẳng không có cột để kéo-thả như Kanban). -->
@@ -16565,6 +16682,12 @@ function writeSheet(ss, sheetName, headers, rowsData){
             cv.tienDo = 100;
             cv.giaiDoan = "hoan_tat";                       
             cv.ngayNghiemThu = new Date().toISOString().split("T")[0];
+             
+            try {
+              const _ngNT = CoreService.currentUser || {};
+              cv.nguoiNghiemThuId = _ngNT.id || "";
+              cv.nguoiNghiemThu = _ngNT.hoTen || "";
+            } catch (eNT) {}
           } else { 
             cv.lyDoTraLai = note;                            
             cv.giaiDoan = "thuc_thi";                        
@@ -21614,23 +21737,39 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 </div>
               </div>
 
+              <!-- [SỬA 06/09/2026 — V4 đợt 81] Hai ô này TRƯỚC là ô gõ tay trắng trơn, mỗi người
+                   gõ một kiểu ("Kỹ thuật" / "Ky thuat" / "P.Kỹ Thuật") làm phòng ban vỡ vụn:
+                   lọc theo phòng sai, báo cáo sai, quy trình duyệt theo phòng cũng chạy sai theo.
+                   NAY có GỢI Ý: bấm vào ô là hiện danh sách (phòng ban công ty đang dùng + danh
+                   mục chuẩn). Vẫn gõ tên riêng được — gợi ý chứ không ép. -->
               <div class="form-row">
                 <div class="form-group">
-                  <label class="form-label">Phòng Ban</label>
-                  <input type="text" id="inpNewAccDept" class="form-control" value="Kỹ Thuật Công Nghệ">
+                  <label class="form-label">Phòng Ban <small class="text-muted">(bấm để chọn, hoặc gõ tên mới)</small></label>
+                  <input type="text" id="inpNewAccDept" class="form-control" list="dsGoiYPhongBan" value="" placeholder="Chọn hoặc nhập phòng ban">
+                  <datalist id="dsGoiYPhongBan">${PhanQuyenService.goiY("phongBan").map(x => '<option value="' + String(x).replace(/"/g, "&quot;") + '">').join("")}</datalist>
                 </div>
                 <div class="form-group">
-                  <label class="form-label">Chức Vụ</label>
-                  <input type="text" id="inpNewAccPos" class="form-control" value="Chuyên Viên">
+                  <label class="form-label">Chức Vụ <small class="text-muted">(bấm để chọn, hoặc gõ tên mới)</small></label>
+                  <input type="text" id="inpNewAccPos" class="form-control" list="dsGoiYChucVu" value="" placeholder="Chọn hoặc nhập chức vụ">
+                  <datalist id="dsGoiYChucVu">${PhanQuyenService.goiY("chucVu").map(x => '<option value="' + String(x).replace(/"/g, "&quot;") + '">').join("")}</datalist>
                 </div>
               </div>
 
               <div class="form-group">
-                <label class="form-label"><i class="fa-solid fa-shield-halved"></i> Vai Trò Phân Quyền (RBAC)</label>
+                <label class="form-label"><i class="fa-solid fa-shield-halved"></i> Vai Trò Phân Quyền
+                  <small class="text-muted">— quyết định người này XEM &amp; LÀM được gì</small></label>
                 <select id="inpNewAccRole" class="form-control">
                   <!-- [SỬA 27/08/2026] Đổ vai trò từ bộ vai trò sửa được (mặc định chọn Nhân Viên). -->
-                  ${PhanQuyenService.getVaiTro().map(v => `<option value="${v.ma}" ${v.ma === "employee" ? "selected" : ""}>${v.ten}</option>`).join("")}
+                  <!-- [SỬA 06/09/2026 — V4 đợt 81] Chia 3 NHÓM. TRƯỚC là danh sách phẳng 28 mục trộn
+                       CẤP BẬC với PHÒNG BAN — chọn "Kho" hoá ra đang gán cấp bậc nhân viên, người
+                       dùng nhìn không biết chọn gì. Xem hàm PhanQuyenService.optionVaiTro. -->
+                  ${PhanQuyenService.optionVaiTro("employee", true)}
                 </select>
+                <small class="text-muted" style="display:block;margin-top:4px;">
+                  Chọn ở <strong>nhóm ① Theo cấp bậc</strong>. Phòng ban đã khai ở ô trên rồi, không
+                  cần chọn lại ở đây. Muốn chỉnh chi tiết ai xem được gì thì vào tab
+                  <strong>Ma Trận Phân Quyền</strong>.
+                </small>
               </div>
             </form>
           `;
@@ -21652,6 +21791,13 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
                 if (!id || !hoTen) {
                   CoreService.showToast("Vui lòng nhập Mã NV và Họ tên!", "warning");
+                  return;
+                }
+                 
+                if (!PhanQuyenService.duocGanVaiTro(role)) {
+                  const _vt = PhanQuyenService.timVaiTro(role);
+                  CoreService.showToast("Bạn không được cấp tài khoản có quyền ngang hoặc cao hơn mình ("
+                    + ((_vt && _vt.ten) || role) + "). Hãy nhờ cấp cao hơn tạo giúp.", "danger");
                   return;
                 }
 
@@ -30468,6 +30614,15 @@ function writeSheet(ss, sheetName, headers, rowsData){
       CoreService.showToast("Đã đổi mật khẩu quản trị. Hãy ghi nhớ mật khẩu mới!", "success");
     };
 
+     
+    AppModules.rbac.khoaLaiCoHoi = function () {
+      CoreService.openModal("Khoá khu quản trị?",
+        "<p style='margin:0'>Khoá xong, lần sau vào lại phải <strong>nhập mật khẩu quản trị</strong>."
+        + "<br>Bạn có chắc muốn khoá bây giờ không?</p>",
+        [{ text: "Không, ở lại", class: "btn-secondary" },
+         { text: "🔒 Khoá lại", class: "btn-danger", onClick: function () { CoreService.closeModal(); AppModules.rbac.khoaLai(); } }]);
+    };
+
     AppModules.rbac.khoaLai = function () {
       AppModules.rbac.unlockedMasterPass = false;
       AppModules.rbac.xoaNhoMoKhoa();   
@@ -31841,7 +31996,12 @@ function writeSheet(ss, sheetName, headers, rowsData){
             <div style="display:flex;gap:8px;flex-wrap:wrap">
               <!-- [THÊM MỚI 28/08/2026] Nút đổi mật khẩu quản trị (nhập mật khẩu cũ → đặt mật khẩu mới). -->
               <button class="btn btn-sm btn-secondary" onclick="AppModules.rbac.doiMatKhau()"><i class="fa-solid fa-key"></i> Đổi Mật Khẩu</button>
-              <button class="btn btn-sm btn-secondary" onclick="AppModules.rbac.khoaLai()"><i class="fa-solid fa-lock"></i> Khóa Lại</button>
+              <!-- [SỬA 06/09/2026 — V4 đợt 81] TÁCH nút "Khóa Lại" ra xa và HỎI LẠI trước khi khoá.
+                   VÌ SAO: nút này nằm sát ngay trên hàng tab (Danh Sách Tài Khoản · Ma Trận…),
+                   với tay bấm tab là dễ trúng nó, văng thẳng về màn nhập mật khẩu — đúng cái
+                   chủ app kêu "dễ thoát ở cửa sổ này". -->
+              <button class="btn btn-sm btn-secondary" style="margin-left:18px;opacity:.75"
+                onclick="AppModules.rbac.khoaLaiCoHoi()" title="Khoá khu quản trị — sẽ hỏi lại trước khi khoá"><i class="fa-solid fa-lock"></i> Khóa Lại</button>
             </div>
           </div>
           <div style="display:inline-flex;gap:4px;background:var(--bg-surface);padding:4px;border-radius:10px;border:1px solid var(--border-color);box-shadow:var(--shadow-sm);flex-wrap:wrap;margin-bottom:14px;">
