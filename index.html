@@ -2810,7 +2810,7 @@ var CHUNK         = 45000;               // 1 ô Sheet tối đa ~50.000 ký t�
    mã CŨ và không có dấu hiệu nào để biết — đã dính lỗi này nhiều lần. Nay mọi phản hồi đều
    kèm số bản; nút "Kiểm tra kết nối" ở mục 6.4 hiện số đó ra để đối chiếu.
    ⚠️ MỖI LẦN SỬA MÃ NÀY PHẢI TĂNG SỐ (r1 → r2 …). */
-var CODE_VERSION  = "HCNS-BE-2026-09-06-r11";   // [SỬA đợt 80c] r7 → r10: THÊM lệnh ghiDong dùng chung (trước đây gần như MỌI chức năng — đơn từ, góp ý, sáng kiến, dự trù, KPI… — đều không lưu được lên kho khi làm từ điện thoại) · CHẶN nhân viên tự duyệt đơn của chính mình · và sửa lỗi DUYỆT TRÊN MÁY QUẢN TRỊ KHÔNG ĂN (dòng cũ trong tab đè ngược bản vừa duyệt)
+var CODE_VERSION  = "HCNS-BE-2026-09-06-r12";   // [SỬA đợt 86] r11 → r12: nhân viên cũng giao việc được từ điện thoại (kho congViec mở mọi cấp, kèm hàng rào chỉ đụng việc mình giao/mình nhận)   // [SỬA đợt 80c] r7 → r10: THÊM lệnh ghiDong dùng chung (trước đây gần như MỌI chức năng — đơn từ, góp ý, sáng kiến, dự trù, KPI… — đều không lưu được lên kho khi làm từ điện thoại) · CHẶN nhân viên tự duyệt đơn của chính mình · và sửa lỗi DUYỆT TRÊN MÁY QUẢN TRỊ KHÔNG ĂN (dòng cũ trong tab đè ngược bản vừa duyệt)
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    [THÊM MỚI 05/09/2026 — V4 đợt 51] BẤM ▶ CHẠY THÌ CHẠY HÀM NÀY (KIEM_TRA_NHANH).
@@ -2994,8 +2994,14 @@ var LUAT_GHI = {
   bangCong:         { cap: [], cua: ["maNV"] },                 // dòng chấm công của mình
   congViecSanLuong: { cap: [], cua: ["maNV"] },                 // khai sản lượng của mình
   thongBao:         { cap: [], cua: null },                     // gửi cho người khác là bản chất
+  /* [SỬA 06/09/2026 — V4 đợt 86] Kho công việc: MỌI cấp ghi được (trước đòi trưởng phòng
+     trở lên → nhân viên giao việc từ điện thoại bị từ chối, việc không tới người nhận).
+     Hàng rào thay thế: nhân viên thường CHỈ đụng bản ghi mà mình là NGƯỜI NHẬN (cập nhật
+     tiến độ việc của mình) hoặc NGƯỜI GIAO (việc chính mình giao đi) — cột nguoiNhan /
+     nguoiGiaoId. Việc của người khác vẫn không sửa được, và tự đặt trạng thái duyệt vẫn
+     bị chặn như cũ. */
+  congViec:         { cap: [], cua: ["nguoiNhan", "nguoiGiaoId"] },   // giao việc · giao lại
   // — Trưởng phòng trở lên —
-  congViec:         { cap: CAP_QL, cua: null },                 // giao việc · giao lại
   danhMucCongViec:  { cap: CAP_QL, cua: null },                 // mẫu công việc
   kpiData:          { cap: CAP_QL, cua: null },                 // chấm KPI tháng
   phieuKiemTra:     { cap: CAP_QL, cua: null },                 // phiếu kiểm tra công · lương
@@ -5114,7 +5120,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.69" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.72" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -5343,7 +5349,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.69"
+                version: "4.0.72"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -15841,10 +15847,14 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 <button class="filter-btn ${this.currentGroup === "toi_giao" ? "active" : ""}" onclick="AppModules.tasks.setGroup('toi_giao')">📤 Tôi Giao (${soToiGiao})</button>
                 <button class="filter-btn ${this.currentGroup === "urgent" ? "active" : ""}" onclick="AppModules.tasks.setGroup('urgent')">🔥 Gấp / Cao</button>
                 <button class="filter-btn ${this.currentGroup === "cho_nghiem_thu" ? "active" : ""}" onclick="AppModules.tasks.setGroup('cho_nghiem_thu')">⏳ Chờ Nghiệm Thu (${pendingReviewTasks})</button>
-                <button class="filter-btn ${this.currentGroup === "ky_thuat" ? "active" : ""}" onclick="AppModules.tasks.setGroup('ky_thuat')">💻 Kỹ Thuật</button>
-                <button class="filter-btn ${this.currentGroup === "hcns" ? "active" : ""}" onclick="AppModules.tasks.setGroup('hcns')">📋 Hành Chính - Nhân Sự</button>
-                <button class="filter-btn ${this.currentGroup === "san_xuat" ? "active" : ""}" onclick="AppModules.tasks.setGroup('san_xuat')">🏭 Sản Xuất</button>
-                <button class="filter-btn ${this.currentGroup === "ke_toan" ? "active" : ""}" onclick="AppModules.tasks.setGroup('ke_toan')">💰 Kế Toán</button>
+                <!-- [SỬA 06/09/2026 — V4 đợt 87] Nút lọc nhóm dựng ĐỘNG: nhóm nào ĐANG CÓ VIỆC mới
+                     hiện nút (kèm số việc). Trước gắn cứng 4 nhóm (thiếu cả Kinh Doanh), phòng ban
+                     thật của công ty không bao giờ có nút lọc. -->
+                ${(() => { const dem87 = {}; baseList.forEach(t => { if (t.nhomCV && t.trangThai !== "dinh_chi") dem87[t.nhomCV] = (dem87[t.nhomCV] || 0) + 1; });
+                  const ds87 = AppModules.tasks.dsNhomCV(null);
+                  return Object.keys(dem87).map(ma => { const ten = (ds87.find(x => x.ma === ma) || {}).ten || ma;
+                    const maAt = String(ma).replace(/['"\\]/g, "");   // tên phòng không nên chứa dấu nháy — gạt ra cho chắc
+                    return '<button class="filter-btn ' + (this.currentGroup === ma ? "active" : "") + '" onclick="AppModules.tasks.setGroup(\'' + maAt + '\')">' + ten + " (" + dem87[ma] + ")</button>"; }).join(""); })()}
                 <!-- [THÊM MỚI 28/08/2026] Nút lọc xem riêng việc ĐÃ ĐÌNH CHỈ (hủy, không làm nữa). -->
                 <button class="filter-btn ${this.currentGroup === "dinh_chi" ? "active" : ""}" onclick="AppModules.tasks.setGroup('dinh_chi')" style="${this.currentGroup === "dinh_chi" ? "" : (soDinhChi > 0 ? "border-color:#fecaca;color:#b91c1c;" : "")}">⛔ Đã Đình Chỉ (${soDinhChi})</button>
               </div>
@@ -16452,6 +16462,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
                  Mỗi giai đoạn ứng một % hoàn thành → KPI tính đúng công theo từng bước. -->
             <div class="card" style="padding:12px;margin-bottom:16px;border-left:4px solid var(--primary-main)">
               <div style="font-weight:bold;font-size:13px;margin-bottom:8px"><i class="fa-solid fa-list-ol"></i> Giai Đoạn Công Việc (căn cứ tính KPI)</div>
+              <!-- [THÊM MỚI 06/09/2026 — V4 đợt 87] Chỉ dẫn ai dùng / lúc nào (chủ app: "các mô tả chỉ dẫn đã có đâu"). -->
+              <div style="font-size:11.5px;color:var(--text-secondary);margin-bottom:8px;line-height:1.5">Người <strong>LÀM</strong> việc bấm vào bước ĐANG ở — mỗi bước ứng một % hoàn thành, KPI tính đúng theo bước đó (chỉnh % ở Cài đặt ▸ KPI).</div>
               ${cv.trangThai === "dinh_chi" ? `
                 <div><span class="badge badge-danger"><i class="fa-solid fa-ban"></i> Đã đình chỉ — không tính KPI</span>${cv.lyDoDinhChi ? ` <small class="text-muted">Lý do: ${cv.lyDoDinhChi}</small>` : ``}</div>
                 ${isManager ? `<button class="btn btn-sm btn-secondary" style="margin-top:8px" onclick="AppModules.tasks.khoiPhucCongViec('${cv.id}')"><i class="fa-solid fa-rotate-left"></i> Bỏ đình chỉ (tiếp tục làm)</button>` : ``}
@@ -16475,6 +16487,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 <strong style="font-size:14px"><i class="fa-solid fa-list-check"></i> Tiêu Chí Nghiệm Thu Con (Interactive Checklist)</strong>
                 <span style="font-weight:bold;color:var(--primary-main);font-size:13px" id="drawerProgressText">${cv.tienDo}%</span>
               </div>
+              <!-- [THÊM MỚI 06/09/2026 — V4 đợt 87] Chỉ dẫn khu tiêu chí con. -->
+              <div style="font-size:11.5px;color:var(--text-secondary);margin-bottom:6px;line-height:1.5">Chia việc thành các đầu việc nhỏ — người làm tích ✔ mục nào xong, thanh % tự nhảy theo.</div>
               <div style="background:#e2e8f0;border-radius:4px;overflow:hidden;height:8px;margin-bottom:10px">
                 <div id="drawerProgressBar" style="background:var(--primary-main);width:${cv.tienDo}%;height:100%;transition:width 0.2s ease"></div>
               </div>
@@ -16495,6 +16509,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
             <!-- 2. Khai Báo Nhật Ký Tiến Độ Hôm Nay (Daily Log) -->
             <div class="card" style="padding:14px;margin-bottom:20px;background:var(--bg-surface)">
               <div style="font-weight:bold;font-size:13px;margin-bottom:10px"><i class="fa-solid fa-pen-to-square"></i> Khai Báo Báo Cáo Ngày (Daily Log)</div>
+              <!-- [THÊM MỚI 06/09/2026 — V4 đợt 87] Chỉ dẫn khu báo cáo ngày. -->
+              <div style="font-size:11.5px;color:var(--text-secondary);margin-bottom:8px;line-height:1.5">Người <strong>LÀM</strong> việc ghi mỗi ngày: hôm nay làm mấy giờ, tới bao nhiêu %, làm được gì. Cấp trên xem lịch sử này để theo dõi và nghiệm thu; số giờ cộng vào đối soát giờ thực tế.</div>
               <!-- [SỬA 02/09/2026 lần 3] 2 ô SỐ (giờ làm · tiến độ) chỉ chứa 1 con số → thu NHỎ về ~110px
                    thay vì kéo dài nửa màn (trước dùng .form-row nên mỗi ô rộng 50% → thừa, nhìn thô). -->
               <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;">
@@ -16547,6 +16563,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
             ${isManager ? `
               <div class="card" style="padding:14px;background:#f8fafc;border:1px solid #cbd5e1">
                 <div style="font-weight:bold;font-size:13px;margin-bottom:10px;color:var(--primary-dark)"><i class="fa-solid fa-award"></i> Nghiệm Thu & Đánh Giá Chất Lượng KPI (Trưởng Phòng)</div>
+                <!-- [THÊM MỚI 06/09/2026 — V4 đợt 87] Chỉ dẫn khu nghiệm thu (chỉ cấp quản lý thấy khối này). -->
+                <div style="font-size:11.5px;color:var(--text-secondary);margin-bottom:8px;line-height:1.5">Chỉ <strong>cấp quản lý</strong> thấy khối này. Khi việc xong (100% / chờ nghiệm thu): chấm Điểm chất lượng rồi bấm nghiệm thu — điểm chảy thẳng vào KPI tháng và lương thưởng của người làm.</div>
                 <!-- [THÊM MỚI 31/08/2026] Nếu việc có TIÊU CHÍ chấm điểm → hiện checklist, tích ý ĐẠT tự cộng ra điểm. -->
                 ${(cv.tieuChi && cv.tieuChi.length) ? `
                   <div style="margin-bottom:10px;padding:8px 10px;background:#fff;border:1px solid var(--border-light);border-radius:8px;">
@@ -17288,7 +17306,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const templates = data.danhMucCongViec || [];
           
           const defaultTenCV = templateData ? templateData.tenMau : "";
-          const defaultNhom = templateData ? templateData.nhomCV : "ky_thuat";
+           
+          const defaultNhom = templateData ? templateData.nhomCV : (this.maNhomTuPhongBan((CoreService.currentUser || {}).phongBan) || "ky_thuat");
           const defaultTrongSo = templateData ? templateData.trongSoKPI : 3;
           const defaultGio = templateData ? templateData.gioChuan : 8;
           const defaultTieuChuan = templateData ? templateData.tieuChuan : "";
@@ -17298,14 +17317,30 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const _vtGiao = (typeof PhanQuyenService !== "undefined") ? PhanQuyenService.timVaiTro(_uGiao.role) : null;
           const _giaoToanCty = ["manager", "hr", "director", "it_admin"].indexOf(_capGiao) >= 0 || !!(_vtGiao && _vtGiao.xemCVToanCty);
           const _phongGiao = _uGiao.phongBan || "";
+           
           const dsNguoiNhan = (data.nhanVien || [])
-            .filter(n => n.trangThai !== "dinh_chi")
-            .filter(n => _giaoToanCty || (n.phongBan || "") === _phongGiao);
+            .filter(n => n.trangThai !== "dinh_chi");
            
           const _phongToiGiao = _uGiao.phongBan || "";
+           
+          const _hangThapNhat = {};   
+          dsNguoiNhan.forEach(n => {
+            const p = n.phongBan || "";
+            const h = this._hangSo(n.role);
+            if (!(p in _hangThapNhat) || h < _hangThapNhat[p]) _hangThapNhat[p] = h;
+          });
           const _dsPhongGiao = [...new Set(dsNguoiNhan.map(n => n.phongBan || "").filter(Boolean))]
-            .sort((a, b) => (a === _phongToiGiao ? -1 : b === _phongToiGiao ? 1 : 0));
-          const _xepTrongPhong = (a, b) => (a.id === _uGiao.id ? -1 : b.id === _uGiao.id ? 1 : 0);
+            .sort((a, b) => {
+              if (a === _phongToiGiao) return -1;
+              if (b === _phongToiGiao) return 1;
+              return (_hangThapNhat[a] || 1) - (_hangThapNhat[b] || 1);   
+            });
+          const _xepTrongPhong = (a, b) => {
+            if (a.id === _uGiao.id) return -1;
+            if (b.id === _uGiao.id) return 1;
+            return (this._hangSo(a.role) - this._hangSo(b.role))
+              || String(a.hoTen || "").localeCompare(String(b.hoTen || ""), "vi");
+          };
           const optionsNguoiNhan =
             _dsPhongGiao.map(p => '<optgroup label="' + p + (p === _phongToiGiao ? " — phòng của bạn" : "") + '">'
               + dsNguoiNhan.filter(n => (n.phongBan || "") === p).sort(_xepTrongPhong)
@@ -17313,7 +17348,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
                     + n.hoTen + (n.id === _uGiao.id ? " — chính bạn" : "") + ' (' + n.chucVu + ')</option>').join("")
               + '</optgroup>').join("")
             + dsNguoiNhan.filter(n => !(n.phongBan || "")).map(n => '<option value="' + n.id + '" data-pb="">' + n.hoTen + ' (' + n.chucVu + ')</option>').join("")
-            + (_giaoToanCty ? '<optgroup label="🏢 GIAO CHO CẢ PHÒNG (trưởng phòng đó sẽ chuyển tiếp)">' + _dsPhongGiao.map(p => '<option value="PB::' + p + '" data-pb="' + p + '">🏢 Cả phòng ' + p + '</option>').join("") + '</optgroup>' : "");
+             
+            + '<optgroup label="🏢 GIAO CHO CẢ PHÒNG (trưởng phòng đó sẽ chuyển tiếp)">' + _dsPhongGiao.map(p => '<option value="PB::' + p + '" data-pb="' + p + '">🏢 Cả phòng ' + p + '</option>').join("") + '</optgroup>';
 
           
           
@@ -17343,11 +17379,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 <div class="form-group" style="margin-bottom:0">
                   <label class="form-label">Nhóm phòng ban <small class="text-muted">(tự gợi ý)</small></label>
                   <select id="inpNhomCV" class="form-control">
-                    <option value="ky_thuat" ${defaultNhom === "ky_thuat" ? "selected" : ""}>Kỹ Thuật Công Nghệ</option>
-                    <option value="hcns" ${defaultNhom === "hcns" ? "selected" : ""}>Hành Chính Nhân Sự</option>
-                    <option value="san_xuat" ${defaultNhom === "san_xuat" ? "selected" : ""}>Sản Xuất & Kho</option>
-                    <option value="ke_toan" ${defaultNhom === "ke_toan" ? "selected" : ""}>Tài Chính Kế Toán</option>
-                    <option value="kinh_doanh" ${defaultNhom === "kinh_doanh" ? "selected" : ""}>Kinh Doanh & CSKH</option>
+                    <!-- [SỬA 06/09/2026 — V4 đợt 87] Dựng ĐỘNG từ dsNhomCV: 5 nhóm chuẩn + phòng ban thật. -->
+                    ${this.optionNhomCV(data, defaultNhom)}
                   </select>
                 </div>
 
@@ -17436,6 +17469,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
                   id: "CV" + Date.now().toString().slice(-6),
                   tenCV,
                   nguoiGiao: CoreService.currentUser.hoTen,
+                   
+                  nguoiGiaoId: CoreService.currentUser.id,
                   
                   nguoiNhan: laGiaoCaPhong ? "" : nvId,
                   tenNguoiNhan: laGiaoCaPhong ? ("🏢 Cả phòng " + tenPhongGiao) : (nvObj ? nvObj.hoTen : nvId),
@@ -17476,6 +17511,26 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
                 if (!data.congViec) data.congViec = [];
                 data.congViec.unshift(newCV);
+                 
+                try {
+                  const _capTuDay = (typeof PhanQuyenService !== "undefined") ? PhanQuyenService.capBacCua((CoreService.currentUser || {}).role || "employee") : "employee";
+                  const _chuan87 = t => (t || "").trim().toLowerCase().replace(/\s+/g, " ");
+                  if (["manager", "hr", "director", "it_admin"].indexOf(_capTuDay) >= 0 && !_mau
+                      && !(data.danhMucCongViec || []).some(m => _chuan87(m.tenMau) === _chuan87(tenCV))) {
+                    if (!data.danhMucCongViec) data.danhMucCongViec = [];
+                    const _dsN87 = AppModules.tasks.dsNhomCV(data);
+                    data.danhMucCongViec.push({
+                      id: AppModules.tasks.maMauTiepTheo(data),
+                      tenMau: tenCV,
+                      nhomCV: newCV.nhomCV,
+                      tenNhom: (_dsN87.find(x => x.ma === newCV.nhomCV) || {}).ten || newCV.nhomCV,
+                      gioChuan: newCV.gioDuKien, gioChuanFull: 0, kieuThoiGian: "cong_ty",
+                      trongSoKPI: newCV.trongSoKPI, mucRuiRo: newCV.mucRuiRo || "thap",
+                      tieuChuan: newCV.tieuChuan || "", tieuChi: []
+                    });
+                    CoreService.showToast("💡 Đã tự lưu \"" + tenCV + "\" vào Danh mục mẫu — lần sau chọn nhanh từ mẫu được ngay.", "info");
+                  }
+                } catch (e87) {}
                 DataService.saveData(data);
 
                 try { AppModules.tasks.baoGiaoViec(newCV, "giao_moi"); } catch (eB) {}
@@ -17489,20 +17544,58 @@ function writeSheet(ss, sheetName, headers, rowsData){
           if (!templateData) setTimeout(() => this.dongBoNhomTheoNV(), 0);
         },
 
-        
+        NHOM_CHUAN: [
+          { ma: "ky_thuat",   ten: "Kỹ Thuật Công Nghệ", tuKhoa: /kỹ thuật|ky thuat| it |công nghệ|cong nghe|phần mềm|phan mem|r&d|nghiên cứu|nghien cuu/ },
+          { ma: "hcns",       ten: "Hành Chính Nhân Sự", tuKhoa: /nhân sự|nhan su|hành chính|hanh chinh|hcns/ },
+          { ma: "san_xuat",   ten: "Sản Xuất & Kho",     tuKhoa: /sản xuất|san xuat|kho|xưởng|xuong|bảo trì|bao tri/ },
+          { ma: "ke_toan",    ten: "Tài Chính Kế Toán",  tuKhoa: /kế toán|ke toan|tài chính|tai chinh|kiểm soát|kiem soat/ },
+          { ma: "kinh_doanh", ten: "Kinh Doanh & CSKH",  tuKhoa: /kinh doanh|bán hàng|ban hang|cskh|sale|thị trường|thi truong/ }
+        ],
+
+        _hangSo(role) {
+          const cap = (typeof PhanQuyenService !== "undefined") ? PhanQuyenService.capBacCua(role || "employee") : (role || "employee");
+          return { employee: 1, accountant: 2, manager: 2, hr: 3, it_admin: 3, director: 4 }[cap] || 1;
+        },
+
+        maNhomTuPhongBan(pb) {
+          const t = (pb || "").toLowerCase();
+          if (!t.trim()) return "";
+          const nh = this.NHOM_CHUAN.find(n => n.tuKhoa.test(t));
+          return nh ? nh.ma : (pb || "").trim();
+        },
+
+        dsNhomCV(data) {
+          const d = data || DataService.getData();
+          const ds = this.NHOM_CHUAN.map(n => ({ ma: n.ma, ten: n.ten }));
+          const co = new Set(ds.map(n => n.ma));
+          const them = (ma, ten) => { const m = (ma == null ? "" : String(ma)).trim(); if (m && !co.has(m)) { co.add(m); ds.push({ ma: m, ten: (ten || m) }); } };
+          (d.nhanVien || []).forEach(n => { const pb = (n.phongBan || "").trim(); if (pb && !this.NHOM_CHUAN.some(x => x.tuKhoa.test(pb.toLowerCase()))) them(pb, pb); });
+          (d.danhMucCongViec || []).forEach(m => them(m.nhomCV, m.tenNhom));
+          (d.congViec || []).forEach(c => them(c.nhomCV, ""));
+          return ds;
+        },
+
+        optionNhomCV(data, maChon) {
+          return this.dsNhomCV(data).map(n =>
+            '<option value="' + String(n.ma).replace(/"/g, "&quot;") + '"' + (n.ma === maChon ? " selected" : "") + ">" + n.ten + "</option>").join("");
+        },
+
+        maMauTiepTheo(data) {
+          let max = 0;
+          (data.danhMucCongViec || []).forEach(m => {
+            const so = parseInt(String(m.id || "").replace(/^TMP/i, ""), 10);
+            if (!isNaN(so) && so > max) max = so;
+          });
+          return "TMP" + String(max + 1).padStart(2, "0");
+        },
+
         dongBoNhomTheoNV() {
           const sel = document.getElementById("inpNguoiNhan");
           const nhom = document.getElementById("inpNhomCV");
           if (!sel || !nhom) return;
           const opt = sel.options[sel.selectedIndex];
-          const pb = ((opt && opt.getAttribute("data-pb")) || "").toLowerCase();
-          let g = "";
-          if (/kỹ thuật|ky thuat| it |công nghệ|cong nghe|phần mềm|phan mem|r&d|nghiên cứu|nghien cuu/.test(pb)) g = "ky_thuat";
-          else if (/nhân sự|nhan su|hành chính|hanh chinh|hcns/.test(pb)) g = "hcns";
-          else if (/sản xuất|san xuat|kho|xưởng|xuong|bảo trì|bao tri/.test(pb)) g = "san_xuat";
-          else if (/kế toán|ke toan|tài chính|tai chinh|kiểm soát|kiem soat/.test(pb)) g = "ke_toan";
-          else if (/kinh doanh|bán hàng|ban hang|cskh|sale|thị trường|thi truong/.test(pb)) g = "kinh_doanh";
-          if (g) nhom.value = g;
+          const g = this.maNhomTuPhongBan((opt && opt.getAttribute("data-pb")) || "");
+          if (g && Array.from(nhom.options).some(o => o.value === g)) nhom.value = g;
         },
 
         baoGiaoViec(cv, boiCanh) {
@@ -17565,8 +17658,20 @@ function writeSheet(ss, sheetName, headers, rowsData){
           
           const toanCty = capCao || cap === "manager";
           const ds = (data.nhanVien || []).filter(n => n.trangThai !== "dinh_chi")
-            .filter(n => toanCty || (n.phongBan || "") === (u.phongBan || ""))
+             
+            .filter(n => true)
             .filter(n => n.id !== cv.nguoiNhan);
+           
+          ds.sort((a, b) => {
+            const lanhDaoA = this._hangSo(a.role) >= 4 ? 1 : 0;
+            const lanhDaoB = this._hangSo(b.role) >= 4 ? 1 : 0;
+            if (lanhDaoA !== lanhDaoB) return lanhDaoA - lanhDaoB;
+            const cungPhongA = (a.phongBan || "") === (u.phongBan || "") ? 0 : 1;
+            const cungPhongB = (b.phongBan || "") === (u.phongBan || "") ? 0 : 1;
+            if (cungPhongA !== cungPhongB) return cungPhongA - cungPhongB;
+            return (this._hangSo(a.role) - this._hangSo(b.role))
+              || String(a.hoTen || "").localeCompare(String(b.hoTen || ""), "vi");
+          });
           if (!ds.length) { CoreService.showToast("Không còn ai phù hợp để giao lại.", "info"); return; }
           const body = '<p style="font-size:13px" class="text-muted">Việc: <strong>' + this._esc(cv.tenCV) + '</strong><br>'
             + 'Đang ở: <strong>' + this._esc(cv.giaoChoPhong ? ("Cả phòng " + cv.giaoChoPhong) : (cv.tenNguoiNhan || "—")) + '</strong> · tiến độ ' + (Number(cv.tienDo) || 0) + '% (giữ nguyên khi chuyển)</p>'
@@ -17689,11 +17794,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 <div class="form-group">
                   <label class="form-label">Phòng Ban Áp Dụng</label>
                   <select id="inpTmpNhom" class="form-control">
-                    <option value="ky_thuat">Kỹ Thuật Công Nghệ</option>
-                    <option value="hcns">Hành Chính Nhân Sự</option>
-                    <option value="san_xuat">Sản Xuất & Kho</option>
-                    <option value="ke_toan">Tài Chính Kế Toán</option>
-                    <option value="kinh_doanh">Kinh Doanh & CSKH</option>
+                    <!-- [SỬA 06/09/2026 — V4 đợt 87] Dựng ĐỘNG từ dsNhomCV (5 nhóm chuẩn + phòng ban thật). -->
+                    ${AppModules.tasks.optionNhomCV(null, "ky_thuat")}
                   </select>
                 </div>
                 <div class="form-group">
@@ -17759,12 +17861,15 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 const tenMau = document.getElementById("inpTmpTen").value.trim();
                 if (!tenMau) { CoreService.showToast("Vui lòng nhập tên việc mẫu!", "warning"); return; }
                 const nhomCV = document.getElementById("inpTmpNhom").value;
-                const nhomNames = { ky_thuat: "Kỹ Thuật Công Nghệ", hcns: "Hành Chính Nhân Sự", san_xuat: "Sản Xuất & Kho", ke_toan: "Tài Chính Kế Toán", kinh_doanh: "Kinh Doanh & CSKH" };
+
+                const nhomNames = {};
+                AppModules.tasks.dsNhomCV(null).forEach(n => { nhomNames[n.ma] = n.ten; });
                 
                 const data = DataService.getData();
                 if (!data.danhMucCongViec) data.danhMucCongViec = [];
                 data.danhMucCongViec.push({
-                  id: "TMP" + (data.danhMucCongViec.length + 1).toString().padStart(2, "0"),
+
+                  id: AppModules.tasks.maMauTiepTheo(data),
                   tenMau,
                   nhomCV,
                   tenNhom: nhomNames[nhomCV] || nhomCV,
@@ -17807,11 +17912,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 <div class="form-group">
                   <label class="form-label">Phòng Ban Áp Dụng</label>
                   <select id="inpTmpNhom" class="form-control">
-                    <option value="ky_thuat" ${sel(tmp.nhomCV, "ky_thuat")}>Kỹ Thuật Công Nghệ</option>
-                    <option value="hcns" ${sel(tmp.nhomCV, "hcns")}>Hành Chính Nhân Sự</option>
-                    <option value="san_xuat" ${sel(tmp.nhomCV, "san_xuat")}>Sản Xuất & Kho</option>
-                    <option value="ke_toan" ${sel(tmp.nhomCV, "ke_toan")}>Tài Chính Kế Toán</option>
-                    <option value="kinh_doanh" ${sel(tmp.nhomCV, "kinh_doanh")}>Kinh Doanh & CSKH</option>
+                    <!-- [SỬA 06/09/2026 — V4 đợt 87] Dựng ĐỘNG — nhóm của mẫu đang sửa được chọn sẵn. -->
+                    ${AppModules.tasks.optionNhomCV(null, tmp.nhomCV)}
                   </select>
                 </div>
                 <div class="form-group">
@@ -17872,7 +17974,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 const tenMau = document.getElementById("inpTmpTen").value.trim();
                 if (!tenMau) { CoreService.showToast("Vui lòng nhập tên việc mẫu!", "warning"); return; }
                 const nhomCV = document.getElementById("inpTmpNhom").value;
-                const nhomNames = { ky_thuat: "Kỹ Thuật Công Nghệ", hcns: "Hành Chính Nhân Sự", san_xuat: "Sản Xuất & Kho", ke_toan: "Tài Chính Kế Toán", kinh_doanh: "Kinh Doanh & CSKH" };
+
+                const nhomNames = {};
+                AppModules.tasks.dsNhomCV(null).forEach(n => { nhomNames[n.ma] = n.ten; });
                 const d = DataService.getData();
                 const m = (d.danhMucCongViec || []).find(t => t.id === tmpId);
                 if (!m) { CoreService.showToast("Mẫu đã bị xóa.", "warning"); CoreService.closeModal(); return; }
@@ -27490,12 +27594,13 @@ function writeSheet(ss, sheetName, headers, rowsData){
                       <div>Nhóm / Giai đoạn</div>
                       ${getGiaiDoanCV().map(g => `<div style="text-align:center">${g.ten}</div>`).join("")}
                     </div>
-                    ${[["ky_thuat", "Kỹ Thuật"], ["hcns", "Hành Chính NS"], ["san_xuat", "Sản Xuất & Kho"], ["ke_toan", "Tài Chính KT"], ["kinh_doanh", "Kinh Doanh"]].map(([id, ten]) => {
-                      const rieng = (companySettings.giaiDoanKPINhom || {})[id];
+                    ${AppModules.tasks.dsNhomCV(null).map((nh87, ix87) => { const id = "i" + ix87; const ten = nh87.ten; const ma87 = String(nh87.ma).replace(/"/g, "&quot;");
+                       
+                      const rieng = (companySettings.giaiDoanKPINhom || {})[nh87.ma];
                       const co = Array.isArray(rieng) && rieng.length === 5;
                       const pts = co ? rieng : getGiaiDoanCV().map(g => g.pt);
                       return `<div style="display:grid;grid-template-columns:150px repeat(5,1fr);gap:6px;align-items:center;margin-bottom:6px;">
-                        <label style="font-size:11px;display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="setGdNhom_${id}_chk" ${co ? "checked" : ""} style="width:auto;"> Dùng riêng: <strong>${ten}</strong></label>
+                        <label style="font-size:11px;display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" id="setGdNhom_${id}_chk" data-ma="${ma87}" ${co ? "checked" : ""} style="width:auto;"> Dùng riêng: <strong>${ten}</strong></label>
                         ${[0, 1, 2, 3, 4].map(i => `<input type="number" id="setGdNhom_${id}_${i}" class="form-control" value="${pts[i]}" min="0" max="100" style="font-size:11.5px;text-align:center;padding:4px;">`).join("")}
                       </div>`;
                     }).join("")}
@@ -30024,18 +30129,20 @@ function writeSheet(ss, sheetName, headers, rowsData){
               tyLe: Math.max(0, parseInt(document.getElementById("setKpiBac_" + i + "_tyle").value) || 0)
             }));
           }
-          
+
           let giaiDoanKPINhom = oldSet.giaiDoanKPINhom || {};
-          if (document.getElementById("setGdNhom_ky_thuat_chk")) {
+          const _oGdNhom = document.querySelectorAll('input[id^="setGdNhom_"][id$="_chk"]');
+          if (_oGdNhom.length) {
             giaiDoanKPINhom = {};
-            ["ky_thuat", "hcns", "san_xuat", "ke_toan", "kinh_doanh"].forEach(nh => {
-              const chk = document.getElementById("setGdNhom_" + nh + "_chk");
-              if (chk && chk.checked) {
-                giaiDoanKPINhom[nh] = [0, 1, 2, 3, 4].map(i => {
-                  const v = parseInt(document.getElementById("setGdNhom_" + nh + "_" + i).value);
-                  return isNaN(v) ? 0 : Math.max(0, Math.min(100, v));
-                });
-              }
+            _oGdNhom.forEach(chk => {
+              if (!chk.checked) return;
+              const ma = chk.getAttribute("data-ma") || "";
+              if (!ma) return;
+              giaiDoanKPINhom[ma] = [0, 1, 2, 3, 4].map(i => {
+                const o = document.getElementById(chk.id.replace(/_chk$/, "_" + i));
+                const v = o ? parseInt(o.value) : NaN;
+                return isNaN(v) ? 0 : Math.max(0, Math.min(100, v));
+              });
             });
           }
 
