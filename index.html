@@ -4780,7 +4780,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.57" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.58" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -5009,7 +5009,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.57"
+                version: "4.0.58"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -6797,7 +6797,13 @@ function writeSheet(ss, sheetName, headers, rowsData){
             if (!DataService.syncBat()) return;               
             const modal = document.getElementById("modalBackdrop");
             if (modal && modal.classList.contains("show")) return;   
+             
+            if (document.visibilityState === "hidden") return;
             await DataService.keoTuServer();                  
+             
+            try { this._veLaiSauKhiKeo(); } catch (eV) {}
+            try { this.capNhatHieuChung(); } catch (eH) {}
+            try { NotificationService.baoMoiChoToi(); } catch (eB) {}
             const u = this.currentUser; if (!u) return;
             const moi = (DataService.getData().nhanVien || []).find(n => n.id === u.id);
             if (!moi) return;
@@ -6807,7 +6813,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
               this.logout();
             }
           } catch (e) {   }
-        }, 90000);
+           
+        }, 30000);
       },
 
       _baoTaiDuLieu(bat, el) {
@@ -16740,10 +16747,17 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const dsNguoiNhan = (data.nhanVien || [])
             .filter(n => n.trangThai !== "dinh_chi")
             .filter(n => _giaoToanCty || (n.phongBan || "") === _phongGiao);
-          
-          const _dsPhongGiao = [...new Set(dsNguoiNhan.map(n => n.phongBan || "").filter(Boolean))];
+           
+          const _phongToiGiao = _uGiao.phongBan || "";
+          const _dsPhongGiao = [...new Set(dsNguoiNhan.map(n => n.phongBan || "").filter(Boolean))]
+            .sort((a, b) => (a === _phongToiGiao ? -1 : b === _phongToiGiao ? 1 : 0));
+          const _xepTrongPhong = (a, b) => (a.id === _uGiao.id ? -1 : b.id === _uGiao.id ? 1 : 0);
           const optionsNguoiNhan =
-            _dsPhongGiao.map(p => '<optgroup label="' + p + '">' + dsNguoiNhan.filter(n => (n.phongBan || "") === p).map(n => '<option value="' + n.id + '" data-pb="' + (n.phongBan || "") + '">' + n.hoTen + ' (' + n.chucVu + ')</option>').join("") + '</optgroup>').join("")
+            _dsPhongGiao.map(p => '<optgroup label="' + p + (p === _phongToiGiao ? " — phòng của bạn" : "") + '">'
+              + dsNguoiNhan.filter(n => (n.phongBan || "") === p).sort(_xepTrongPhong)
+                  .map(n => '<option value="' + n.id + '" data-pb="' + (n.phongBan || "") + '">'
+                    + n.hoTen + (n.id === _uGiao.id ? " — chính bạn" : "") + ' (' + n.chucVu + ')</option>').join("")
+              + '</optgroup>').join("")
             + dsNguoiNhan.filter(n => !(n.phongBan || "")).map(n => '<option value="' + n.id + '" data-pb="">' + n.hoTen + ' (' + n.chucVu + ')</option>').join("")
             + (_giaoToanCty ? '<optgroup label="🏢 GIAO CHO CẢ PHÒNG (trưởng phòng đó sẽ chuyển tiếp)">' + _dsPhongGiao.map(p => '<option value="PB::' + p + '" data-pb="' + p + '">🏢 Cả phòng ' + p + '</option>').join("") + '</optgroup>' : "");
 
@@ -16833,6 +16847,16 @@ function writeSheet(ss, sheetName, headers, rowsData){
           `;
 
           this._fileTam = [];   
+           
+          setTimeout(() => {
+            try {
+              const _sel = document.getElementById("inpNguoiNhan");
+              if (_sel && Array.from(_sel.options).some(o => o.value === _uGiao.id)) {
+                _sel.value = _uGiao.id;
+                AppModules.tasks.dongBoNhomTheoNV();
+              }
+            } catch (e) {}
+          }, 0);
           CoreService.openModal("Giao Việc Mới Cho Nhân Viên", bodyHtml, [
             { text: "Hủy", class: "btn-secondary" },
             {
@@ -25051,8 +25075,17 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const cap = PhanQuyenService.capBacCua(u.role || "employee");
           if (cap === "it_admin") return true;                    
           if (p.trangThai === "cho_hcns") return cap === "hr" || cap === "director";   
-          if (cap === "hr" || cap === "director") return true;    
-          return cap === "manager" && PhanQuyenService.phuTrachPhong(u, p.phongBan);  
+           
+          const laTPPhong = cap === "manager" && PhanQuyenService.phuTrachPhong(u, p.phongBan);
+          if (laTPPhong) return true;
+          if (cap === "hr" || cap === "director") {
+            const coTP = (DataService.getData().nhanVien || []).some(n =>
+              n.trangThai !== "dinh_chi"
+              && PhanQuyenService.capBacCua(n.role || "employee") === "manager"
+              && PhanQuyenService.phuTrachPhong(n, p.phongBan));
+            return !coTP;                                        
+          }
+          return false;
         },
 
         _tinhLechDong(inp) {
