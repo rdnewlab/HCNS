@@ -907,6 +907,15 @@
       
       .nut-tron-hang-mb { width: 100% !important; justify-content: center !important; min-height: 44px; }
       
+      .drawer-footer {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px !important;
+        padding: 12px 14px !important;
+      }
+      .drawer-footer > .btn { width: 100%; min-height: 44px; justify-content: center; white-space: normal; line-height: 1.25; }
+      .drawer-footer > .btn:last-child { grid-column: 1 / -1; }
+      
       .quick-app-btn > div:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     }
 
@@ -1627,6 +1636,8 @@
       justify-content: flex-end;
       gap: 8px;
       background: var(--bg-surface);
+      
+      flex-wrap: wrap;
     }
     
     .drawer-grid {
@@ -2771,19 +2782,19 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
      
     const APPS_SCRIPT_SOURCE_CODE = `/**
  * =========================================================================================
- * AUTO HCNS V2 — BACKEND GOOGLE APPS SCRIPT (ĐA DOANH NGHIỆP • MIỄN PHÍ 0đ)
+ * AUTO HCNS V4 — BACKEND GOOGLE APPS SCRIPT (ĐA DOANH NGHIỆP • MIỄN PHÍ 0đ)
  * -----------------------------------------------------------------------------------------
  * Mỗi công ty dán mã này vào Apps Script CỦA BẢNG TÍNH RIÊNG MÌNH → thành 1 server độc lập.
  * MÃ BÍ MẬT (SHARED_SECRET) do app TỰ SINH và tự điền sẵn khi bạn bấm "Sao chép mã" —
  *   KHÔNG cần tự nghĩ, tránh gõ sai gây lỗi không kết nối được.
- * Dữ liệu gốc lưu ở tab ẩn _HCNS_DATA (dạng JSON, cắt khúc). Các tab NhanVien/BangCong...
+ * Dữ liệu gốc lưu ở tab ẩn "Auto HCNS" (dạng JSON, cắt khúc). Các tab NhanVien/BangCong...
  *   chỉ để XEM cho dễ. Chấm công online GHI TỪNG DÒNG (có khóa) nên nhiều người cùng chấm
  *   không đè mất của nhau.
  * =========================================================================================
  */
 var SHARED_SECRET = "__HCNS_SECRET__";   // app tự thay bằng mã bí mật thật — KHÔNG sửa tay
 var DATA_SHEET    = "Auto HCNS";         // [SỬA 04/09/2026 — V3] tab chứa toàn bộ dữ liệu (JSON, chia nhiều dòng).
-                                         //   Trước tên "_HCNS_DATA". Chủ app chốt đổi thành "Auto HCNS".
+                                         //   Tên cũ thời V3 là _HCNS_DATA; chủ app chốt đổi thành "Auto HCNS".
                                          //   Tab này ĐƯỢC ẨN có chủ ý — nội dung là khối chữ JSON dài, người
                                          //   mở Sheet dễ tưởng là rác rồi xoá là MẤT SẠCH dữ liệu công ty.
 var CHUNK         = 45000;               // 1 ô Sheet tối đa ~50.000 ký tự → cắt khúc 45.000 cho an toàn
@@ -2793,7 +2804,7 @@ var CHUNK         = 45000;               // 1 ô Sheet tối đa ~50.000 ký t�
    mã CŨ và không có dấu hiệu nào để biết — đã dính lỗi này nhiều lần. Nay mọi phản hồi đều
    kèm số bản; nút "Kiểm tra kết nối" ở mục 6.4 hiện số đó ra để đối chiếu.
    ⚠️ MỖI LẦN SỬA MÃ NÀY PHẢI TĂNG SỐ (r1 → r2 …). */
-var CODE_VERSION  = "HCNS-BE-2026-09-06-r4";   // [SỬA đợt 61] r3 → r4: chuyển lệnh xinKey lên TRƯỚC cổng chặn (người quên PIN không có vé phiên — nằm sau cổng là bị từ chối 100%)
+var CODE_VERSION  = "HCNS-BE-2026-09-06-r5";   // [SỬA đợt 74] r4 → r5: dọn hết chữ "V2" và tên tab cũ "_HCNS_DATA" trong chú thích (tab thật tên "Auto HCNS" — chú thích sai làm người đọc tưởng tab thật là rác rồi xoá, MẤT SẠCH dữ liệu)
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    [THÊM MỚI 05/09/2026 — V4 đợt 51] BẤM ▶ CHẠY THÌ CHẠY HÀM NÀY (KIEM_TRA_NHANH).
@@ -3221,9 +3232,10 @@ function khoiTaoTrangTinh(ss){
   for (var ten in dinh){ dinhDangTab(ss, ten, dinh[ten]); names.push(ten); }
   var hd = ss.getSheetByName("HuongDan") || ss.insertSheet("HuongDan");
   hd.clearContents();
-  hd.getRange(1, 1).setValue("CSDL AUTO HCNS V2 — Tự động tạo. TUYỆT ĐỐI KHÔNG xóa tab ẩn _HCNS_DATA (chứa dữ liệu gốc).").setFontWeight("bold");
-  hd.getRange(2, 1).setValue("Các tab NhanVien/BangCong/DonTu... chỉ để XEM cho dễ; app đọc/ghi dữ liệu gốc ở tab ẩn _HCNS_DATA.");
-  hd.getRange(3, 1).setValue("Chấm công online ghi thêm từng dòng vào tab BangCong (không xóa của người khác).");
+  hd.getRange(1, 1).setValue('CSDL AUTO HCNS V4 — Tự động tạo. TUYỆT ĐỐI KHÔNG xóa tab ẩn ' + DATA_SHEET + ' (chứa toàn bộ dữ liệu gốc của công ty).').setFontWeight("bold");
+  hd.getRange(2, 1).setValue('Các tab NhanVien/BangCong/DonTu... chỉ để XEM cho dễ; app đọc/ghi dữ liệu gốc ở tab ẩn ' + DATA_SHEET + '.');
+  hd.getRange(3, 1).setValue('Chấm công online ghi thêm từng dòng vào tab BangCong (không xóa của người khác).');
+  hd.getRange(4, 1).setValue('Số bản mã backend: ' + CODE_VERSION + ' — trong app bấm 6.4 > Kiểm tra kết nối phải thấy đúng số này.');
   if (!ss.getSheetByName(DATA_SHEET)){ var dsh = ss.insertSheet(DATA_SHEET); dsh.getRange(1, 1).setValue("{}"); try { dsh.hideSheet(); } catch (e) {} }
   ["Sheet1", "Trang tính1", "Trang tính 1"].forEach(function(n){ var s = ss.getSheetByName(n); if (s && ss.getSheets().length > 1 && s.getLastRow() === 0){ try { ss.deleteSheet(s); } catch (e) {} } });
   return { status: "success", message: "Đã thiết lập " + names.length + " bảng chuẩn + hướng dẫn.", tabs: names };
@@ -3237,7 +3249,7 @@ function dinhDangTab(ss, ten, headers){
   try { sh.getRange(1, 1, 1, headers.length).setBorder(true, true, true, true, true, true); } catch (e) {}
   for (var c = 1; c <= headers.length; c++) sh.autoResizeColumn(c);
 }
-// Đổ dữ liệu ra các tab cho NGƯỜI XEM (ghi đè; nguồn chuẩn vẫn nằm ở _HCNS_DATA).
+// Đổ dữ liệu ra các tab cho NGƯỜI XEM (ghi đè; nguồn chuẩn vẫn nằm ở tab ẩn DATA_SHEET).
 function ganBangHienThi(ss, data){
   if (data.nhanVien) writeSheet(ss, "NhanVien", ["Mã NV", "Họ và Tên", "Mã PIN", "Email", "Chức Vụ", "Phòng Ban", "Quyền", "Lương Cơ Bản", "Phụ Cấp", "Phép Năm Còn", "Ngày Vào Làm", "Loại Hợp Đồng", "Trạng Thái"], data.nhanVien.map(function(n){ return [n.id, n.hoTen, n.pin, n.email, n.chucVu, n.phongBan, n.role, n.luongCoBan, n.phuCap, n.phepNamCon, n.ngayVaoLam, n.hopDong, n.trangThai]; }));
   if (data.bangCong) writeSheet(ss, "BangCong", ["Mã NV", "Ngày", "Ca Làm Việc", "Giờ Vào", "Giờ Ra", "Giờ OT", "Hình Thức", "Địa Chỉ/GPS", "Ghi Chú", "Trạng Thái"], data.bangCong.map(function(b){ return [b.maNV, b.ngay, b.caLam || "", b.gioVao || "", b.gioRa || "", b.gioOT || 0, b.nguon || "", b.diaChi || "", b.ghiChu || "", b.trangThai || ""]; }));
@@ -4464,6 +4476,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
           </div>
         `;
         CoreService.openModal("🔔 Trung Tâm Thông Báo Hệ Thống", bodyHtml, [{ text: "Đóng", class: "btn-secondary" }]);
+         
+        setTimeout(() => { try { NotificationService.markAllAsRead(); } catch (e) {} }, 1200);
       },
 
       initTimer() {
@@ -4780,7 +4794,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.58" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.60" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -5009,7 +5023,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.58"
+                version: "4.0.60"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -30253,12 +30267,34 @@ function writeSheet(ss, sheetName, headers, rowsData){
          
         const _thangCT = (ma) => { try { return AppModules.quytrinhduyet.thangCua(ma) || []; } catch (e) { return []; } };
         const _coTPPhong = (pb) => (data.nhanVien || []).some(n => n.trangThai !== "dinh_chi" && PhanQuyenService.capBacCua(n.role) === "manager" && PhanQuyenService.phuTrachPhong(n, pb));
+         
+        const _thangCoNguoi = (thang, pb) => (data.nhanVien || []).some(n => {
+          if (n.trangThai === "dinh_chi") return false;
+          const cb = PhanQuyenService.capBacCua(n.role || "employee");
+          if (thang.indexOf(cb) < 0) return false;
+          return cb === "manager" ? PhanQuyenService.phuTrachPhong(n, pb) : true;
+        });
+         
+        const _capToiLuot = (thang, pb) => {
+          for (let b = 0; b < thang.length; b++) {
+            const cb = thang[b];
+            const co = (data.nhanVien || []).some(n => n.trangThai !== "dinh_chi"
+              && PhanQuyenService.capBacCua(n.role || "employee") === cb
+              && (cb === "manager" ? PhanQuyenService.phuTrachPhong(n, pb) : true));
+            if (co) return cb;
+          }
+          return "";
+        };
         const _xemTheoThang = (ma, pb) => {
           const thang = _thangCT(ma);
           if (!thang.length) return trongPhong(pb);                  
           if (cap === "it_admin") return true;
-          if (thang.indexOf(cap) >= 0) return cap === "manager" ? PhanQuyenService.phuTrachPhong(u, pb) : true;
-          if ((cap === "hr" || cap === "director") && !_coTPPhong(pb)) return true;   
+           
+          const toiLuot = _capToiLuot(thang, pb);
+          if (toiLuot && cap === toiLuot) return cap === "manager" ? PhanQuyenService.phuTrachPhong(u, pb) : true;
+          if (toiLuot) return false;                                  
+           
+          if ((cap === "hr" || cap === "director") && !_thangCoNguoi(thang, pb)) return true;
           return false;
         };
         const src = [];
@@ -30285,12 +30321,12 @@ function writeSheet(ss, sheetName, headers, rowsData){
           "CoreService.switchTab('denxuat');try{AppModules.denxuat.setFilter('can_duyet')}catch(e){}");
 
         them("nghiemThu", "✅", "#059669", "Công việc chờ nghiệm thu",
-          (data.congViec || []).filter(t => (t.trangThai === "cho_nghiem_thu" || (Number(t.tienDo) >= 100 && t.trangThai !== "hoan_thanh")) && t.trangThai !== "dinh_chi" && trongPhong(deptCua(t.nguoiNhan)))
+          (data.congViec || []).filter(t => (t.trangThai === "cho_nghiem_thu" || (Number(t.tienDo) >= 100 && t.trangThai !== "hoan_thanh")) && t.trangThai !== "dinh_chi" && _xemTheoThang("nghiem_thu_viec", deptCua(t.nguoiNhan)))
             .map(t => ({ mo: `${t.tenCV}`, phu: t.tenNguoiNhan || t.nguoiNhan || "" })),
           "CoreService.switchTab('tasks');try{AppModules.tasks.setGroup('cho_nghiem_thu')}catch(e){}");
 
-        if (toanCty) them("kpi", "🏆", "#d97706", "KPI chờ duyệt",
-          (data.kpiData || []).filter(k => k.trangThai === "cho_duyet")
+        them("kpi", "🏆", "#d97706", "KPI chờ duyệt",
+          (data.kpiData || []).filter(k => k.trangThai === "cho_duyet" && _xemTheoThang("kpi_thang", deptCua(k.maNV)))
             .map(k => ({ mo: `${k.hoTen || k.maNV} — ${k.thang || ""}`, phu: k.diemKPI ? ("Điểm " + k.diemKPI) : "" })),
           "CoreService.switchTab('kpi')");
 
@@ -30311,7 +30347,15 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
         try {
 
-          const _nhacKho = (typeof NotificationService !== "undefined") ? NotificationService.getSettings().nhacChoXuatKho !== false : true;
+           
+          const _ct = (typeof NotificationService !== "undefined") ? NotificationService.getSettings() : {};
+           
+          let _gdTuBat = false;
+          try {
+            const _luu = localStorage.getItem(NotificationService.STORAGE_KEY);
+            _gdTuBat = !!(_luu && JSON.parse(_luu).nhacChoXuatKho === true);
+          } catch (e) {}
+          const _nhacKho = (cap === "director") ? _gdTuBat : (_ct.nhacChoXuatKho !== false);
           if (_nhacKho && AppModules.vpp._quyenKho().thaoTac) them("choXuat", "🚚", "#ea580c", "Cấp phát đã duyệt — chờ xuất kho",
             (data.yeuCauKhac || []).filter(y => y.loai === "cap_phat_ts" && y.trangThai === "da_duyet" && !y.daCapPhat)
               .map(y => ({ mo: `${y.tenNguoiGui || y.nguoiGui}`, phu: y.tenTaiSan || "" })),
@@ -31036,6 +31080,13 @@ function writeSheet(ss, sheetName, headers, rowsData){
         { ma: "dieu_chuyen", ten: "Điều chuyển / bổ nhiệm / thăng chức", icon: "fa-people-arrows",
           trangThai: "khai_bao", macDinh: ["manager", "hr", "director"], ungVien: ["manager", "hr", "director"],
           moTa: "Đổi vị trí/phòng ban, bổ nhiệm chức vụ. Chốt ở Giám đốc." },
+         
+        { ma: "nghiem_thu_viec", ten: "Nghiệm thu công việc được giao", icon: "fa-clipboard-check",
+          trangThai: "da_ap", macDinh: ["manager"], ungVien: ["manager", "hr", "director"],
+          moTa: "Người làm nộp việc 100% → người có quyền chấm điểm & nghiệm thu. Mặc định Trưởng phòng của người làm." },
+        { ma: "kpi_thang", ten: "KPI tháng của nhân viên", icon: "fa-trophy",
+          trangThai: "da_ap", macDinh: ["hr", "director"], ungVien: ["manager", "hr", "director"],
+          moTa: "Bảng điểm KPI tháng chờ duyệt. Mặc định HC-NS rồi Giám đốc." },
         { ma: "hop_dong", ten: "Ký / gia hạn hợp đồng lao động", icon: "fa-file-contract",
           trangThai: "khai_bao", macDinh: ["hr", "director"], ungVien: ["manager", "hr", "director"],
           moTa: "Ký mới/gia hạn HĐLĐ, thử việc → chính thức. HC soạn, Giám đốc ký." }
