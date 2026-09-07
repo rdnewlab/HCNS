@@ -4071,7 +4071,17 @@ function writeSheet(ss, sheetName, headers, rowsData){
         
         sheetSyncBat: false,
         sheetToken: "",
-        gasUrl: localStorage.getItem(CONFIG.GAS_ENDPOINT_KEY) || "",
+         
+        gasUrl: (function () {
+          try {
+            const rieng = localStorage.getItem(CONFIG.GAS_ENDPOINT_KEY) || "";
+            let trongCaiDat = "";
+            try { trongCaiDat = (JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY_SETTINGS) || "{}").gasUrl) || ""; } catch (e1) {}
+            if (rieng && !trongCaiDat) return rieng;
+            if (!rieng && trongCaiDat) { try { localStorage.setItem(CONFIG.GAS_ENDPOINT_KEY, trongCaiDat); } catch (e2) {} return trongCaiDat; }
+            return rieng;
+          } catch (e) { return ""; }
+        })(),
 
         
          
@@ -5149,7 +5159,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.73" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.74" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -5378,7 +5388,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.73"
+                version: "4.0.74"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -6653,7 +6663,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
        
       _conNoGui() {
-        try { return this._docHangDoi().filter(x => x && x.loai === "ghiDong").length; }
+         
+        try { return this._docHangDoi().filter(x => x && (x.loai === "ghiDong" || x.loai === "chamCong")).length; }
         catch (e) { return 0; }
       },
 
@@ -6663,7 +6674,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
            
           try {
             const hd = this._docHangDoi();
-            hd.forEach(x => { if (x && x.loai === "ghiDong") x.hen = 0; });
+            hd.forEach(x => { if (x && (x.loai === "ghiDong" || x.loai === "chamCong")) x.hen = 0; });   
             this._ghiHangDoi(hd);
             await this._guiMotDot();
           } catch (e) {}
@@ -6690,6 +6701,20 @@ function writeSheet(ss, sheetName, headers, rowsData){
             
 
             try { this._doiSoatChamCong(j.data); } catch (eDS) {}
+             
+            try {
+              const _duLieuCu90 = this.getData();
+              const _anhCu90 = {};
+              (_duLieuCu90.bangCong || []).forEach(b => {
+                if (b && b.maNV && (b.anhCheckIn || b.anhCheckOut)) _anhCu90[b.maNV + "|" + b.ngay] = b;
+              });
+              (j.data.bangCong || []).forEach(b => {
+                const cu = b && b.maNV ? _anhCu90[b.maNV + "|" + b.ngay] : null;
+                if (!cu) return;
+                if (!b.anhCheckIn && cu.anhCheckIn) b.anhCheckIn = cu.anhCheckIn;
+                if (!b.anhCheckOut && cu.anhCheckOut) b.anhCheckOut = cu.anhCheckOut;
+              });
+            } catch (eAG) {}
             localStorage.setItem(CONFIG.STORAGE_KEY_DATA, JSON.stringify(j.data));
              
             try { localStorage.setItem("hcns4_ban_kho_luc", String(Number(j.luuLuc) || Date.now())); } catch (eML) {}
@@ -11690,11 +11715,13 @@ function writeSheet(ss, sheetName, headers, rowsData){
                          (getCompanySettings().caLamViec). VALUE để MÃ CA ở ĐẦU (vd "HC — ...") để
                          ChamCongCore.timCa khớp đúng ca theo mã → tính công/OT đúng ca đã chọn.
                          Muốn thêm "ca online/linh hoạt" thì thêm 1 ca ở Cài đặt 6.2 mục 4. -->
+                    <!-- [SỬA 07/09/2026 — V4 đợt 90] Ca TỰ GỢI Ý theo giờ hiện tại (goiYCa) — vẫn đổi tay được. -->
                     <select id="selCaLamViec" class="form-control" style="font-weight:500;">
-                      ${((getCompanySettings().caLamViec) || []).map(c => {
-                        const nhan = `${c.ma} — ${c.ten} (${c.vao}–${c.ra})`;
-                        return `<option value="${nhan}">${nhan}</option>`;
-                      }).join("") || `<option value="Ca Hành Chính">Ca Hành Chính</option>`}
+                      ${(() => { const caGoiY = this.goiYCa();
+                        return ((getCompanySettings().caLamViec) || []).map(c => {
+                          const nhan = `${c.ma} — ${c.ten} (${c.vao}–${c.ra})`;
+                          return `<option value="${nhan}"${nhan === caGoiY ? " selected" : ""}>${nhan}</option>`;
+                        }).join("") || `<option value="Ca Hành Chính">Ca Hành Chính</option>`; })()}
                     </select>
                   </div>
                   <div class="form-group" style="margin-top:10px;">
@@ -12178,6 +12205,33 @@ function writeSheet(ss, sheetName, headers, rowsData){
         removePhoto() {
           this.currentPhoto = null;
           this.render();
+        },
+
+        /* [THÊM MỚI 07/09/2026 — V4 đợt 90] GỢI Ý CA THEO GIỜ HIỆN TẠI (chủ app: "vào chấm
+           công thời gian nào thì gán trước ô ca luôn, đỡ mất công chọn, vẫn đổi được").
+           Nhận: không. Trả: NHÃN ca gợi ý (đúng chuỗi value của ô chọn) hoặc "".
+           Cách chọn: ca nào đang ÔM giờ hiện tại thì lấy (ca qua đêm tính vòng qua nửa đêm,
+           vd 22:00–06:00 mà đang 23:30 vẫn trúng); không ca nào ôm → lấy ca có giờ VÀO gần
+           giờ hiện tại nhất (vd 07:40 → ca 08:00). */
+        goiYCa() {
+          try {
+            const ds = (getCompanySettings().caLamViec) || [];
+            if (!ds.length) return "";
+            const nay = new Date();
+            const phut = nay.getHours() * 60 + nay.getMinutes();
+            const doiPhut = g => { const p = String(g || "").split(":"); return (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0); };
+            let dangOm = null, ganNhat = null, lechMin = 100000;
+            ds.forEach(c => {
+              const v = doiPhut(c.vao), r = doiPhut(c.ra);
+              const om = c.quaDem ? (phut >= v || phut <= r) : (phut >= v && phut <= r);
+              if (om && !dangOm) dangOm = c;
+              let lech = Math.abs(phut - v);
+              lech = Math.min(lech, 1440 - lech);          // 23:50 so 00:10 chỉ lệch 20 phút, không phải 23 tiếng
+              if (lech < lechMin) { lechMin = lech; ganNhat = c; }
+            });
+            const c = dangOm || ganNhat;
+            return c ? (c.ma + " — " + c.ten + " (" + c.vao + "–" + c.ra + ")") : "";
+          } catch (e) { return ""; }
         },
 
         async submitCheckIn() {
@@ -16500,6 +16554,15 @@ function writeSheet(ss, sheetName, headers, rowsData){
             <div class="drawer-grid">
             <div class="drawer-col">
 
+            <!-- [THÊM MỚI 07/09/2026 — V4 đợt 90] 🎯 MỤC TIÊU đứng ĐẦU cột trái — mở việc ra là thấy
+                 ngay phải làm gì, đạt chuẩn nào (chủ app: "khó nhìn thấy mục tiêu, cần tăng nội dung
+                 mục tiêu, hướng dẫn"). Mô tả & hướng dẫn nay hiện RIÊNG, không còn bị tiêu chuẩn che. -->
+            <div style="background:var(--primary-lighter);padding:12px;border-radius:8px;margin-bottom:14px;border-left:4px solid var(--primary-main)">
+              <div style="font-weight:bold;color:var(--primary-dark);font-size:12.5px;margin-bottom:4px">🎯 MỤC TIÊU / TIÊU CHUẨN NGHIỆM THU:</div>
+              <div style="font-size:13px;color:var(--text-primary);line-height:1.55">${cv.tieuChuan || "Hoàn thành công việc theo đúng quy trình nội bộ."}</div>
+              ${cv.moTa ? `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--primary-main);font-size:12px;color:var(--text-primary);line-height:1.55"><strong>📝 Mô tả & hướng dẫn:</strong> ${cv.moTa}</div>` : ""}
+            </div>
+
             <!-- [THÊM MỚI 27/08/2026] GIAI ĐOẠN CÔNG VIỆC (5 bước) — bấm để chuyển giai đoạn.
                  Mỗi giai đoạn ứng một % hoàn thành → KPI tính đúng công theo từng bước. -->
             <div class="card" style="padding:12px;margin-bottom:16px;border-left:4px solid var(--primary-main)">
@@ -16519,11 +16582,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
               `}
             </div>
 
-            <!-- Thông tin tiêu chuẩn đầu ra -->
-            <div style="background:var(--primary-lighter);padding:12px;border-radius:6px;margin-bottom:16px;border-left:4px solid var(--primary-main)">
-              <div style="font-weight:bold;color:var(--primary-dark);font-size:12px;margin-bottom:3px"><i class="fa-solid fa-bullseye"></i> TIÊU CHUẨN NGHIỆM THU ĐẦU RA (KPI OUTPUT):</div>
-              <div style="font-size:13px;color:var(--text-primary)">${cv.tieuChuan || cv.moTa || "Hoàn thành công việc theo đúng quy trình nội bộ."}</div>
-            </div>
+            <!-- [SỬA 07/09/2026 — V4 đợt 90] Khối tiêu chuẩn cũ ĐÃ DỜI LÊN ĐẦU cột trái thành "🎯 MỤC TIÊU" (chủ app: khó nhìn thấy mục tiêu). -->
 
             <!-- 1. Interactive Checklist (Tích chọn tự nhảy %) -->
             <div style="margin-bottom:20px">
@@ -18541,6 +18600,10 @@ function writeSheet(ss, sheetName, headers, rowsData){
           
           if (this.currentSubTab === "app_cham_cong") {
             const dsApp = rawAttendanceList.filter(b => String(b.ngay || "").slice(0, 7) === thangCC && b.nguon === "app");
+             
+            dsApp.sort((a, b) => String(b.ngay || "").localeCompare(String(a.ngay || "")) || String(a.gioVao || "").localeCompare(String(b.gioVao || "")));
+            const _tenNV90 = {};
+            (DataService.getData().nhanVien || []).forEach(n => { _tenNV90[n.id] = n.hoTen; });
             return `
               <div class="card">
                 <div class="card-header">
@@ -18558,6 +18621,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                       <tr>
                         <th class="col-stt" style="width:44px">STT</th>
                         <th class="col-ma">Mã NV</th>
+                        <th style="min-width:130px">Tên Nhân Viên</th>
                         <th class="col-ngay">Ngày</th>
                         <th>Ca Làm Việc</th>
                         <th style="text-align:center">Giờ Vào</th>
@@ -18569,10 +18633,12 @@ function writeSheet(ss, sheetName, headers, rowsData){
                       </tr>
                     </thead>
                     <tbody>
-                      ${dsApp.length === 0 ? `<tr><td colspan="10" class="col-action o-rong">Chưa có nhân viên nào tự chấm công bằng app trong tháng ${CoreService.nhanThang(thangCC)}</td></tr>` : dsApp.map((item, idx) => `
+                      ${dsApp.length === 0 ? `<tr><td colspan="11" class="col-action o-rong">Chưa có nhân viên nào tự chấm công bằng app trong tháng ${CoreService.nhanThang(thangCC)}</td></tr>` : dsApp.map((item, idx) => `
+                        ${(idx === 0 || dsApp[idx - 1].ngay !== item.ngay) ? `<tr><td colspan="11" style="background:var(--bg-hover);font-weight:700;font-size:12px;padding:5px 10px;color:var(--primary-dark);">📅 Ngày ${formatDateDisplay(item.ngay)} — ${dsApp.filter(x => x.ngay === item.ngay).length} lượt chấm</td></tr>` : ""}
                         <tr>
                           <td class="col-stt">${idx + 1}</td>
                           <td class="col-ma">${item.maNV}</td>
+                          <td><strong>${_tenNV90[item.maNV] || "—"}</strong></td>
                           <td class="col-ngay">${formatDateDisplay(item.ngay)}</td>
                           <td>${item.caLam || "—"}</td>
                           <td style="text-align:center; font-weight:bold; color:var(--primary-dark)">${item.gioVao || "—"}</td>
@@ -27216,7 +27282,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
                     <div style="overflow-x:auto;max-height:220px;overflow-y:auto;">
                       <table class="bang-excel" style="width:100%;min-width:380px;border-collapse:collapse;font-size:11.5px;">
                         <thead><tr style="color:var(--text-secondary);">
-                          <th style="text-align:left;padding:3px;">Mã app</th><th style="text-align:left;padding:3px;">Mã trên máy</th>
+                          <th style="text-align:left;padding:3px;">Mã app</th>
+                          <th style="text-align:left;padding:3px;">Tên nhân viên</th><!-- [THÊM đợt 90] tra tự động theo mã app -->
+                          <th style="text-align:left;padding:3px;">Mã trên máy</th>
                           <th style="text-align:left;padding:3px;">Mã bảng công</th><th></th>
                         </tr></thead>
                         <tbody id="bangAnhXaBody">${(DataService.getData().anhXaMaNV || []).map(a => this._rowAnhXa(a)).join("")}</tbody>
@@ -28790,10 +28858,20 @@ function writeSheet(ss, sheetName, headers, rowsData){
             <td style="padding:2px;"><button type="button" class="btn btn-sm btn-secondary" style="padding:3px 7px;font-size:11px;" onclick="this.closest('tr').remove()" title="Xóa dòng (bấm Lưu mới có hiệu lực)"><i class="fa-solid fa-xmark" style="color:#dc2626"></i></button></td>
           </tr>`;
         },
-        
+
+        traTenAnhXa(inp) {
+          try {
+            const nv = (DataService.getData().nhanVien || []).find(n => String(n.id).trim().toUpperCase() === String(inp.value).trim().toUpperCase());
+            const o = inp.closest("tr").querySelector(".anhxa-ten");
+            if (o) o.textContent = nv ? nv.hoTen : "—";
+          } catch (e) {}
+        },
         _rowAnhXa(a) {
+          
+          const tenNV90 = (((DataService.getData().nhanVien || []).find(n => String(n.id).trim().toUpperCase() === String(a.maNV || "").trim().toUpperCase()) || {}).hoTen) || "—";
           return `<tr>
-            <td style="padding:2px;"><input data-k="maNV" class="form-control" value="${(a.maNV || "")}" placeholder="NV001" style="font-size:11.5px;padding:3px 5px;width:84px;font-weight:600;"></td>
+            <td style="padding:2px;"><input data-k="maNV" class="form-control" value="${(a.maNV || "")}" placeholder="NV001" oninput="AppModules.settings.traTenAnhXa(this)" style="font-size:11.5px;padding:3px 5px;width:84px;font-weight:600;"></td>
+            <td style="padding:2px 6px;white-space:nowrap;"><span class="anhxa-ten" style="font-size:11px;color:var(--text-secondary);">${tenNV90}</span></td>
             <td style="padding:2px;"><input data-k="maMay" class="form-control" value="${(a.maMay || "")}" placeholder="00361" style="font-size:11.5px;padding:3px 5px;width:84px;font-family:monospace;"></td>
             <td style="padding:2px;"><input data-k="maBang" class="form-control" value="${(a.maBang || "")}" placeholder="mã bảng công" style="font-size:11.5px;padding:3px 5px;width:110px;font-family:monospace;"></td>
             <td style="padding:2px;"><button type="button" class="btn btn-sm btn-secondary" style="padding:3px 7px;font-size:11px;" onclick="this.closest('tr').remove()" title="Xóa dòng (bấm Lưu mới có hiệu lực)"><i class="fa-solid fa-xmark" style="color:#dc2626"></i></button></td>
@@ -30137,7 +30215,10 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const directorName = (document.getElementById("setDirectorName") ? document.getElementById("setDirectorName").value.trim() : "") || getCompanySettings().directorName;
           const hrManagerName = (document.getElementById("setHrManagerName") ? document.getElementById("setHrManagerName").value.trim() : "") || getCompanySettings().hrManagerName;
           const logo = getCompanySettings().logo || "";
-          const gasUrl = (document.getElementById("guideGasUrlInp") ? document.getElementById("guideGasUrlInp").value.trim() : "") || getCompanySettings().gasUrl;
+           
+          const gasUrl = (document.getElementById("guideGasUrlInp") ? document.getElementById("guideGasUrlInp").value.trim() : "")
+            || getCompanySettings().gasUrl
+            || localStorage.getItem(CONFIG.GAS_ENDPOINT_KEY) || "";
 
           
           const oldSet = getCompanySettings();
