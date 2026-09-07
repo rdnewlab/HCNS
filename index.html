@@ -2826,7 +2826,7 @@ var CHUNK         = 45000;               // 1 ô Sheet tối đa ~50.000 ký t�
    mã CŨ và không có dấu hiệu nào để biết — đã dính lỗi này nhiều lần. Nay mọi phản hồi đều
    kèm số bản; nút "Kiểm tra kết nối" ở mục 6.4 hiện số đó ra để đối chiếu.
    ⚠️ MỖI LẦN SỬA MÃ NÀY PHẢI TĂNG SỐ (r1 → r2 …). */
-var CODE_VERSION  = "HCNS-BE-2026-09-07-r15";   // [SỬA đợt 103] r14 → r15: thêm cửa hỏi nhẹ api=kiemMoc để máy KHÔNG phải kéo cả kho mỗi 30 giây (200-500 người dùng cùng lúc)   // [SỬA đợt 99] r13 → r14: gộp bảng công theo THỨ TỰ ƯU TIÊN NGUỒN (sản lượng > máy > app > phòng > tay) thay vì "dòng sau đè dòng trước"; ô HCNS sửa tay trên tab vẫn luôn thắng   // [SỬA đợt 89] r12 → r13: chấm công giữ đủ trường phụ khi gộp (ảnh, cờ ra ca, nguồn, IP, GPS) — hết "dữ liệu chấm công bị mất bị nhảy"   // [SỬA đợt 80c] r7 → r10: THÊM lệnh ghiDong dùng chung (trước đây gần như MỌI chức năng — đơn từ, góp ý, sáng kiến, dự trù, KPI… — đều không lưu được lên kho khi làm từ điện thoại) · CHẶN nhân viên tự duyệt đơn của chính mình · và sửa lỗi DUYỆT TRÊN MÁY QUẢN TRỊ KHÔNG ĂN (dòng cũ trong tab đè ngược bản vừa duyệt)
+var CODE_VERSION  = "HCNS-BE-2026-09-07-r18";   // [SỬA đợt 107] r17 → r18: hiểu thêm kho kiểu "từ điển" (bảng lương đã chốt, khấu trừ, doanh số, ma trận quyền) — thiếu phần này thì mấy kho đó kéo về bị sai kiểu, màn hình trắng   // r16 → r17: MỞ 22 KHO còn thiếu (nhân sự/kế toán/giám đốc làm trên điện thoại hoặc bản web không còn bị mất dữ liệu im lặng) + cửa hỏi "có gì mới" có bộ nhớ đệm 15 giây (nhẹ tải cho công ty đông người) + sửa 2 chỗ màn hình cho làm mà máy chủ từ chối   // [SỬA đợt 106] r15 → r16: thêm cửa api=layMoi — máy chỉ tải NHỮNG DÒNG vừa đổi (vài KB) thay vì tải lại cả kho (vài MB) mỗi khi có người chấm công   // [SỬA đợt 103] r14 → r15: thêm cửa hỏi nhẹ api=kiemMoc để máy KHÔNG phải kéo cả kho mỗi 30 giây (200-500 người dùng cùng lúc)   // [SỬA đợt 99] r13 → r14: gộp bảng công theo THỨ TỰ ƯU TIÊN NGUỒN (sản lượng > máy > app > phòng > tay) thay vì "dòng sau đè dòng trước"; ô HCNS sửa tay trên tab vẫn luôn thắng   // [SỬA đợt 89] r12 → r13: chấm công giữ đủ trường phụ khi gộp (ảnh, cờ ra ca, nguồn, IP, GPS) — hết "dữ liệu chấm công bị mất bị nhảy"   // [SỬA đợt 80c] r7 → r10: THÊM lệnh ghiDong dùng chung (trước đây gần như MỌI chức năng — đơn từ, góp ý, sáng kiến, dự trù, KPI… — đều không lưu được lên kho khi làm từ điện thoại) · CHẶN nhân viên tự duyệt đơn của chính mình · và sửa lỗi DUYỆT TRÊN MÁY QUẢN TRỊ KHÔNG ĂN (dòng cũ trong tab đè ngược bản vừa duyệt)
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    [THÊM MỚI 05/09/2026 — V4 đợt 51] BẤM ▶ CHẠY THÌ CHẠY HÀM NÀY (KIEM_TRA_NHANH).
@@ -3063,6 +3063,18 @@ function _ngayChuoi(v){
    Muốn mở thêm kho nào thì thêm một dòng vào bảng này rồi dán lại mã máy chủ. */
 var CAP_QL = ["manager", "hr", "accountant", "director", "it_admin"];   // trưởng phòng trở lên
 var CAP_NS = ["hr", "director", "it_admin"];                            // nhân sự / lãnh đạo
+/* [THÊM MỚI 07/09/2026 — V4 đợt 107] Hai nhóm quyền mới, để mở thêm kho mà KHÔNG mở rộng quyền
+   quá tay. Nguyên tắc: mỗi kho chỉ mở cho ĐÚNG nhóm người vẫn đang thao tác nó trên màn hình,
+   không mở rộng hơn một ai. */
+var CAP_KT = ["hr", "accountant", "director", "it_admin"];              // kế toán · nhân sự · lãnh đạo (tiền lương, bảo hiểm, thuế)
+/* [THÊM MỚI 07/09/2026 — V4 đợt 107] KHO KIỂU "TỪ ĐIỂN" — xếp theo KHOÁ chứ không phải danh sách.
+   Vd bảng lương đã chốt xếp theo { "2026-09": {…} }, khấu trừ xếp theo { "NV001|2026-09": số tiền }.
+   Các kho này phải được dựng lại ĐÚNG KIỂU khi gộp, nếu không app kéo về sẽ thấy chúng biến thành
+   danh sách → mọi màn đọc chúng đều trắng trơn.
+   ⚠️ PHẢI KHỚP với biến KHO_TU_DIEN phía app. Thêm một nơi mà quên nơi kia là hỏng dữ liệu. */
+var KHO_TU_DIEN = ["bangCongChot", "bangLuongChot", "doanhSoThang", "khauTruThang",
+                   "luongChuyenThang", "maTranQuyen", "dieuChinhCong"];
+var CAP_QUYEN = ["director", "it_admin"];                               // CHỈ giám đốc + IT (phân quyền, tài khoản)
 var LUAT_GHI = {
   // — Nhân viên tự làm cho chính mình —
   donTu:            { cap: [], cua: ["maNV"] },                 // xin phép · về sớm · tăng ca
@@ -3085,13 +3097,106 @@ var LUAT_GHI = {
   kpiData:          { cap: CAP_QL, cua: null },                 // chấm KPI tháng
   phieuKiemTra:     { cap: CAP_QL, cua: null },                 // phiếu kiểm tra công · lương
   bienBanHop:       { cap: CAP_QL, cua: null },                 // biên bản họp
-  deXuatNhanSu:     { cap: CAP_QL, cua: null },                 // đề xuất tuyển người
+  /* [SỬA 07/09/2026 — V4 đợt 107] MÀN HÌNH CHO LÀM NHƯNG MÁY CHỦ TỪ CHỐI — nay khớp lại.
+     Menu "Đề Xuất Nhân Sự" mở cho MỌI vai trò (ghi rõ trong mã giao diện: "ai cũng có thể đề
+     xuất tuyển người cho phòng mình"), nhưng máy chủ chỉ nhận từ trưởng phòng trở lên → nhân
+     viên bấm gửi là ăn báo đỏ. Nay mọi cấp gửi được ĐỀ XUẤT CỦA CHÍNH MÌNH (cột nguoiTaoId);
+     nhân viên vẫn KHÔNG tự đặt trạng thái "đã duyệt" được, và vẫn không sửa được đề xuất của
+     người khác. Trưởng phòng trở lên duyệt như cũ. */
+  deXuatNhanSu:     { cap: [], cua: ["nguoiTaoId"] },           // đề xuất tuyển người
   dieuChinhCong:    { cap: CAP_QL, cua: null },                 // điều chỉnh công cho nhân viên
+  quyTrinhThongNhat:{ cap: CAP_QL, cua: null },                 // [THÊM đợt 107] quy trình chốt sau cuộc họp
   // — Nhân sự / lãnh đạo —
   tinTuc:           { cap: CAP_NS, cua: null },                 // bảng tin nội bộ
-  thuongPhatThang:  { cap: CAP_NS, cua: null },                 // thưởng · phạt trong tháng
-  taiSan:           { cap: CAP_NS, cua: null }                  // sổ tài sản
+  /* [SỬA đợt 107] Thưởng/phạt: thêm KẾ TOÁN. Trước chỉ nhân sự + lãnh đạo, trong khi kế toán
+     mới là người ngồi nhập khoản thưởng/phạt vào bảng lương → nhập trên bản web là mất. */
+  thuongPhatThang:  { cap: CAP_KT, cua: null },                 // thưởng · phạt trong tháng
+  taiSan:           { cap: CAP_NS, cua: null },                 // sổ tài sản
+
+  /* ═══════════════════════════════════════════════════════════════════════════════════════
+     [THÊM MỚI 07/09/2026 — V4 đợt 107] 🔴 MỞ 22 KHO CÒN LẠI — SỬA LỖI "MẤT DỮ LIỆU IM LẶNG".
+     CHUYỆN GÌ ĐÃ XẢY RA (khảo sát toàn app hôm nay): app có 40 kho dữ liệu nhưng chỉ 18 kho
+     được phép gửi lên. 22 kho còn lại, nếu làm trên điện thoại hoặc bản web (máy không có mã
+     bí mật quản trị), thì cứ 30 giây app kéo kho về là ĐÈ MẤT — KHÔNG có một lời cảnh báo nào.
+     Cụ thể ai mất gì:
+       · Nhân sự  : sửa hồ sơ nhân viên · cập nhật BHXH · chốt sổ công · định mức sản xuất
+       · Kế toán  : chốt bảng lương · nhập doanh số · khấu trừ · đánh dấu đã chuyển lương · thuế
+       · Hành chính: nhập kho VPP · báo giá · tạo và DUYỆT đơn mua · nhật ký kho
+       · Giám đốc : đổi vai trò · sửa ma trận quyền · tạo/khoá tài khoản
+     Đây chính là điều chủ app nói: "không đồng bộ tốt TẤT CẢ dữ liệu trong app".
+     NGUYÊN TẮC MỞ: mỗi kho chỉ mở cho ĐÚNG nhóm đang thao tác nó, không rộng hơn. Cấp bậc vẫn
+     do máy chủ TỰ TRA từ kho (không tin lời máy gửi), nên mở kho không làm yếu bảo mật.
+     ═══════════════════════════════════════════════════════════════════════════════════════ */
+  // — Hồ sơ · cấu hình nhân sự (nhân sự / lãnh đạo) —
+  nhanVien:         { cap: CAP_NS, cua: null },                 // hồ sơ nhân viên
+  bangCongChot:     { cap: CAP_NS, cua: null },                 // sổ công đã chốt từng tháng
+  dinhMucSanXuat:   { cap: CAP_NS, cua: null },                 // định mức sản lượng
+  anhXaMaNV:        { cap: CAP_NS, cua: null },                 // ánh xạ mã máy chấm vân tay → mã app
+  nhatKyTaiKhoan:   { cap: CAP_NS, cua: null },                 // nhật ký đăng nhập
+  yeuCauCapKey:     { cap: CAP_NS, cua: null },                 // xử lý yêu cầu cấp lại mã PIN
+  tinTucNhom:       { cap: CAP_NS, cua: null },                 // nhóm được phát hành tin
+  gopYChuDe:        { cap: CAP_NS, cua: null },                 // danh mục chủ đề góp ý
+  // — Kho văn phòng phẩm (hành chính) —
+  danhMucVPP:       { cap: CAP_NS, cua: null },                 // danh mục vật tư văn phòng
+  khoVPP:           { cap: CAP_NS, cua: null },                 // tồn kho
+  baoGiaVPP:        { cap: CAP_NS, cua: null },                 // báo giá nhà cung cấp
+  poVPP:            { cap: CAP_NS, cua: null },                 // đơn mua hàng
+  nhatKyKho:        { cap: CAP_NS, cua: null },                 // nhật ký nhập · xuất kho
+  // — Tiền lương · bảo hiểm · thuế (kế toán · nhân sự · lãnh đạo) —
+  bangLuongChot:    { cap: CAP_KT, cua: null },                 // bảng lương đã chốt
+  doanhSoThang:     { cap: CAP_KT, cua: null },                 // doanh số tính hoa hồng
+  khauTruThang:     { cap: CAP_KT, cua: null },                 // khấu trừ trong tháng
+  luongChuyenThang: { cap: CAP_KT, cua: null },                 // đánh dấu đã chuyển lương
+  baoHiem:          { cap: CAP_KT, cua: null },                 // khai báo bảo hiểm
+  thueTNCN:         { cap: CAP_KT, cua: null },                 // khai báo thuế thu nhập cá nhân
+  // — Phân quyền (CHỈ giám đốc + IT) —
+  vaiTro:           { cap: CAP_QUYEN, cua: null },              // danh sách vai trò
+  maTranQuyen:      { cap: CAP_QUYEN, cua: null },              // ma trận quyền theo màn hình
+  nhatKyQuyen:      { cap: CAP_QUYEN, cua: null }               // nhật ký thay đổi quyền
 };
+/* [THÊM MỚI 07/09/2026 — V4 đợt 107] GHÉP HỒ SƠ & VAI TRÒ VỪA ĐỔI TRƯỚC KHI XÉT QUYỀN.
+   VÌ SAO PHẢI CÓ: từ bản này, giám đốc đổi được vai trò ngay trên điện thoại hoặc bản web —
+   thay đổi đó nằm ở tab đệm GhiMoi, chưa vào khối gốc (khối gốc chỉ đổi khi máy quản trị bấm
+   lưu). Nếu máy chủ cứ tra cấp bậc từ khối gốc thì:
+     · Người VỪA ĐƯỢC NÂNG lên trưởng phòng vẫn bị chặn — nâng quyền như không.
+     · NGUY HIỂM HƠN: người vừa bị HẠ quyền hoặc bị khoá tài khoản VẪN GHI ĐƯỢC như cũ,
+       cho tới khi có ai đó mở máy quản trị lên lưu.
+   NAY: đọc tab đệm, lấy bản MỚI NHẤT của hồ sơ người này và của bảng vai trò, ghép đè lên khối
+   gốc rồi mới xét quyền. Chỉ ghép ĐÚNG 2 kho này (không đụng kho khác) nên vẫn nhẹ.
+   Nhận: bảng tính · khối dữ liệu gốc · mã nhân viên. Trả: khối đã ghép (bản sao, không sửa gốc). */
+function _khoXetQuyen(ss, data, maNV){
+  try {
+    var sh = ss.getSheetByName("GhiMoi");
+    if (!sh || sh.getLastRow() < 2) return data;
+    var v = sh.getRange(2, 1, sh.getLastRow() - 1, 4).getValues();
+    var hoSoMoi = null, vaiTroMoi = {};
+    for (var i = 0; i < v.length; i++){                       // quét xuôi: dòng SAU đè dòng trước
+      var bang = String(v[i][1] || ""), id = String(v[i][2] || "");
+      if (bang !== "nhanVien" && bang !== "vaiTro") continue;
+      var o = null; try { o = JSON.parse(v[i][3] || "null"); } catch (eP) { continue; }
+      if (!o) continue;
+      if (bang === "nhanVien" && id === String(maNV)) hoSoMoi = o;
+      if (bang === "vaiTro") vaiTroMoi[id] = o;
+    }
+    if (!hoSoMoi && !Object.keys(vaiTroMoi).length) return data;   // không có gì mới → dùng nguyên khối gốc
+    var kq = { nhanVien: (data.nhanVien || []).slice(), vaiTro: (data.vaiTro || []).slice() };
+    if (hoSoMoi){
+      var thay = false;
+      for (var j = 0; j < kq.nhanVien.length; j++){
+        if (String(kq.nhanVien[j].id) === String(maNV)) { kq.nhanVien[j] = hoSoMoi; thay = true; break; }
+      }
+      if (!thay) kq.nhanVien.push(hoSoMoi);
+    }
+    Object.keys(vaiTroMoi).forEach(function(k){
+      var d = false;
+      for (var m = 0; m < kq.vaiTro.length; m++){
+        if (String(kq.vaiTro[m].id) === k || String(kq.vaiTro[m].ma) === String(vaiTroMoi[k].ma)) { kq.vaiTro[m] = vaiTroMoi[k]; d = true; break; }
+      }
+      if (!d) kq.vaiTro.push(vaiTroMoi[k]);
+    });
+    return kq;
+  } catch (e) { return data; }   // hỏng đường nào cũng quay về khối gốc, không chặn người dùng
+}
 /* Cấp bậc THẬT của người gửi — tra từ khối dữ liệu gốc, KHÔNG lấy theo lời người gửi khai.
    Chép đúng cách app tính: vai trò tự đặt thì lấy capBac của vai trò đó; vai trò gốc thì
    chính nó; không rõ thì coi là nhân viên (an toàn nhất). */
@@ -3180,8 +3285,21 @@ function _gopTabChung(ss, data, mocKeo){
     try { theoKho[bang].push({ id: id, o: JSON.parse(v[i][3]) }); } catch (e) {}
   }
   for (var kho in theoKho){
+    /* [THÊM MỚI 07/09/2026 — V4 đợt 107] Kho kiểu TỪ ĐIỂN: gán thẳng theo khoá, không xếp danh sách.
+       Bản ghi đi trên đường ống chung có dạng { id: khoá, _td: 1, v: giá trị } (app bọc lại như vậy
+       để mọi kho dùng chung một đường). Bản mang dấu _daXoa thì xoá hẳn khoá đó. */
+    if (KHO_TU_DIEN.indexOf(kho) >= 0){
+      var td = (data[kho] && typeof data[kho] === "object" && !(data[kho] instanceof Array)) ? data[kho] : {};
+      theoKho[kho].forEach(function(r){
+        if (!r || !r.o) return;
+        if (r.o._daXoa) { delete td[r.id]; }
+        else { td[r.id] = (r.o._td ? r.o.v : r.o); }
+      });
+      data[kho] = td;
+      continue;
+    }
     var m = {}, thuTu = [];
-    (data[kho] || []).forEach(function(x){ if (x && x.id && !m[x.id]) { m[x.id] = x; thuTu.push(x.id); } });
+    ((data[kho] instanceof Array) ? data[kho] : []).forEach(function(x){ if (x && x.id && !m[x.id]) { m[x.id] = x; thuTu.push(x.id); } });
     theoKho[kho].forEach(function(r){ if (!m[r.id]) thuTu.push(r.id); m[r.id] = r.o; });   // dòng sau THẮNG
     /* [THÊM MỚI 06/09/2026 — V4 đợt 78b] Bản ghi mang dấu _daXoa nghĩa là người dùng đã XOÁ nó
        trên máy họ. Bỏ hẳn khỏi kho, nếu không thì xoá xong máy khác kéo về vẫn thấy nó nằm đó. */
@@ -3248,15 +3366,98 @@ function doGet(e){
        NAY app hỏi cửa này trước. Máy chủ chỉ trả VÀI CHỤC BYTE: mốc lần cuối kho được lưu +
        số dòng của các tab đệm. App so với lần hỏi trước: GIỐNG thì thôi, KHÁC mới tải kho về.
        Trả lời nhẹ nên gọi bao nhiêu lần cũng không tốn gì đáng kể. */
+    /* [THÊM MỚI 07/09/2026 — V4 đợt 106 · r16] CỬA "LẤY PHẦN MỚI".
+       VÌ SAO CÓ: hễ một người chấm công là kho đổi, mà trước đây mọi máy khác phải tải LẠI CẢ
+       KHO (công ty 200 người, dữ liệu 1 năm ≈ 8 MB mỗi lượt). Giờ cao điểm sáng ai cũng chấm →
+       tải liên tục, máy chậm và quá hạn mức Google.
+       NAY máy gửi kèm mốc nó đang giữ; máy chủ chỉ trả NHỮNG DÒNG ghi SAU mốc đó.
+       AN TOÀN: nếu KHỐI DỮ LIỆU GỐC đã bị máy quản trị lưu đè (mốc HCNS_LUU_LUC mới hơn mốc
+       máy đang giữ) thì KHÔNG trả phần lẻ — báo "phải tải đủ" để app tải nguyên khối như cũ,
+       tránh máy ghép nhầm lên nền dữ liệu đã lỗi thời. */
+    if (p.api === "layMoi"){
+      if (!_ok(p.token, p.session)) return _json({ status: "error", error: "Chưa đăng nhập hoặc phiên đã hết hạn." });
+      var ssLM = SpreadsheetApp.getActiveSpreadsheet();
+      var tuMoc = Number(p.tuMoc || 0);
+      var luuLuc = 0;
+      try { luuLuc = Number(PropertiesService.getDocumentProperties().getProperty("HCNS_LUU_LUC") || 0); } catch (eLM) {}
+      // Khối gốc mới hơn bản máy đang giữ ⇒ không ghép lẻ được, bảo app tải đủ.
+      if (!tuMoc || (luuLuc && luuLuc > tuMoc)) return _json({ status: "success", canTaiDu: true, codeVersion: CODE_VERSION });
+
+      // Đọc các dòng NGƯỜI KHÁC vừa gửi lên sau mốc, từ 4 tab đệm.
+      var sauMoc = function (o){ var t = (o instanceof Date) ? o.getTime() : Number(new Date(o)); return t && t > tuMoc; };
+      var dsGhi = [], viecMoi = [], tbMoi = [], congMoi = [];
+      try {
+        var shG = ssLM.getSheetByName("GhiMoi");
+        if (shG && shG.getLastRow() > 1){
+          var vG = shG.getRange(2, 1, shG.getLastRow() - 1, 4).getValues();
+          for (var i = 0; i < vG.length; i++){
+            if (!sauMoc(vG[i][0])) continue;
+            var bangG = String(vG[i][1] || ""), idG = String(vG[i][2] || "");
+            if (!bangG || !idG || !LUAT_GHI[bangG]) continue;
+            try { dsGhi.push({ bang: bangG, id: idG, o: JSON.parse(vG[i][3]) }); } catch (eJ) {}
+          }
+        }
+      } catch (e1) {}
+      var docTabGiao = function (ten, ra){
+        try {
+          var sh = ssLM.getSheetByName(ten);
+          if (!sh || sh.getLastRow() < 2) return;
+          var v = sh.getRange(2, 1, sh.getLastRow() - 1, 3).getValues();
+          for (var j = 0; j < v.length; j++){
+            if (!sauMoc(v[j][0])) continue;
+            var id = String(v[j][1] || ""); if (!id) continue;
+            try { ra.push({ id: id, o: JSON.parse(v[j][2]) }); } catch (e2) {}
+          }
+        } catch (e3) {}
+      };
+      docTabGiao("ViecMoi", viecMoi);
+      docTabGiao("ThongBaoMoi", tbMoi);
+      // Chấm công: đọc tab BangCong, chỉ dòng ghi sau mốc.
+      // CỘT 1 của tab này VỐN ĐÃ là thời gian ghi (xem lệnh chamCong: appendRow([new Date(), …]))
+      // nên không phải thêm cột mới — tab cũ của công ty dùng được ngay, không cần sửa gì.
+      try {
+        var shC = ssLM.getSheetByName("BangCong");
+        if (shC && shC.getLastRow() > 1){
+          var vC = shC.getRange(2, 1, shC.getLastRow() - 1, 14).getValues();
+          for (var k = 0; k < vC.length; k++){
+            if (!sauMoc(vC[k][0])) continue;
+            if (!vC[k][1] || !vC[k][2]) continue;
+            var moiC = { maNV: String(vC[k][1]), ngay: _ngayChuoi(vC[k][2]), caLam: vC[k][3] || "",
+                         gioVao: vC[k][4] || "", gioRa: vC[k][5] || "", gioOT: vC[k][6],
+                         hinhThuc: vC[k][7] || "", diaChi: vC[k][8] || "", ghiChu: vC[k][9] || "",
+                         trangThai: vC[k][10] || "" };
+            try { if (vC[k][13]) { var ctC = JSON.parse(vC[k][13]); for (var tC in ctC){ if (tC === "anhCheckIn" || tC === "anhCheckOut") continue; moiC[tC] = ctC[tC]; } moiC.maNV = String(vC[k][1]); moiC.ngay = _ngayChuoi(vC[k][2]); } } catch (e4) {}
+            congMoi.push(moiC);
+          }
+        }
+      } catch (e5) {}
+
+      return _json({ status: "success", codeVersion: CODE_VERSION, canTaiDu: false,
+        mocMoi: Date.now(), dsGhi: dsGhi, viecMoi: viecMoi, thongBaoMoi: tbMoi, bangCongMoi: congMoi });
+    }
+
     if (p.api === "kiemMoc"){
       if (!_ok(p.token, p.session)) return _json({ status: "error", error: "Chưa đăng nhập hoặc phiên đã hết hạn." });
+      /* [THÊM MỚI 07/09/2026 — V4 đợt 107] BỘ NHỚ ĐỆM CHO CỬA HỎI — bớt tải cho máy chủ.
+         VÌ SAO: mỗi máy hỏi câu này 30 giây một lần, và mỗi lần máy chủ phải mở bảng tính rồi
+         đếm số dòng của 5 tab — 5 lượt gọi dịch vụ Google. Công ty 500 người thì thành khoảng
+         17 lượt hỏi MỖI GIÂY, chiếm gần một nửa số lượt chạy cùng lúc mà Google cho phép (30).
+         NAY: câu trả lời được nhớ tạm 15 giây. Trong 15 giây đó, dù 500 máy cùng hỏi thì máy
+         chủ chỉ thực sự đếm MỘT lần, còn lại trả ngay từ bộ nhớ.
+         CÓ CHẬM TIN KHÔNG? Chậm nhiều nhất 15 giây so với trước — trong khi nhịp hỏi vốn đã là
+         30 giây, nên người dùng không thấy khác. Đổi lại máy chủ nhẹ đi nhiều lần. */
+      try {
+        var _demKM = CacheService.getScriptCache().get("dauvet_v1");
+        if (_demKM) return _json({ status: "success", codeVersion: CODE_VERSION, dauVet: _demKM, tuDem: true });
+      } catch (eDem) {}
       var ssKM = SpreadsheetApp.getActiveSpreadsheet();
       var mocKM = 0;
       try { mocKM = Number(PropertiesService.getDocumentProperties().getProperty("HCNS_LUU_LUC") || 0); } catch (eKM) {}
       // Đếm số dòng các tab đệm — người khác vừa gửi gì lên là con số này đổi.
       var demKM = function (ten){ try { var sh = ssKM.getSheetByName(ten); return sh ? sh.getLastRow() : 0; } catch (e) { return 0; } };
-      return _json({ status: "success", codeVersion: CODE_VERSION,
-        dauVet: [mocKM, demKM("GhiMoi"), demKM("ViecMoi"), demKM("ThongBaoMoi"), demKM("BangCong"), demKM("XinKey")].join("-") });
+      var _dvKM = [mocKM, demKM("GhiMoi"), demKM("ViecMoi"), demKM("ThongBaoMoi"), demKM("BangCong"), demKM("XinKey")].join("-");
+      try { CacheService.getScriptCache().put("dauvet_v1", _dvKM, 15); } catch (eP) {}   // [đợt 107] nhớ tạm 15 giây
+      return _json({ status: "success", codeVersion: CODE_VERSION, dauVet: _dvKM });
     }
     /* [THÊM MỚI 04/09/2026 — V3] Trả MÃ CÔNG TY cho app dùng khi hỏi bản quyền. */
     if (p.api === "maCongTy"){
@@ -3406,7 +3607,8 @@ function doPost(e){
       var data = {};
       try { var sBlob = _docBlob(ss); data = sBlob ? JSON.parse(sBlob) : {}; } catch (eB) { data = {}; }
       // Máy quản trị (có mã bí mật) coi như cấp cao nhất; còn lại tra cấp bậc thật từ kho.
-      var cap = (String(token) === SHARED_SECRET) ? "it_admin" : _capCuaNguoi(data, maNV).cap;
+      // [SỬA đợt 107] tra trên khối ĐÃ GHÉP hồ sơ/vai trò vừa đổi — xem chú thích ở _khoXetQuyen.
+      var cap = (String(token) === SHARED_SECRET) ? "it_admin" : _capCuaNguoi(_khoXetQuyen(ss, data, maNV), maNV).cap;
       if (!cap) return _json({ status: "error", error: "Không tìm thấy hồ sơ của bạn trong kho dữ liệu." });
       var sh = ss.getSheetByName("GhiMoi");
       if (!sh){ sh = ss.insertSheet("GhiMoi"); sh.appendRow(["Lúc ghi","Kho dữ liệu","ID","Nội dung (JSON)","Người gửi"]); }
@@ -4279,16 +4481,34 @@ function writeSheet(ss, sheetName, headers, rowsData){
     }
 
      
-    function soNgayLeTrongThang(st, thang) {
+     
+    function dsNgayLeTrongThang(st, thang) {
       try {
-        if (!thang) return 0;
+        if (!thang) return [];
         const ds = st && Array.isArray(st.dsNgayLe) ? st.dsNgayLe : null;
-        if (ds && ds.length) return ds.filter(x => String((x || {}).ngay || "").slice(0, 7) === thang).length;
-        return String((st || {}).ngayLeTet || "").split(/[,;\n]+/).map(x => x.trim()).filter(Boolean).filter(x => {
-          const m = x.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);          
-          return m && (m[3] + "-" + m[2].padStart(2, "0")) === thang;
-        }).length;
+        if (ds && ds.length) {
+          return ds.filter(x => String((x || {}).ngay || "").slice(0, 7) === thang)
+                   .map(x => Number(String(x.ngay).slice(8, 10))).filter(n => n >= 1 && n <= 31);
+        }
+        return String((st || {}).ngayLeTet || "").split(/[,;\n]+/).map(x => x.trim()).filter(Boolean)
+          .map(x => x.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/))          
+          .filter(m => m && (m[3] + "-" + m[2].padStart(2, "0")) === thang)
+          .map(m => Number(m[1])).filter(n => n >= 1 && n <= 31);
+      } catch (e) { return []; }
+    }
+     
+    function congPhepThang(dsDon, maNV, thang) {
+      try {
+        return (dsDon || []).filter(d => d && d.maNV === maNV && d.trangThai === "da_duyet"
+            && /phep/i.test(d.loaiDon || "")                      
+            && d.hinhThuc !== "gio"                               
+            && String(d.tuNgay || "").slice(0, 7) === String(thang || ""))
+          .reduce((tong, d) => tong + (Number(d.soNgay) || 0), 0);
       } catch (e) { return 0; }
+    }
+     
+    function soNgayLeTrongThang(st, thang) {
+      return dsNgayLeTrongThang(st, thang).length;
     }
 
     const ChamCongCore = {
@@ -4337,14 +4557,16 @@ function writeSheet(ss, sheetName, headers, rowsData){
         const gio = this.gioCongDoan(row.batDau, row.ketThuc, truAn);
         const gioChuan = this.gioChuanCa(st, row.ca);
         const tangCa = Number(row.tangCa) || 0;                   
-        
-        const tongCong = Math.round(((gio + tangCa) / gioChuan) * heSo * 100) / 100;
+         
+        const _gopOtVaoCong107 = (st.otKhoanGopVaoCong === true);
+        const tongCong = Math.round((((gio + (_gopOtVaoCong107 ? tangCa : 0))) / gioChuan) * heSo * 100) / 100;
         
         const slKhoan = Math.round(slGio * gio * 100) / 100;
         const slThucTe = Number(row.sanLuong) || 0;
         
         const phanTramDat = slKhoan > 0 ? Math.round(slThucTe / slKhoan * 1000) / 10 : 0;
-        return { gio, heSo, gioChuan, tongCong, slKhoan, slThucTe, phanTramDat };
+        
+        return { gio, heSo, gioChuan, tongCong, slKhoan, slThucTe, phanTramDat, tangCa, daGopOtVaoCong: _gopOtVaoCong107 };
       },
 
       phut(gio) {
@@ -4459,8 +4681,13 @@ function writeSheet(ss, sheetName, headers, rowsData){
           };
         }
         const qt = st.quyTacCong || {};
-        const ca = this.timCa(banGhi, st);
+        let ca = this.timCa(banGhi, st);   
         if (!ca) return { gio: 8, cong: 1, otGio: Number(banGhi.gioOT) || 0, treSomPhut: 0, vuotDungSai: false, tenCa: "" };
+         
+        if (!(Number(ca.gioLam) > 0)) {
+          try { console.warn("[Auto HCNS] Ca \"" + (ca.ten || ca.ma) + "\" khai số giờ làm = " + ca.gioLam + " — tạm dùng 8 giờ. Hãy sửa ở Cài đặt ▸ mục 4."); } catch (e) {}
+          ca = Object.assign({}, ca, { gioLam: 8 });
+        }
         const vaoCa = this.phut(ca.vao), raCa0 = this.phut(ca.ra);
         const raCa = ca.quaDem ? raCa0 + 1440 : raCa0;                 
          
@@ -4500,18 +4727,30 @@ function writeSheet(ss, sheetName, headers, rowsData){
           
           return { gio: ca.gioLam, cong: ca.soCong, otGio: Number(banGhi.gioOT) || 0, treSomPhut: 0, vuotDungSai: false, tenCa: ca.ma };
         }
-        if (ca.quaDem && ra < vao) ra += 1440;                         
-        const tre = Math.max(0, vao - vaoCa);                          
-        const som = Math.max(0, raCa - ra);                            
-        const treSom = tre + som;                                      
+         
+        const _quenRa107 = (banGhi.hasCheckedOut === false);
+        if (_quenRa107) ra = raCa;                                      
+        else if (ca.quaDem && ra < vao) ra += 1440;                     
+        let tre = Math.max(0, vao - vaoCa);                             
+        let som = Math.max(0, raCa - ra);                               
+        const treSom = tre + som;                                       
         const vuot = treSom > (Number(qt.dungSaiPhut) || 15);
-        const otPhut = Math.max(0, ra - raCa);                         
+        const otPhut = _quenRa107 ? 0 : Math.max(0, ra - raCa);         
+         
+        let _nghiTu107 = this.phut(ca.nghiTu), _nghiDen107 = this.phut(ca.nghiDen);
+        const _coNghi107 = _nghiTu107 != null && _nghiDen107 != null && _nghiDen107 !== _nghiTu107;
+        if (_coNghi107 && ca.quaDem && _nghiDen107 <= vaoCa) { _nghiTu107 += 1440; _nghiDen107 += 1440; }
+        
+        const _giaoNghi107 = (a, b) => _coNghi107 ? Math.max(0, Math.min(b, _nghiDen107) - Math.max(a, _nghiTu107)) : 0;
+        const _treThuc = Math.max(0, tre - _giaoNghi107(vaoCa, vao));   
+        const _somThuc = Math.max(0, som - _giaoNghi107(ra, raCa));     
+        const _vangThuc = _treThuc + _somThuc;                          
         
         let gio = ca.gioLam;
-        if (vuot && (qt.xuLyVuotDungSai || "tru_gio") === "tru_gio") gio = Math.max(0, ca.gioLam - treSom / 60);
+        if (vuot && (qt.xuLyVuotDungSai || "tru_gio") === "tru_gio") gio = Math.max(0, ca.gioLam - _vangThuc / 60);
         if (vuot && qt.xuLyVuotDungSai === "nua_cong") gio = ca.gioLam / 2;
         const cong = Math.round((gio / ca.gioLam) * ca.soCong * 100) / 100;
-        return { gio: Math.round(gio * 100) / 100, cong, otGio: Math.round(otPhut / 60 * 100) / 100, treSomPhut: treSom, vuotDungSai: vuot, tenCa: ca.ma };
+        return { gio: Math.round(gio * 100) / 100, cong, otGio: Math.round(otPhut / 60 * 100) / 100, treSomPhut: treSom, vuotDungSai: vuot, tenCa: ca.ma, quenRaCa: _quenRa107 };
       },
 
       ghiNhanCong(data, banGhiMoi) {
@@ -5337,7 +5576,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.87" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.89" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -5566,7 +5805,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.87"
+                version: "4.0.89"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -5890,7 +6129,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
       
       const pHT = ptGiaiDoanTheoNhom(cv, settings);
       const pDH = tinhDiemDungHan(cv);
-      const pCL = (Number(cv.diemDanhGia) || 0) > 0 ? Number(cv.diemDanhGia) : pHT;
+       
+      const pCL = Math.max(0, Math.min(100, (Number(cv.diemDanhGia) || 0) > 0 ? Number(cv.diemDanhGia) : pHT));
       return Math.round((pHT * wHT + pDH * wDH + pCL * wCL) / tong);
     }
 
@@ -6036,17 +6276,22 @@ function writeSheet(ss, sheetName, headers, rowsData){
       const thieuDuLieuCong = (congDiLam < congChuan * 0.5);
 
        
-      const congPhep = (kho.donTu || [])
-        .filter(d => d.maNV === nv.id && d.trangThai === "da_duyet" && /phep/i.test(d.loaiDon || "")
-          && d.hinhThuc !== "gio"                                  
-          && String(d.tuNgay || "").slice(0, 7) === kyLuong)       
-        .reduce((tong, d) => tong + (Number(d.soNgay) || 0), 0);
+
+      
+      
+      const congPhep = congPhepThang(kho.donTu, nv.id, kyLuong);
 
       
 
       
 
-      const congLe = soNgayLeTrongThang(st, kyLuong);
+       
+      const _dsLe107 = dsNgayLeTrongThang(st, kyLuong);
+      
+      const _oNgay107 = (_rowCong && _rowCong.oNgay) ? _rowCong.oNgay : {};
+      const _leDaDiLam107 = (st.congLeTruNgayDaLam === false) ? 0
+        : _dsLe107.filter(n => _oNgay107[n] || _oNgay107[String(n)]).length;
+      const congLe = Math.max(0, _dsLe107.length - _leDaDiLam107);
 
       
       
@@ -6190,16 +6435,23 @@ function writeSheet(ss, sheetName, headers, rowsData){
       const tongPhuCapThem = dsPhuCapThem.reduce((s, x) => s + (Number(x.tien) || 0), 0);
       const tongPhuCap = pcTrachNhiem + pcChuyenCan + pcXangXe + chenhLechBHXH + hoTroAnCa + hoTroHetViec + congKhac + phuCapKhac + tongPhuCapThem;
 
-      const nvTasks = (kho.congViec || []).filter(t => t.nguoiNhan === nv.id);
+       
+      const _thangCuaViec107 = t => String(t.ngayHoanThanh || t.ngayNghiemThu || t.hanChot || t.ngayTao || "").slice(0, 7);
+      const nvTasks = (kho.congViec || []).filter(t => t.nguoiNhan === nv.id
+        && (st.kpiCongDon === true || _thangCuaViec107(t) === kyLuong));
       const completedCount = nvTasks.filter(t => t.trangThai === "hoan_thanh" || t.tienDo >= 100).length;
 
-      const kpiRate = nvTasks.length > 0 ? (tinhDiemKpiNguoi(nv.id, kho, st) / 100) : 0.8;
+       
+      const _khoKpi107 = Object.assign({}, kho, { congViec: nvTasks });
+      const kpiRate = nvTasks.length > 0 ? (tinhDiemKpiNguoi(nv.id, _khoKpi107, st) / 100) : 0;
 
       const batThuongKpi = (st.batThuongKpi !== false);                 
       const thuongKpiRate = (Number(st.thuongKpiRate) || 15) / 100;     
 
       
-      const tyLeThuongKpi = nvTasks.length > 0 ? (tyLeThuongKpiTheoBac(kpiRate * 100, st) / 100) : 1.0;
+       
+      const tyLeThuongKpi = nvTasks.length > 0 ? (tyLeThuongKpiTheoBac(kpiRate * 100, st) / 100)
+        : (st.kpiKhongViecVanThuong === true ? 1.0 : 0);
 
       
       const _heSoCongKpi = (st.thuongKpiTheoCong === false) ? 1 : tyLeCong;
@@ -6228,7 +6480,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
       const _rateBhxhBhyt = Math.max(0, bhxhRate - bhtnRate);      
 
       const _ngayCoMatThieuSL = ((st.quyTacCong || {}).xuLyThieuSanLuong === "khong_cong") ? (Number(_rowCong.ngayThieuSL) || 0) : 0;
-      const _ngayNghiKhongLuong = Math.max(0, congChuan - congThucTe - _ngayCoMatThieuSL);
+       
+      const _ngayCoMat107 = Number(_rowCong.soNgayCo) || 0;          
+      const _ngayNghiKhongLuong = Math.max(0, congChuan - (_ngayCoMat107 + congPhep + congLe) - _ngayCoMatThieuSL);
       const _nguongNghiMienBH = Number(st.nguongNgayNghiMienBH) || 14;
       const _mienBHNghiDai = (st.mienBHXHNghiDai !== false) && !chuaCoCham && (_ngayNghiKhongLuong >= _nguongNghiMienBH);
       const bhxh = (_khongTrichBH || _mienBHNghiDai) ? 0 : Math.round(
@@ -6357,7 +6611,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
       } else {
 
         
-        thuNhapTinhThue = Math.max(0, tongLuong - phuCapMienThue - mienThueTuDong - tuyBienMienThue - thuongMienThue - bhxh - congDoan - giamTruBanThan - giamTruGiaCanh);
+         
+        const _doanPhiTruThue107 = (st.doanPhiGiamTruThue === true) ? congDoan : 0;
+        thuNhapTinhThue = Math.max(0, tongLuong - phuCapMienThue - mienThueTuDong - tuyBienMienThue - thuongMienThue - bhxh - _doanPhiTruThue107 - giamTruBanThan - giamTruGiaCanh);
         
         thueTNCN = (st.dungTNCN === false) ? 0 : Math.round(tinhThueTNCN(thuNhapTinhThue, st));
       }
@@ -6431,6 +6687,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
         pcTrachNhiem, pcChuyenCan, pcXangXe, chenhLechBHXH, hoTroAnCa, hoTroHetViec, congKhac, phuCapKhac, dsPhuCapThem, tongPhuCapThem, tongPhuCap, tyLeCong,
         nvTasks, completedCount, kpiRate, tyLeThuongKpi, thuongKpi, thuongKaizen,
         bhxhRate, bhxh, congDoanRate, congDoan, luongCanCuBH, tranBHXH,   
+
+        luongDongBHGoc: _luongDongGoc, tranBHTN, bhtnRate,
         giamTruBanThan, soNguoiPhuThuoc, giamTruGiaCanh, phuCapMienThue, thuNhapTinhThue, thueTNCN,
         phatViPham, ungLuong, khacKhauTru, khauTruAnCa,
         dsTuyBien, tuyBienCong, tuyBienTru, loiTuyBien,   
@@ -6876,6 +7134,63 @@ function writeSheet(ss, sheetName, headers, rowsData){
         } catch (e) { return true; }                                    
       },
 
+      async layPhanMoi106() {
+        const s = getCompanySettings();
+        if (!s.gasUrl) return false;
+        if (this._conNoGui && this._conNoGui()) return false;         
+        const moc = Number(localStorage.getItem("hcns4_ban_kho_luc") || 0);
+        if (!moc) return false;                                       
+        let j = null;
+        try {
+          const ctrl = new AbortController();
+          const hetGio = setTimeout(() => ctrl.abort(), 15000);
+          const r = await fetch(s.gasUrl + "?api=layMoi&tuMoc=" + encodeURIComponent(moc) + this._authQS(), { signal: ctrl.signal });
+          clearTimeout(hetGio);
+          j = await r.json();
+        } catch (e) { return false; }
+        if (!j || j.status !== "success" || j.canTaiDu) return false; 
+        const data = this.getData();
+        let doi = 0;
+         
+        const gopTheoMa = (kho, ds) => {
+          if (!Array.isArray(ds) || !ds.length) return;
+           
+          if ((DataService.KHO_TU_DIEN || []).indexOf(kho) >= 0) {
+            const td = (data[kho] && typeof data[kho] === "object" && !Array.isArray(data[kho])) ? data[kho] : {};
+            ds.forEach(r => {
+              if (!r || !r.id || !r.o) return;
+              if (r.o._daXoa) { delete td[r.id]; } else { td[r.id] = (r.o._td ? r.o.v : r.o); }
+              doi++;
+            });
+            data[kho] = td;
+            return;
+          }
+          const m = {}, thuTu = [];
+          (Array.isArray(data[kho]) ? data[kho] : []).forEach(x => { if (x && x.id && !m[x.id]) { m[x.id] = x; thuTu.push(x.id); } });
+          ds.forEach(r => { if (!r || !r.id) return; if (!m[r.id]) thuTu.push(r.id); m[r.id] = r.o; doi++; });
+          data[kho] = thuTu.map(k => m[k]).filter(x => x && !x._daXoa);   
+        };
+        (j.dsGhi || []).forEach(x => { if (x && x.bang) { (this._deltaTam = this._deltaTam || {}); (this._deltaTam[x.bang] = this._deltaTam[x.bang] || []).push(x); } });
+        Object.keys(this._deltaTam || {}).forEach(bang => { gopTheoMa(bang, this._deltaTam[bang]); });
+        this._deltaTam = null;
+        gopTheoMa("congViec", j.viecMoi || []);
+        gopTheoMa("thongBao", j.thongBaoMoi || []);
+         
+        (j.bangCongMoi || []).forEach(b => {
+          if (!b || !b.maNV || !b.ngay) return;
+          data.bangCong = data.bangCong || [];
+          const i = data.bangCong.findIndex(x => x.maNV === b.maNV && x.ngay === b.ngay);
+          if (i < 0) { data.bangCong.unshift(b); doi++; return; }
+          const cu = data.bangCong[i];
+          data.bangCong[i] = Object.assign({}, cu, b,
+            { anhCheckIn: cu.anhCheckIn || b.anhCheckIn, anhCheckOut: cu.anhCheckOut || b.anhCheckOut });
+          doi++;
+        });
+        if (doi) { this.saveData(data, { khongDayLen: true }); }        
+        if (j.mocMoi) { try { localStorage.setItem("hcns4_ban_kho_luc", String(j.mocMoi)); } catch (e) {} }
+        return true;
+      },
+
       async keoTuServer() {
          
         if (this._conNoGui()) {
@@ -7302,16 +7617,32 @@ function writeSheet(ss, sheetName, headers, rowsData){
         } catch (e) {}
       },
 
+       
+      KHO_TU_DIEN: ["bangCongChot", "bangLuongChot", "doanhSoThang", "khauTruThang",
+        "luongChuyenThang", "maTranQuyen", "dieuChinhCong"],
+       
       KHO_GUI_DUOC: ["donTu", "gopY", "kaizen", "yeuCauKhac", "ordersVPP", "bangCong",
         "congViecSanLuong", "thongBao", "congViec", "danhMucCongViec", "kpiData",
         "phieuKiemTra", "bienBanHop", "deXuatNhanSu", "dieuChinhCong", "tinTuc",
-        "thuongPhatThang", "taiSan"],
+        "thuongPhatThang", "taiSan",
+        
+        "quyTrinhThongNhat", "nhanVien", "bangCongChot", "dinhMucSanXuat", "anhXaMaNV",
+        "nhatKyTaiKhoan", "yeuCauCapKey", "tinTucNhom", "gopYChuDe",
+        "danhMucVPP", "khoVPP", "baoGiaVPP", "poVPP", "nhatKyKho",
+        "bangLuongChot", "doanhSoThang", "khauTruThang", "luongChuyenThang", "baoHiem", "thueTNCN",
+        "vaiTro", "maTranQuyen", "nhatKyQuyen"],
 
       chupAnhKho(data) {
         const anh = {};
         (this.KHO_GUI_DUOC || []).forEach(kho => {
           const m = {};
-          (data && data[kho] || []).forEach(x => { if (x && x.id) { try { m[x.id] = JSON.stringify(x); } catch (e) {} } });
+          const v = data && data[kho];
+          
+          if (Array.isArray(v)) {
+            v.forEach(x => { if (x && x.id) { try { m[x.id] = JSON.stringify(x); } catch (e) {} } });
+          } else if (v && typeof v === "object") {
+            Object.keys(v).forEach(k => { try { m[k] = JSON.stringify(v[k]); } catch (e) {} });
+          }
           anh[kho] = m;
         });
         this._anhKho = anh;
@@ -7328,10 +7659,16 @@ function writeSheet(ss, sheetName, headers, rowsData){
           (this.KHO_GUI_DUOC || []).forEach(kho => {
             const cu = this._anhKho[kho] || {};
             const nay = {};
-            (data && data[kho] || []).forEach(x => {
+             
+            const _laTuDien107 = (this.KHO_TU_DIEN || []).indexOf(kho) >= 0;
+            const _dsGui107 = _laTuDien107
+              ? Object.keys((data && data[kho]) || {}).map(k => ({ id: k, _td: 1, v: data[kho][k] }))
+              : ((data && data[kho]) || []);
+            (Array.isArray(_dsGui107) ? _dsGui107 : []).forEach(x => {
               if (!x || !x.id) return;
               let js = ""; try { js = JSON.stringify(x); } catch (e) { return; }
-              nay[x.id] = js;
+              
+              nay[x.id] = x._td ? (function () { try { return JSON.stringify(x.v); } catch (e) { return js; } })() : js;
                
               if (js.length > 45000) {
                 if (!this._daBaoToBanGhi) {
@@ -7340,7 +7677,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 }
                 return;                                                       
               }
-              if (cu[x.id] !== js) guiDi.push({ bang: kho, banGhi: x });     
+              if (cu[x.id] !== nay[x.id]) guiDi.push({ bang: kho, banGhi: x });     
             });
             Object.keys(cu).forEach(id => {
 
@@ -7633,7 +7970,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
             else { this._demNhipKeo = 0; }
              
             if (!(await DataService.coGiMoiKhong())) return;
-            await DataService.keoTuServer();                  
+             
+            if (!(await DataService.layPhanMoi106())) await DataService.keoTuServer();
              
             try { this._veLaiSauKhiKeo(); } catch (eV) {}
             try { this.capNhatHieuChung(); } catch (eH) {}
@@ -19350,7 +19688,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
               const cChuan = Number(nv.congChuan) || Number(settings.congChuan) || 26;
               
               const congMay = th.soNgayCo > 0 ? th.tongCong : 0;
-              const congPhep = approvedLeaves.filter(l => l.maNV === nv.id).reduce((acc, l) => acc + (l.soNgay || 0), 0);
+              const congPhep = congPhepThang(data.donTu, nv.id, thangCC);   
               const gioOT = th.otGio;
               const tongCong = Math.round((congMay + congPhep) * 100) / 100;
               const thieu = this._soNgayThieuCham(nv.id, thangCC, data);   
@@ -19565,8 +19903,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
                         // [SỬA 31/08/2026] Chủ app chốt: ngày trống = 0 công (bỏ 21 cứng); KHÔNG cap ở công chuẩn
                         //   (bỏ Math.min — cho vượt). Đồng bộ với Bảng 6 + Đối chiếu + Bảng lương.
                         const congThucTe = th.soNgayCo > 0 ? th.tongCong : 0;
-                        const empLeaves = approvedLeaves.filter(l => l.maNV === nv.id);
-                        const congPhep = empLeaves.reduce((acc, l) => acc + (l.soNgay || 0), 0);
+                        const empLeaves = approvedLeaves.filter(l => l.maNV === nv.id);   // chỉ để LIỆT KÊ đơn, không dùng tính công
+                        const congPhep = congPhepThang(data.donTu, nv.id, thangCC);        // [SỬA đợt 107] dùng chung cửa với phiếu lương
                         const gioOT = th.otGio;
                         const soKP = th.demKyHieu["KP"] || 0;                      // nghỉ không phép (ký hiệu KP)
                         const tongCong = Math.round((congThucTe + congPhep) * 100) / 100;
@@ -20278,7 +20616,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
             const r = thTab.find(x => x.maNV === nv.id) || { tongCong: 0, otGio: 0, soNgayCo: 0 };
             const cChuan = Number(nv.congChuan) || Number(settings.congChuan) || 26;
             const congMay = r.soNgayCo > 0 ? r.tongCong : 0;
-            const congPhep = leaves.filter(l => l.maNV === nv.id).reduce((a, l) => a + (l.soNgay || 0), 0);
+            const congPhep = congPhepThang(data.donTu, nv.id, thang);   // [SỬA đợt 107] dùng chung cửa với phiếu lương
             const tong = Math.round((congMay + congPhep) * 100) / 100;
             const thieu = this._soNgayThieuCham(nv.id, thang, data);
             sC += cChuan; sM += congMay; sP += congPhep; sO += r.otGio; sT += tong; sTh += thieu;
@@ -20360,7 +20698,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
             const r = th.find(x => x.maNV === nv.id) || { tongCong: 0, otGio: 0, soNgayCo: 0 };
             const cChuan = Number(nv.congChuan) || Number(settings.congChuan) || 26;
             const congMay = r.soNgayCo > 0 ? r.tongCong : 0;                     
-            const congPhep = leaves.filter(l => l.maNV === nv.id).reduce((a, l) => a + (l.soNgay || 0), 0);
+            const congPhep = congPhepThang(data.donTu, nv.id, thang);   
             const tong = Math.round((congMay + congPhep) * 100) / 100;            
             const thieu = this._soNgayThieuCham(nv.id, thang, data);
             tC += cChuan; tM += congMay; tP += congPhep; tO += r.otGio; tT += tong; tTh += thieu;
@@ -20736,7 +21074,10 @@ function writeSheet(ss, sheetName, headers, rowsData){
             const t = ChamCongCore.tinhCongSanLuongDong(r, data, st);
             const key = r.maNV + "|" + r.ngay;
             if (!gom[key]) gom[key] = { maNV: r.maNV, ngay: r.ngay, cong: 0, gio: 0, ot: 0, soDong: 0 };
-            gom[key].cong += t.tongCong; gom[key].gio += t.gio; gom[key].ot += (Number(r.tangCa) || 0); gom[key].soDong++;
+             
+            gom[key].cong += t.tongCong; gom[key].gio += t.gio;
+            gom[key].ot += t.daGopOtVaoCong ? 0 : (Number(r.tangCa) || 0);
+            gom[key].soDong++;
           });
           let n = 0, boChot = 0;
           Object.keys(gom).forEach(k => {
@@ -21159,7 +21500,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
             const r = thTong.find(x => x.maNV === nv.id) || { tongCong: 0, otGio: 0, soNgayCo: 0 };
             const cChuan = Number(nv.congChuan) || Number(settings.congChuan) || 26;
             const congThucTe = r.soNgayCo > 0 ? r.tongCong : 0;
-            const congPhep = approvedLeaves.filter(l => l.maNV === nv.id).reduce((acc, l) => acc + (l.soNgay || 0), 0);
+            const congPhep = congPhepThang(data.donTu, nv.id, thang);   
             const gioOT = r.otGio;
             const tongCong = Math.round((congThucTe + congPhep) * 100) / 100;
 
@@ -21222,8 +21563,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
                     
                     const r = thTong.find(x => x.maNV === nv.id) || { tongCong: 0, otGio: 0, soNgayCo: 0 };
                     const congThucTe = r.soNgayCo > 0 ? r.tongCong : 0;
-                    const empLeaves = approvedLeaves.filter(l => l.maNV === nv.id);
-                    const congPhep = empLeaves.reduce((acc, l) => acc + (l.soNgay || 0), 0);
+                    const empLeaves = approvedLeaves.filter(l => l.maNV === nv.id);   // chỉ để LIỆT KÊ đơn, không dùng tính công
+                    const congPhep = congPhepThang(data.donTu, nv.id, thang);          // [SỬA đợt 107] dùng chung cửa với phiếu lương
                     const gioOT = r.otGio;
                     const tongCong = Math.round((congThucTe + congPhep) * 100) / 100;
 
@@ -24571,7 +24912,14 @@ function writeSheet(ss, sheetName, headers, rowsData){
             const khai = _khaiBH[nv.id] || {};
             
             const _canCu = Number(l.luongCanCuBH) || 0;
-            const _dn = (Number(l.bhxh) === 0) ? 0 : Math.round(_canCu * _rateDN / 100);   
+             
+            const _goc107 = Number(l.luongDongBHGoc) || _canCu;              
+            const _tranTN107 = Number(l.tranBHTN) || 99200000;
+            const _tyLeTN107 = isNaN(Number(_stBH.bhtnRateDN)) ? 1 : Number(_stBH.bhtnRateDN);   
+            const _tyLeConLai107 = Math.max(0, _rateDN - _tyLeTN107);        
+            const _dn = (Number(l.bhxh) === 0) ? 0 : Math.round(
+              Math.min(Number(l.tranBHXH) || 46800000, _goc107) * _tyLeConLai107 / 100
+              + Math.min(_tranTN107, _goc107) * _tyLeTN107 / 100);           
             return {
               maNV: nv.id, hoTen: nv.hoTen,
               soBHXH: khai.soBHXH || nv.soBHXH || "—",
