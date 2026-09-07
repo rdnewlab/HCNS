@@ -4331,7 +4331,16 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
       phut(gio) {
         const m = String(gio || "").match(/^(\d{1,2}):(\d{2})/);
-        return m ? (+m[1]) * 60 + (+m[2]) : null;
+        if (m) return (+m[1]) * 60 + (+m[2]);
+         
+        const g2 = this.doiGio(gio);
+        const m2 = g2 && g2.match(/^(\d{1,2}):(\d{2})/);
+        return m2 ? (+m2[1]) * 60 + (+m2[2]) : null;
+      },
+
+      hienGio(gio) {
+        if (gio === null || gio === undefined || gio === "") return "—";
+        return this.doiGio(gio) || "—";
       },
 
       
@@ -4354,6 +4363,27 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (m) return m[3] + "-" + ("0" + m[2]).slice(-2) + "-" + ("0" + m[1]).slice(-2);
         if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
         if (/^\d{5}$/.test(s)) return this.doiNgay(+s);   
+        return "";
+      },
+
+      doiGio(v) {
+        if (v == null || v === "") return "";
+        const hai = n => ("0" + n).slice(-2);
+        if (Object.prototype.toString.call(v) === "[object Date]" && !isNaN(v.getTime()))
+          return hai(v.getUTCHours()) + ":" + hai(v.getUTCMinutes());
+        if (typeof v === "number" && v >= 0 && v < 1) {                 
+           
+          const tongGiay = Math.round(v * 24 * 60 * 60);
+          const tongPhut = Math.floor(tongGiay / 60);
+          return hai(Math.floor(tongPhut / 60) % 24) + ":" + hai(tongPhut % 60);
+        }
+        const c = String(v).trim();
+        const mISO = c.match(/T(\d{2}):(\d{2})/);                       
+        if (mISO) return mISO[1] + ":" + mISO[2];
+        const mHM = c.match(/^(\d{1,2})[:h](\d{2})/);                   
+        if (mHM) return hai(+mHM[1]) + ":" + mHM[2];
+        const mSo = c.match(/^0?\.\d+$/);                               
+        if (mSo) return this.doiGio(parseFloat(c));
         return "";
       },
 
@@ -5282,7 +5312,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.82" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.84" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -5511,7 +5541,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.82"
+                version: "4.0.84"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -12079,11 +12109,11 @@ function writeSheet(ss, sheetName, headers, rowsData){
                           `}
                         </td>
                         <td style="text-align:center" class="col-so">
-                          <span style="color:#059669; font-weight:600;">${item.gioVao || "—"}</span>
-                          ${(item.cacLan && item.cacLan.length) ? `<br><small class="badge badge-info" style="font-size:10px" title="${item.cacLan.map(q => q.vao + "–" + q.ra).join("  ·  ")}  ·  ${item.vaoLanNay || ""}–${item.hasCheckedOut ? item.gioRa : "…"}">↔ ${item.cacLan.length + 1} lần vào/ra</small>` : ""}
+                          <span style="color:#059669; font-weight:600;">${ChamCongCore.hienGio(item.gioVao)}</span>
+                          ${(item.cacLan && item.cacLan.length) ? `<br><small class="badge badge-info" style="font-size:10px" title="${item.cacLan.map(q => ChamCongCore.hienGio(q.vao) + "–" + ChamCongCore.hienGio(q.ra)).join("  ·  ")}  ·  ${ChamCongCore.hienGio(item.vaoLanNay)}–${item.hasCheckedOut ? ChamCongCore.hienGio(item.gioRa) : "…"}">↔ ${item.cacLan.length + 1} lần vào/ra</small>` : ""}
                         </td>
                         <td style="text-align:center" class="col-so">
-                          <span style="color:#dc2626; font-weight:600;">${item.hasCheckedOut ? item.gioRa : (item.gioRa && item.gioRa !== (getCompanySettings().gioRaChuan || '17:00') ? item.gioRa : '—')}</span>
+                          <span style="color:#dc2626; font-weight:600;">${item.hasCheckedOut ? ChamCongCore.hienGio(item.gioRa) : (item.gioRa && item.gioRa !== (getCompanySettings().gioRaChuan || '17:00') ? ChamCongCore.hienGio(item.gioRa) : '—')}</span>
                         </td>
                         <td class="col-so">${formatNumber(item.gioOT, 1)}h</td>
                         <td>
@@ -18672,7 +18702,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const isManager = currentUser.role === "admin" || ["manager", "hr", "director", "it_admin"].indexOf(_capCC) >= 0;
 
           
-          const TAB_CHI_QUAN_LY = ["nhan_su", "doi_chieu", "theo_phong_ban", "bao_cao_bang_cong"];
+          const TAB_CHI_QUAN_LY = ["nhan_su", "doi_chieu", "theo_phong_ban", "bao_cao_bang_cong", "tay_cham_cong"];   
           if (!isManager && TAB_CHI_QUAN_LY.indexOf(this.currentSubTab) >= 0) this.currentSubTab = "app_cham_cong";
 
           this.slThang = CoreService.thangLamViec();
@@ -18707,8 +18737,10 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 ${(() => {
                   const nLech = rawAttendanceList.filter(b => ["lech", "nv_xac_nhan", "ql_duyet"].indexOf(b.trangThaiDoiChieu) >= 0).length;
 
+                   
                   const soApp = rawAttendanceList.filter(b => b.nguon === "app").length;
-                  const soMay = rawAttendanceList.filter(b => b.nguon !== "app" && b.nguon !== "sanluong").length;
+                  const soMay = rawAttendanceList.filter(b => b.nguon === "may").length;
+                  const soTay = rawAttendanceList.filter(b => b.nguon === "tay" || b.nguon === "phong" || !b.nguon).length;
                   const badge = (n, mau) => n ? ` <span class="badge" style="background:${mau};color:#fff;font-size:9px;padding:1px 5px;">${n}</span>` : "";
                   const nhom = t => `<div style="font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:.5px;padding:9px 6px 3px;border-top:1px solid var(--border-light);margin-top:4px;">${t}</div>`;
                   const muc = (key, icon, ten, mota) => `
@@ -18734,15 +18766,19 @@ function writeSheet(ss, sheetName, headers, rowsData){
                     ${nhom("② NGUỒN VÀO (dữ liệu thô)")}
                     ${muc("may_cham_cong", "⏰", "1. Chấm công bằng máy", "Vân tay/khuôn mặt, Excel (" + soMay + ")")}
                     ${muc("app_cham_cong", "📱", "2. Chấm công bằng app", "GPS/Ảnh/Online tự chấm (" + soApp + ")")}
-                    ${muc("cham_cong_sl", "🏭", "3. Chấm công sản lượng", "Khoán công đoạn CV SL (" + (data.congViecSanLuong || []).length + ")")}
-                    ${muc("don_xin_phep", "📝", "4. Đơn đã duyệt", "Phép, OT, ra ngoài (" + approvedLeaves.length + ")")}
+                    <!-- [THÊM MỚI 07/09/2026 — V4 đợt 100] Mục riêng cho cách chấm THỨ BA: HCNS gõ tay /
+                         điểm danh nhanh / bảng công phòng ban gửi lên. Trước đây những bản ghi này bị
+                         gộp nhầm vào mục "chấm công bằng máy" nên nhìn tưởng máy vân tay ghi ra. -->
+                    ${muc("tay_cham_cong", "✍️", "3. Chấm công nhập tay", "HCNS gõ tay · bảng phòng (" + soTay + ")")}
+                    ${muc("cham_cong_sl", "🏭", "4. Chấm công sản lượng", "Khoán công đoạn CV SL (" + (data.congViecSanLuong || []).length + ")")}
+                    ${muc("don_xin_phep", "📝", "5. Đơn đã duyệt", "Phép, OT, ra ngoài (" + approvedLeaves.length + ")")}
                     ${nhom("③ XỬ LÝ")}
-                    ${muc("doi_chieu", "🔀", "5. Đối chiếu công" + badge(nLech, "#dc2626"), "Gộp nguồn → ra công")}
+                    ${muc("doi_chieu", "🔀", "6. Đối chiếu công" + badge(nLech, "#dc2626"), "Gộp nguồn → ra công")}
                     ${nhom("④ KẾT QUẢ")}
-                    ${muc("theo_phong_ban", "🏢", "6. Bảng công phòng ban", "Chi tiết theo bộ phận")}
-                    ${muc("bang_cong_thang", "📅", "7. Bảng công tháng", "Ma trận ngày × người (kiểu Excel)")}
-                    ${muc("tong_theo_nhan_vien", "📊", "8. Tổng công nhân viên", "Chốt công tính lương")}
-                    ${muc("bao_cao_bang_cong", "🖨️", "9. Báo cáo & in", "A4 + Excel Kế toán")}
+                    ${muc("theo_phong_ban", "🏢", "7. Bảng công phòng ban", "Chi tiết theo bộ phận")}
+                    ${muc("bang_cong_thang", "📅", "8. Bảng công tháng", "Ma trận ngày × người (kiểu Excel)")}
+                    ${muc("tong_theo_nhan_vien", "📊", "9. Tổng công nhân viên", "Chốt công tính lương")}
+                    ${muc("bao_cao_bang_cong", "🖨️", "10. Báo cáo & in", "A4 + Excel Kế toán")}
                   `;
                 })()}
               </div>
@@ -18850,11 +18886,12 @@ function writeSheet(ss, sheetName, headers, rowsData){
           if (this.currentSubTab === "may_cham_cong") {
 
             
-            const dsMay = rawAttendanceList.filter(b => String(b.ngay || "").slice(0, 7) === thangCC && b.nguon !== "app" && b.nguon !== "sanluong");
+             
+            const dsMay = rawAttendanceList.filter(b => String(b.ngay || "").slice(0, 7) === thangCC && b.nguon === "may");
             return `
               <div class="card">
                 <div class="card-header">
-                  <div class="card-title"><i class="fa-solid fa-fingerprint"></i> 2. Nhật Ký Chấm Công Theo Máy — Tháng ${CoreService.nhanThang(thangCC)}</div>
+                  <div class="card-title"><i class="fa-solid fa-fingerprint"></i> 1. Chấm Công Bằng Máy (vân tay / khuôn mặt) — Tháng ${CoreService.nhanThang(thangCC)}</div>
                   <div style="display:flex; gap:8px;">
                     ${isManager ? `
                       <button class="btn btn-sm btn-secondary" onclick="CoreService.triggerImportExcel('attendance')" title="Nạp file Excel xuất từ máy chấm công (chịu được 2 dòng tít ở đầu; ngày dạng dd/mm/yyyy hoặc số Excel)">
@@ -18870,10 +18907,15 @@ function writeSheet(ss, sheetName, headers, rowsData){
                         <i class="fa-solid fa-paste"></i> Dán từ Excel
                       </button>
                     ` : ``}
-                    <button class="btn btn-sm btn-success" onclick="AppModules.attendance.checkInToday()">
-                      <i class="fa-solid fa-location-dot"></i> Điểm Danh Hôm Nay
-                    </button>
                   </div>
+                </div>
+                <!-- [THÊM MỚI 07/09/2026 — V4 đợt 100] Nói rõ mục này chứa gì, để không lẫn với cách chấm khác. -->
+                <div style="background:var(--bg-hover);border:1px solid var(--border-light);border-radius:8px;padding:8px 12px;font-size:11.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:10px;">
+                  ⏰ Chỉ hiện bản ghi <strong>từ MÁY chấm công</strong> (vân tay / khuôn mặt) — nạp bằng file Excel,
+                  dán từ Excel, hoặc máy tự đẩy vào. Mã trên máy khớp về mã nhân viên theo bảng
+                  <strong>Cài đặt 6.2 ▸ mục 5 (Ghép Mã Nhân Viên)</strong>.
+                  Người HCNS gõ tay hay bảng phòng gửi lên nằm ở mục <strong>3. Chấm công nhập tay</strong>;
+                  nhân viên tự chấm nằm ở mục <strong>2. Chấm công bằng app</strong>.
                 </div>
                 <div class="table-responsive">
                   <table>
@@ -18887,8 +18929,10 @@ function writeSheet(ss, sheetName, headers, rowsData){
                         <th style="text-align:center">Giờ Ra</th>
                         <th class="col-so">Giờ OT</th>
                         <th style="text-align:center">Trạng Thái Quẹt Thẻ</th>
-                        <!-- [THÊM MỚI 28/08/2026] Cột cho HR thấy chấm bằng cách nào (WFH/IP/GPS) và cách công ty bao xa. -->
-                        <th style="text-align:center">Xác Thực Vị Trí</th>
+                        <!-- [SỬA 07/09/2026 — V4 đợt 100] Bỏ cột "Xác Thực Vị Trí": máy vân tay KHÔNG có
+                             GPS nên cột đó luôn hiện "Chưa xác thực", nhìn tưởng máy chấm công lỗi.
+                             Thay bằng cột cho biết bản ghi này vào app bằng đường nào. -->
+                        <th style="text-align:center">Cách Nạp Vào App</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -18898,11 +18942,64 @@ function writeSheet(ss, sheetName, headers, rowsData){
                           <td class="col-ma">${item.maNV}</td>
                           <td class="col-ngay">${formatDateDisplay(item.ngay)}</td>
                           <td>${item.caLam}</td>
-                          <td style="text-align:center; font-weight:bold; color:var(--primary-dark)">${item.gioVao || "—"}</td>
-                          <td style="text-align:center; font-weight:bold; color:var(--primary-dark)">${item.gioRa || "—"}</td>
+                          <!-- [SỬA 07/09/2026 — V4 đợt 101] Hiện giờ qua ChamCongCore.hienGio: bản ghi cũ
+                               lưu giờ kiểu "1899-12-30T03:02:30.000Z" nay cũng hiện gọn "03:02". -->
+                          <td style="text-align:center; font-weight:bold; color:var(--primary-dark)">${ChamCongCore.hienGio(item.gioVao)}</td>
+                          <td style="text-align:center; font-weight:bold; color:var(--primary-dark)">${ChamCongCore.hienGio(item.gioRa)}</td>
                           <td class="col-so">${formatNumber(item.gioOT || 0, 1)}h</td>
                           <td style="text-align:center"><span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Hợp lệ</span></td>
-                          <td style="text-align:center">${moTaXacThucChamCong(item)}</td>
+                          <td style="text-align:center"><span class="badge badge-info" title="Bản ghi từ máy chấm công, nạp vào app qua file Excel / dán Excel">⏰ Máy chấm công</span></td>
+                        </tr>
+                      `).join("")}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            `;
+          }
+
+          if (this.currentSubTab === "tay_cham_cong") {
+            const dsTay = rawAttendanceList.filter(b => String(b.ngay || "").slice(0, 7) === thangCC
+              && (b.nguon === "tay" || b.nguon === "phong" || !b.nguon));
+            const tenNguon = ng => ng === "phong" ? "🏢 Bảng phòng ban" : ng === "tay" ? "✍️ HCNS nhập tay" : "❔ Chưa rõ nguồn (dữ liệu cũ)";
+            return `
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title"><i class="fa-solid fa-pen-to-square"></i> 3. Chấm Công Nhập Tay / Bảng Phòng — Tháng ${CoreService.nhanThang(thangCC)}</div>
+                  <button class="btn btn-sm btn-success" onclick="AppModules.attendance.checkInToday()">
+                    <i class="fa-solid fa-location-dot"></i> Điểm Danh Hôm Nay
+                  </button>
+                </div>
+                <div style="background:var(--bg-hover);border:1px solid var(--border-light);border-radius:8px;padding:8px 12px;font-size:11.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:10px;">
+                  ✍️ Bản ghi <strong>không đến từ máy chấm công và không do nhân viên tự chấm</strong>: HCNS gõ tay,
+                  bấm "Điểm danh hôm nay", hoặc bảng công phòng ban gửi lên. Đây là nguồn <strong>ít tin cậy nhất</strong>
+                  khi đối chiếu (Sản lượng &gt; Máy &gt; App &gt; Phòng &gt; Tay) — dùng để bù những ngày máy không ghi được.
+                </div>
+                <div class="table-responsive">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th class="col-stt" style="width:44px">STT</th>
+                        <th class="col-ma">Mã NV</th>
+                        <th class="col-ngay">Ngày Báo Công</th>
+                        <th>Ca Làm Việc</th>
+                        <th style="text-align:center">Giờ Vào</th>
+                        <th style="text-align:center">Giờ Ra</th>
+                        <th class="col-so">Giờ OT</th>
+                        <th style="text-align:center">Nguồn Ghi</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${dsTay.length === 0 ? `<tr><td colspan="8" class="col-action o-rong">Chưa có bản ghi nhập tay trong tháng ${CoreService.nhanThang(thangCC)}</td></tr>` : dsTay.map((item, idx) => `
+                        <tr>
+                          <td class="col-stt">${idx + 1}</td>
+                          <td class="col-ma">${item.maNV}</td>
+                          <td class="col-ngay">${formatDateDisplay(item.ngay)}</td>
+                          <td>${item.caLam || "—"}</td>
+                          <td style="text-align:center;font-weight:bold;color:var(--primary-dark)">${ChamCongCore.hienGio(item.gioVao)}</td>
+                          <td style="text-align:center;font-weight:bold;color:var(--primary-dark)">${ChamCongCore.hienGio(item.gioRa)}</td>
+                          <td class="col-so">${formatNumber(item.gioOT || 0, 1)}h</td>
+                          <td style="text-align:center"><span class="badge badge-warning">${tenNguon(item.nguon)}</span></td>
                         </tr>
                       `).join("")}
                     </tbody>
@@ -18958,8 +19055,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
                           <td><strong>${_tenNV90[item.maNV] || "—"}</strong></td>
                           <td class="col-ngay">${formatDateDisplay(item.ngay)}</td>
                           <td>${item.caLam || "—"}</td>
-                          <td style="text-align:center; font-weight:bold; color:var(--primary-dark)">${item.gioVao || "—"}</td>
-                          <td style="text-align:center; font-weight:bold; color:${item.hasCheckedOut ? "var(--primary-dark)" : "var(--text-muted)"}">${item.hasCheckedOut ? (item.gioRa || "—") : (String(item.ngay || "") < new Date().toISOString().split("T")[0] ? '<span style="color:#dc2626">⚠️ Quên ra</span>' : "Đang làm")}</td>
+                          <td style="text-align:center; font-weight:bold; color:var(--primary-dark)">${ChamCongCore.hienGio(item.gioVao)}</td>
+                          <td style="text-align:center; font-weight:bold; color:${item.hasCheckedOut ? "var(--primary-dark)" : "var(--text-muted)"}">${item.hasCheckedOut ? ChamCongCore.hienGio(item.gioRa) : (String(item.ngay || "") < new Date().toISOString().split("T")[0] ? '<span style="color:#dc2626">⚠️ Quên ra</span>' : "Đang làm")}</td>
                           <td class="col-so">${formatNumber(item.gioOT || 0, 1)}h</td>
                           <td style="text-align:center;font-size:11px">${item.viTri || (item.hinhThuc === "online" ? "Online (WFH)" : item.hinhThuc === "thi_truong" ? "Thị trường" : "Nhà máy")}</td>
                           <td style="text-align:center">${moTaXacThucChamCong(item)}</td>
@@ -19436,8 +19533,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
                           <td class="col-ma">${b.maNV}</td>
                           <td>${tenNV(b.maNV)}</td>
                           <td class="col-ngay">${formatDateDisplay(b.ngay)}</td>
-                          <td><span class="badge badge-info">${tenNguon[b.nguon || "tay"]}</span> <strong>${b.gioVao || "—"} → ${b.gioRa || "—"}</strong></td>
-                          <td style="font-size:11.5px;">${nguonList.map(ng => `${tenNguon[ng] || ng}: ${(b.cacNguon[ng].gioVao || "—")}→${(b.cacNguon[ng].gioRa || "—")}`).join("<br>") || "—"}</td>
+                          <td><span class="badge badge-info">${tenNguon[b.nguon || "tay"]}</span> <strong>${ChamCongCore.hienGio(b.gioVao)} → ${ChamCongCore.hienGio(b.gioRa)}</strong></td>
+                          <td style="font-size:11.5px;">${nguonList.map(ng => `${tenNguon[ng] || ng}: ${ChamCongCore.hienGio(b.cacNguon[ng].gioVao)}→${ChamCongCore.hienGio(b.cacNguon[ng].gioRa)}`).join("<br>") || "—"}</td>
                           <td class="col-so" style="font-weight:700;color:${(b.lechPhut || 0) > nguongLech ? "#dc2626" : "#16a34a"};">${b.lechPhut != null ? b.lechPhut : "—"}</td>
                           <td style="text-align:center">${badgeTT(b.trangThaiDoiChieu)}</td>
                           <td style="text-align:center;white-space:nowrap;">${nutChon}${nutQL}${nutChot}</td>
@@ -20769,8 +20866,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
               obj = {
                 maNV, ngay,
                 caLam: r["Tên ca"] || "",
-                gioVao: String(r["Vào"] || "").trim(),
-                gioRa: String(r["Ra"] || "").trim(),
+
+                gioVao: ChamCongCore.doiGio(r["Vào"]),
+                gioRa: ChamCongCore.doiGio(r["Ra"]),
                 gioOT: tc1 + tc2 + tc3,
                 tc1, tc2, tc3,
                 vaoTre: parseFloat(r["Vào Trễ"]) || 0,
@@ -20788,8 +20886,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
               obj = {
                 maNV, ngay,
                 caLam: r["Ca Làm"] || r["CaLam"] || "",
-                gioVao: r["Giờ Vào"] || r["GioVao"] || "",
-                gioRa: r["Giờ Ra"] || r["GioRa"] || "",
+                
+                gioVao: ChamCongCore.doiGio(r["Giờ Vào"] || r["GioVao"] || ""),
+                gioRa: ChamCongCore.doiGio(r["Giờ Ra"] || r["GioRa"] || ""),
                 gioOT: parseFloat(r["Giờ OT"] || r["GioOT"] || r["Giờ Tăng Ca OT"]) || 0,
                 kyHieu: String(r["Ký Hiệu"] || r["Kí hiệu"] || "").trim(),
                 trangThai: r["Trạng Thái"] || r["TrangThai"] || "du_cong",
