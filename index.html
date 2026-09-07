@@ -1428,6 +1428,11 @@
     .toast.success { border-left-color: var(--success-text); }
     .toast.danger { border-left-color: var(--danger-text); }
     .toast.warning { border-left-color: var(--warning-text); }
+    
+    @media (max-width: 768px) {
+      .toast-container { top: calc(14px + env(safe-area-inset-top)); left: 12px; right: 12px; }
+      .toast { min-width: 0; font-size: 13.5px; line-height: 1.5; }
+    }
 
     .modal-backdrop {
       position: fixed;
@@ -1498,6 +1503,8 @@
       display: flex;
       flex-direction: column;
       min-height: 480px;
+      
+      max-height: max(480px, calc(100vh - 270px));
       flex: 1 1 0;               
       min-width: 240px;          
     }
@@ -5159,7 +5166,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.74" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.75" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -5388,7 +5395,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.74"
+                version: "4.0.75"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -7009,6 +7016,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
         const s = getCompanySettings();
         if (!s.gasUrl || (!s.sheetToken && !this.layVePhien())) return { ok: false, err: "chưa cấu hình đồng bộ" };
         this.xepVaoHangDoi("chamCong", banGhi);
+         
+        try { this._guiMotDot(); } catch (eG91) {}
         return { ok: true, dangCho: this.soDangCho() };
       },
 
@@ -8534,11 +8543,16 @@ function writeSheet(ss, sheetName, headers, rowsData){
         const iconClass = type === "success" ? "fa-circle-check" : type === "danger" ? "fa-triangle-exclamation" : "fa-circle-info";
         toast.innerHTML = `<i class="fa-solid ${iconClass}"></i><span>${message}</span>`;
         container.appendChild(toast);
+         
+        const giuMs = Math.min(9000, Math.max(3500, 1800 + String(message).length * 35))
+          + ((type === "danger" || type === "warning") ? 1500 : 0);
+        toast.style.cursor = "pointer";
+        toast.onclick = () => toast.remove();
         setTimeout(() => {
           toast.style.opacity = "0";
           toast.style.transition = "opacity 0.3s ease";
           setTimeout(() => toast.remove(), 300);
-        }, 3000);
+        }, giuMs);
       },
 
       openModal(title, bodyHtml, footerButtons = []) {
@@ -11570,7 +11584,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const currentUser = CoreService.currentUser;
           const todayStr = new Date().toISOString().split("T")[0];
 
-          const myLogs = (data.bangCong || []).filter(b => b.maNV === currentUser.id);
+           
+          const myLogs = (data.bangCong || []).filter(b => b.maNV === currentUser.id)
+            .sort((a, b) => String(b.ngay || "").localeCompare(String(a.ngay || "")) || String(b.gioVao || "").localeCompare(String(a.gioVao || "")));
           const todayLog = myLogs.find(b => b.ngay === todayStr);
 
           const currentMonth = todayStr.substring(0, 7);
@@ -11923,7 +11939,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
                           ${item.ghiChu || "—"}
                         </td>
                         <td style="text-align:center">
-                          <span class="badge badge-success"><i class="fa-solid fa-check"></i> Đủ công</span>
+                          <!-- [SỬA 07/09/2026 — V4 đợt 91] Hết gắn cứng "Đủ công" — tính thật qua badgeTrangThaiCong. -->
+                          ${this.badgeTrangThaiCong(item)}
                         </td>
                       </tr>
                     `).join("")}
@@ -12103,7 +12120,12 @@ function writeSheet(ss, sheetName, headers, rowsData){
               this.isGpsLoading = false;
               let msg = "Không thể lấy vị trí GPS.";
               if (err.code === 1) msg = "Bạn đã từ chối quyền truy cập vị trí (GPS). Vui lòng bật lại trong cài đặt trình duyệt.";
-              else if (err.code === 2) msg = "Không xác định được vị trí thiết bị.";
+              /* [SỬA 07/09/2026 — V4 đợt 91] Trên BẢN EXE (máy tính): PC không có chip GPS và
+                 bản cài đặt không kèm dịch vụ định vị → lỗi này là GIỚI HạN PHẦN CỨNG, không
+                 phải hỏng app. Nói thẳng + chỉ đường thay thế (xác thực IP wifi công ty). */
+              else if (err.code === 2) msg = (/Electron/i.test(navigator.userAgent))
+                ? "Máy tính KHÔNG có GPS (bản cài trên PC không kèm dịch vụ định vị — đây là giới hạn phần cứng, không phải lỗi). Máy tính hãy xác thực bằng IP wifi công ty (Cài đặt 6.2 ▸ mục 3); chấm GPS dành cho điện thoại."
+                : "Không xác định được vị trí thiết bị.";
               else if (err.code === 3) msg = "Quá thời gian lấy vị trí GPS.";
               CoreService.showToast(msg, "warning");
               this.render();
@@ -12213,6 +12235,31 @@ function writeSheet(ss, sheetName, headers, rowsData){
            Cách chọn: ca nào đang ÔM giờ hiện tại thì lấy (ca qua đêm tính vòng qua nửa đêm,
            vd 22:00–06:00 mà đang 23:30 vẫn trúng); không ca nào ôm → lấy ca có giờ VÀO gần
            giờ hiện tại nhất (vd 07:40 → ca 08:00). */
+        /* [THÊM MỚI 07/09/2026 — V4 đợt 91] HUY HIỆU TRẠNG THÁI CÔNG cho 1 dòng chấm.
+           Nhận: bản ghi bangCong. Trả: chuỗi HTML huy hiệu.
+           VÌ SAO: trước đây cột Trạng Thái GẮN CỨNG "Đủ công" cho mọi dòng — vào 09:36 chưa
+           ra ca cũng "Đủ công" (chủ app: "vô lý đấy bạn"). Nay:
+             · Hết NGÀY mà chưa bấm Ra ca → "QUÊN CHẤM RA" (đúng yêu cầu: máy phải báo quên).
+             · Hôm nay chưa ra ca → "Đang làm".
+             · Đã ra ca → tính công THẬT qua ChamCongCore.tinhCongNgay (chính hàm bảng công/
+               lương đang dùng — một nguồn, không chế công thức riêng): đủ 1 công → Đủ công;
+               chưa đủ → Thiếu giờ (hiện rõ x công). */
+        badgeTrangThaiCong(item) {
+          try {
+            const homNay = new Date().toISOString().split("T")[0];
+            if (!item.hasCheckedOut) {
+              if (String(item.ngay || "") < homNay)
+                return '<span class="badge badge-danger" title="Hết ngày mà chưa bấm Ra ca — hãy chấm bù (chấm lại là tự sửa) hoặc gửi Đơn giải trình">⚠️ Quên chấm ra</span>';
+              return '<span class="badge badge-warning">🟡 Đang làm</span>';
+            }
+            const kq = ChamCongCore.tinhCongNgay(item, getCompanySettings());
+            const cong = Number(kq && kq.cong) || 0;
+            if (cong >= 1) return '<span class="badge badge-success"><i class="fa-solid fa-check"></i> Đủ công</span>';
+            if (cong > 0) return '<span class="badge badge-warning" title="Giờ làm chưa đủ ca chuẩn">⏳ Thiếu giờ (' + cong + ' công)</span>';
+            return '<span class="badge badge-warning" title="Giờ làm chưa đủ ca chuẩn">⏳ Thiếu giờ</span>';
+          } catch (e) { return '<span class="badge badge-secondary">—</span>'; }
+        },
+
         goiYCa() {
           try {
             const ds = (getCompanySettings().caLamViec) || [];
@@ -12247,6 +12294,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const batAp = cheDoCC !== "off" && (coIPcty || coGPScty);
           if (this.currentMode === "nha_may" && batAp) {
             if (this.netTrangThai !== "matched") {
+              // [THÊM MỚI đợt 91] Báo NGAY đang xác thực — trước đây bấm nút xong màn đứng im
+              // 1-2 giây (đang dò IP/GPS ở nền) làm người chấm tưởng app đơ, bấm thêm lần nữa.
+              CoreService.showToast("⏳ Đang xác thực vị trí, chờ một nhịp...", "info");
               await this.kiemTraMangCongTy();
             }
             if (stCty.chamCongBatBuocMang && this.netTrangThai !== "matched") {
@@ -12272,11 +12322,10 @@ function writeSheet(ss, sheetName, headers, rowsData){
           data.bangCong = data.bangCong || [];
           const existIdx = data.bangCong.findIndex(b => b.maNV === user.id && b.ngay === todayStr);
 
-          if (existIdx >= 0) {
-            if (!confirm(`Bạn đã có bản ghi chấm công ngày hôm nay (vào lúc ${data.bangCong[existIdx].gioVao}). Bạn có muốn cập nhật lại thông tin Check-in không?`)) {
-              return;
-            }
-          }
+          /* [SỬA 07/09/2026 — V4 đợt 91] CHẤM LẠI LÀ SỬA LUÔN, KHỎI HỎI (chủ app: "nếu chấm
+             công lại thì mặc định sửa lại luôn"). Giờ cũ vẫn được nêu trong toast xác nhận
+             ở cuối để người chấm biết mình vừa đè lên giờ nào — không mất dấu vết. */
+          const _gioVaoCu91 = existIdx >= 0 ? data.bangCong[existIdx].gioVao : "";
 
           const hinhThucLabel = this.currentMode === "online" 
             ? "Làm Việc Online (WFH)" 
@@ -12333,7 +12382,10 @@ function writeSheet(ss, sheetName, headers, rowsData){
           // [THÊM MỚI 31/08/2026] Reset ảnh/GPS tạm sau khi check-in — nếu không, lúc check-out mà không chụp
           //   ảnh mới sẽ bị DÍNH lại ảnh check-in (gán nhầm sang anhCheckOut).
           this.currentPhoto = null; this.currentGps = null; this.gpsAddress = "";
-          CoreService.showToast(`🟢 Chấm công Vào Ca thành công lúc ${nowTime}! (${hinhThucLabel})`, "success");
+          // [SỬA đợt 91] Chấm LẠI trong ngày → nói rõ vừa SỬA giờ vào từ mấy giờ thành mấy giờ.
+          CoreService.showToast(_gioVaoCu91
+            ? `🟢 Đã CẬP NHẬT lại giờ Vào Ca: ${_gioVaoCu91} → ${nowTime}. (${hinhThucLabel})`
+            : `🟢 Chấm công Vào Ca thành công lúc ${nowTime}! (${hinhThucLabel})`, "success");
           this.render();
         },
 
@@ -16001,7 +16053,11 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const colMoi = conLai.filter(t => t.tienDo === 0 && t.trangThai !== "hoan_thanh");
           const colDangLam = conLai.filter(t => t.tienDo > 0 && t.tienDo < 100 && t.trangThai !== "cho_nghiem_thu");
           const colChoNghiemThu = conLai.filter(t => t.trangThai === "cho_nghiem_thu" || (t.tienDo >= 100 && t.trangThai !== "hoan_thanh"));
-          const colHoanThanh = conLai.filter(t => t.trangThai === "hoan_thanh");
+           
+          const _moc30 = new Date(Date.now() - 30 * 86400000).toISOString().split("T")[0];
+          const _dsHoanThanh = conLai.filter(t => t.trangThai === "hoan_thanh");
+          const colHoanThanh = _dsHoanThanh.filter(t => String(t.ngayNghiemThu || t.deadline || "9999-12-31") >= _moc30);
+          const _soAn30 = _dsHoanThanh.length - colHoanThanh.length;
 
           return `
             <div class="kanban-board">
@@ -16065,7 +16121,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                   <span style="color:#059669;display:flex;align-items:center;gap:6px;">
                     <i class="fa-solid fa-circle-check" style="font-size:11px;"></i> Đã Nghiệm Thu (KPI)
                   </span>
-                  <span class="badge badge-success">${colHoanThanh.length}</span>
+                  <span class="badge badge-success" title="${_soAn30 > 0 ? `Còn ${_soAn30} việc chốt quá 30 ngày — xem ở chế độ Bảng` : "Việc đã nghiệm thu 30 ngày gần nhất"}">${colHoanThanh.length}${_soAn30 > 0 ? " (+" + _soAn30 + " cũ)" : ""}</span>
                 </div>
                 <div class="kanban-card-list" data-col="xong" ondragover="AppModules.tasks._keoTren(event)" ondragleave="AppModules.tasks._keoRoi(event)" ondrop="AppModules.tasks._thaVao(event,'xong')">
                   ${colHoanThanh.length === 0 ? `
@@ -16345,13 +16401,40 @@ function writeSheet(ss, sheetName, headers, rowsData){
             </div>
           `;
         },
+         
+        locBang(tu) {
+          this.tuKhoaBang = tu || "";
+          clearTimeout(this._henLocBang);
+          this._henLocBang = setTimeout(() => {
+            this.render();
+            try { const o = document.getElementById("timBangViec"); if (o) { o.focus(); o.setSelectionRange(o.value.length, o.value.length); } } catch (e) {}
+          }, 280);
+        },
+        locThangBang(th) { this.thangBang = th || ""; this.render(); },
+
         renderTableView(taskList) {
+           
+          const _bo91 = x => String(x || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d");
+          if (this.tuKhoaBang) {
+            const t91 = _bo91(this.tuKhoaBang);
+            taskList = taskList.filter(i => _bo91(i.tenCV + " " + i.id + " " + (i.tenNguoiNhan || "") + " " + (i.nguoiGiao || "")).indexOf(t91) >= 0);
+          }
+          if (this.thangBang) taskList = taskList.filter(i => String(i.deadline || "").slice(0, 7) === this.thangBang);
           const currentUser = CoreService.currentUser;
           const isManager = currentUser.role === "admin" || currentUser.role === "manager" || currentUser.role === "director" || currentUser.role === "hr" || currentUser.role === "it_admin";
 
           return `
             <div class="card">
-              <div class="table-responsive">
+              <!-- [THÊM MỚI 07/09/2026 — V4 đợt 91] Thanh TÌM + LỌC THÁNG cho chế độ Bảng
+                   (chủ app: "cần chức năng lọc tìm kiếm, chọn ngày chọn tháng phù hợp hơn"). -->
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px 2px;">
+                <input type="text" id="timBangViec" class="form-control" style="flex:1;min-width:170px;font-size:13px;" placeholder="🔎 Tìm việc / người (gõ không dấu cũng ra)..." value="${String(this.tuKhoaBang || "").replace(/"/g, "&quot;")}" oninput="AppModules.tasks.locBang(this.value)">
+                <input type="month" class="form-control" style="width:150px;font-size:13px;" value="${this.thangBang || ""}" onchange="AppModules.tasks.locThangBang(this.value)" title="Lọc theo THÁNG của cột Hạn xong — bỏ trống là xem tất cả">
+                ${(this.tuKhoaBang || this.thangBang) ? `<button class="btn btn-sm btn-secondary" onclick="AppModules.tasks.locBang('');AppModules.tasks.locThangBang('')">✕ Bỏ lọc</button>` : ""}
+                <span style="font-size:11.5px;color:var(--text-muted);">${taskList.length} việc</span>
+              </div>
+              <!-- [SỬA đợt 91] Khung bảng cao đúng cỡ màn hình còn lại + thanh cuộn DỌC riêng. -->
+              <div class="table-responsive" style="max-height:calc(100vh - 320px);overflow-y:auto;">
                 <table>
                   <thead>
                     <tr>
@@ -18642,7 +18725,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                           <td class="col-ngay">${formatDateDisplay(item.ngay)}</td>
                           <td>${item.caLam || "—"}</td>
                           <td style="text-align:center; font-weight:bold; color:var(--primary-dark)">${item.gioVao || "—"}</td>
-                          <td style="text-align:center; font-weight:bold; color:${item.hasCheckedOut ? "var(--primary-dark)" : "var(--text-muted)"}">${item.hasCheckedOut ? (item.gioRa || "—") : "Đang làm"}</td>
+                          <td style="text-align:center; font-weight:bold; color:${item.hasCheckedOut ? "var(--primary-dark)" : "var(--text-muted)"}">${item.hasCheckedOut ? (item.gioRa || "—") : (String(item.ngay || "") < new Date().toISOString().split("T")[0] ? '<span style="color:#dc2626">⚠️ Quên ra</span>' : "Đang làm")}</td>
                           <td class="col-so">${formatNumber(item.gioOT || 0, 1)}h</td>
                           <td style="text-align:center;font-size:11px">${item.viTri || (item.hinhThuc === "online" ? "Online (WFH)" : item.hinhThuc === "thi_truong" ? "Thị trường" : "Nhà máy")}</td>
                           <td style="text-align:center">${moTaXacThucChamCong(item)}</td>
