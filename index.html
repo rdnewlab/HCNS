@@ -2555,6 +2555,12 @@
     
     .o-gio-ca::-webkit-calendar-picker-indicator { display: none; }
     
+    @media (max-width: 768px) {
+      .o-nghi-tuan { min-height: 44px; padding: 4px 10px; border-radius: 8px; background: var(--bg-surface); border: 1px solid var(--border-light); }
+      .o-nghi-tuan input[type="checkbox"] { width: 20px !important; height: 20px !important; }
+      .selCaPhong { min-height: 44px; }
+    }
+    
     details.kpi-acc > summary { cursor: pointer; list-style: none; user-select: none; }
     details.kpi-acc > summary::-webkit-details-marker { display: none; }
     details.kpi-acc > summary::before { content: "▸ "; font-size: 11px; }
@@ -2820,7 +2826,7 @@ var CHUNK         = 45000;               // 1 ô Sheet tối đa ~50.000 ký t�
    mã CŨ và không có dấu hiệu nào để biết — đã dính lỗi này nhiều lần. Nay mọi phản hồi đều
    kèm số bản; nút "Kiểm tra kết nối" ở mục 6.4 hiện số đó ra để đối chiếu.
    ⚠️ MỖI LẦN SỬA MÃ NÀY PHẢI TĂNG SỐ (r1 → r2 …). */
-var CODE_VERSION  = "HCNS-BE-2026-09-06-r13";   // [SỬA đợt 89] r12 → r13: chấm công giữ đủ trường phụ khi gộp (ảnh, cờ ra ca, nguồn, IP, GPS) — hết "dữ liệu chấm công bị mất bị nhảy"   // [SỬA đợt 80c] r7 → r10: THÊM lệnh ghiDong dùng chung (trước đây gần như MỌI chức năng — đơn từ, góp ý, sáng kiến, dự trù, KPI… — đều không lưu được lên kho khi làm từ điện thoại) · CHẶN nhân viên tự duyệt đơn của chính mình · và sửa lỗi DUYỆT TRÊN MÁY QUẢN TRỊ KHÔNG ĂN (dòng cũ trong tab đè ngược bản vừa duyệt)
+var CODE_VERSION  = "HCNS-BE-2026-09-07-r14";   // [SỬA đợt 99] r13 → r14: gộp bảng công theo THỨ TỰ ƯU TIÊN NGUỒN (sản lượng > máy > app > phòng > tay) thay vì "dòng sau đè dòng trước"; ô HCNS sửa tay trên tab vẫn luôn thắng   // [SỬA đợt 89] r12 → r13: chấm công giữ đủ trường phụ khi gộp (ảnh, cờ ra ca, nguồn, IP, GPS) — hết "dữ liệu chấm công bị mất bị nhảy"   // [SỬA đợt 80c] r7 → r10: THÊM lệnh ghiDong dùng chung (trước đây gần như MỌI chức năng — đơn từ, góp ý, sáng kiến, dự trù, KPI… — đều không lưu được lên kho khi làm từ điện thoại) · CHẶN nhân viên tự duyệt đơn của chính mình · và sửa lỗi DUYỆT TRÊN MÁY QUẢN TRỊ KHÔNG ĂN (dòng cũ trong tab đè ngược bản vừa duyệt)
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    [THÊM MỚI 05/09/2026 — V4 đợt 51] BẤM ▶ CHẠY THÌ CHẠY HÀM NÀY (KIEM_TRA_NHANH).
@@ -2952,7 +2958,10 @@ function _jsonGon(bg){
     return s.length > 40000 ? "" : s;
   } catch (e){ return ""; }
 }
-function _gopBangCong(ss, nen){
+/* [SỬA 07/09/2026 — V4 đợt 99 · r14] Nhận thêm uuTien = mảng thứ tự tin cậy nguồn công
+   (vd ["sanluong","may","app","phong","tay"]) do app gửi lên trong kho. Không truyền thì
+   dùng thứ tự mặc định. */
+function _gopBangCong(ss, nen, uuTien){
   var sh = ss.getSheetByName("BangCong");
   if (!sh || sh.getLastRow() < 2) return nen;
   var v = sh.getRange(2, 1, sh.getLastRow() - 1, 14).getValues();   // [SỬA đợt 89] đọc thêm cột 14 "Chi tiết (JSON)"
@@ -2973,6 +2982,31 @@ function _gopBangCong(ss, nen){
     var moi = {};
     for (var tC in cu) moi[tC] = cu[tC];               // giữ ảnh, cờ, nguồn, IP… của bản gốc
     moi.maNV = r[1]; moi.ngay = _ngayChuoi(r[2]);
+    /* [THÊM MỚI 07/09/2026 — V4 đợt 99 · r14] TÔN TRỌNG THỨ TỰ ƯU TIÊN NGUỒN.
+       TRƯỚC: dòng trên tab BangCong LUÔN đè bản trong kho → bản "tay" đè mất bản "máy chấm vân
+       tay" hay "sản lượng", tức thứ tự ưu tiên công ty cấu hình trong app bị bỏ qua ở máy chủ.
+       NAY: nếu dòng tab YẾU HƠN bản trong kho thì chỉ ghi vào cacNguon làm chứng cứ, KHÔNG đè giờ.
+       NGOẠI LỆ QUAN TRỌNG: HCNS gõ tay sửa ô trên tab (giá trị khác với JSON cột 14 do app ghi)
+       thì LUÔN THẮNG — vì đó là hành động cố ý để chữa số liệu sai. Dòng chưa có JSON cột 14
+       (dữ liệu đời cũ) cũng coi là sửa tay → đè như trước, không phá dữ liệu cũ. */
+    var _ctT = null; try { if (r[13]) _ctT = JSON.parse(r[13]); } catch (e14) { _ctT = null; }
+    var _uu = function (ng) {
+      var ds = (uuTien && uuTien.length) ? uuTien : ["sanluong", "may", "app", "phong", "tay"];
+      var i = ds.indexOf(ng || "tay");
+      return i < 0 ? 0 : (ds.length - i);                // đứng trước = điểm cao = tin cậy hơn
+    };
+    var _suaTay = !_ctT                                   // không có JSON → dữ liệu cũ, coi như gõ tay
+      || (r[4] && _ctT.gioVao && r[4] !== _ctT.gioVao)
+      || (r[5] && _ctT.gioRa && r[5] !== _ctT.gioRa)
+      || (r[3] && _ctT.caLam && r[3] !== _ctT.caLam);
+    var _yeuHon = !_suaTay && cu && cu.nguon && _uu((_ctT || {}).nguon) < _uu(cu.nguon);
+    if (_yeuHon) {                                        // giữ bản mạnh trong kho, cất bản tab làm chứng cứ
+      moi.cacNguon = moi.cacNguon || {};
+      moi.cacNguon[(_ctT || {}).nguon || "tay"] = { gioVao: r[4] || "", gioRa: r[5] || "", caLam: r[3] || "", gioOT: r[6] };
+      m[k] = moi;
+      continue;
+    }
+    if (_suaTay && _ctT) moi.nguon = "tay";               // HCNS chữa tay → bản chính đổi sang nguồn "tay"
     if (r[3]) moi.caLam = r[3];
     if (r[4]) moi.gioVao = r[4];
     if (r[5]) moi.gioRa = r[5];
@@ -2986,7 +3020,15 @@ function _gopBangCong(ss, nen){
     try {
       if (r[13]) {
         var ct = JSON.parse(r[13]);
-        for (var tJ in ct){ if (tJ === "anhCheckIn" || tJ === "anhCheckOut") continue; moi[tJ] = ct[tJ]; }
+        /* [SỬA 07/09/2026 — V4 đợt 99 · r14] Bỏ qua các ô GIỜ khi HCNS vừa gõ tay sửa trên tab.
+           VÌ SAO: cột JSON là bản app ghi lúc chấm; nếu cứ đè thì ô HCNS vừa sửa bị trả về số cũ
+           ngay lần đồng bộ sau (đo ra: sửa 09:00 → quay lại 08:30). Ảnh vẫn luôn bỏ qua như cũ. */
+        for (var tJ in ct){
+          if (tJ === "anhCheckIn" || tJ === "anhCheckOut") continue;
+          if (_suaTay && (tJ === "gioVao" || tJ === "gioRa" || tJ === "caLam" || tJ === "gioOT" || tJ === "nguon")) continue;
+          moi[tJ] = ct[tJ];
+        }
+        if (_suaTay) moi.nguon = "tay";                 // chốt lại: bản chính là bản HCNS chữa tay
         moi.maNV = r[1]; moi.ngay = _ngayChuoi(r[2]);   // khoá gộp không cho JSON đổi
       }
     } catch (eJ) {}
@@ -3213,7 +3255,7 @@ function doGet(e){
       /* [THÊM MỚI 04/09/2026 — V3] GỘP thêm các dòng chấm công ở tab BangCong.
          Từ nay lệnh chamCong không ghi vào khối gốc nữa (để chạy nhanh), nên nếu không gộp ở
          đây thì app kéo về sẽ THIẾU HẲN phần nhân viên vừa chấm. */
-      try { data.bangCong = _gopBangCong(ss, data.bangCong || []); } catch (eG) {}
+      try { data.bangCong = _gopBangCong(ss, data.bangCong || [], data.uuTienNguonCC); } catch (eG) {}   // [SỬA đợt 99] truyền thứ tự ưu tiên nguồn công ty đã cấu hình
       /* [THÊM đợt 40] Gộp tab XinKey vào khối trả về → máy quản trị kéo dữ liệu là thấy các
          yêu cầu cấp lại key/PIN (kể cả của người gửi từ điện thoại chưa đăng nhập). */
       try {
@@ -3419,7 +3461,7 @@ function doPost(e){
          LƯU Ý: hệ quả phụ là nếu quản trị vừa XÓA TAY một bản ghi chấm công mà dòng gốc
          còn nằm ở tab thì nó được gộp trở lại — chấp nhận (an toàn dữ liệu đặt trên hết;
          tab chỉ giữ dòng mới gần đây nên hiếm gặp, xóa lại lần nữa là hết). */
-      try { data.bangCong = _gopBangCong(ss, data.bangCong || []); } catch (eGop) {}
+      try { data.bangCong = _gopBangCong(ss, data.bangCong || [], data.uuTienNguonCC); } catch (eGop) {}   // [SỬA đợt 99] truyền thứ tự ưu tiên nguồn
       /* [THÊM MỚI 06/09/2026 — V4 đợt 77d] Gộp nốt việc & thông báo do người thường gửi lên.
          VÌ SAO BẮT BUỘC: máy quản trị kéo dữ liệu lúc 8h, lưu lúc 9h. Trong khoảng đó trưởng
          phòng giao việc từ điện thoại — bản trong máy quản trị KHÔNG có việc đó. Không gộp mà
@@ -3963,6 +4005,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         giamTruPhuThuoc: 4400000,     
         batThuongKpi: true,           
         thuongKpiTheoCong: true,      
+        phuCapTheoCong: true,         
         thuongKpiRate: 15,            
         kieuLamTron: "len",           
 
@@ -4002,6 +4045,10 @@ function writeSheet(ss, sheetName, headers, rowsData){
         giaiDoanKPI: [0, 10, 50, 80, 100],
 
         ngayLeTet: "",
+         
+        caPhongBan: {},
+        ngayNghiTuan: [0],
+        dsNgayLe: [],
 
         
 
@@ -4035,13 +4082,17 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
         
 
+        
+
+        
+
         caLamViec: [
-          { ma: "HC", ten: "Hành chính", vao: "08:00", ra: "17:00", gioLam: 8,  truAnCa: 1,    soCong: 1,   quaDem: false },
-          { ma: "C1", ten: "Ca 1",       vao: "06:00", ra: "14:00", gioLam: 8,  truAnCa: 0.5,  soCong: 1,   quaDem: false },
-          { ma: "C2", ten: "Ca 2",       vao: "14:00", ra: "22:00", gioLam: 8,  truAnCa: 0.5,  soCong: 1,   quaDem: false },
-          { ma: "C3", ten: "Ca 3",       vao: "22:00", ra: "06:00", gioLam: 8,  truAnCa: 0.75, soCong: 1,   quaDem: true  },
-          { ma: "K1", ten: "Kíp 1",      vao: "06:00", ra: "18:00", gioLam: 12, truAnCa: 0.75, soCong: 1.5, quaDem: false },
-          { ma: "K2", ten: "Kíp 2",      vao: "18:00", ra: "06:00", gioLam: 12, truAnCa: 0.75, soCong: 1.5, quaDem: true  }
+          { ma: "HC", ten: "Hành chính", vao: "08:00", ra: "17:00", gioLam: 8,  truAnCa: 1, nghiTu: "12:00", nghiDen: "13:00", soCong: 1,   quaDem: false },
+          { ma: "C1", ten: "Ca 1",       vao: "06:00", ra: "14:00", gioLam: 8,  truAnCa: 1, nghiTu: "", nghiDen: "", soCong: 1,   quaDem: false },
+          { ma: "C2", ten: "Ca 2",       vao: "14:00", ra: "22:00", gioLam: 8,  truAnCa: 1, nghiTu: "", nghiDen: "", soCong: 1,   quaDem: false },
+          { ma: "C3", ten: "Ca 3",       vao: "22:00", ra: "06:00", gioLam: 8,  truAnCa: 1, nghiTu: "", nghiDen: "", soCong: 1,   quaDem: true  },
+          { ma: "K1", ten: "Kíp 1",      vao: "06:00", ra: "18:00", gioLam: 12, truAnCa: 1, nghiTu: "", nghiDen: "", soCong: 1.5, quaDem: false },
+          { ma: "K2", ten: "Kíp 2",      vao: "18:00", ra: "06:00", gioLam: 12, truAnCa: 1, nghiTu: "", nghiDen: "", soCong: 1.5, quaDem: true  }
         ],
 
         
@@ -4209,6 +4260,19 @@ function writeSheet(ss, sheetName, headers, rowsData){
       return ds;
     }
 
+     
+    function soNgayLeTrongThang(st, thang) {
+      try {
+        if (!thang) return 0;
+        const ds = st && Array.isArray(st.dsNgayLe) ? st.dsNgayLe : null;
+        if (ds && ds.length) return ds.filter(x => String((x || {}).ngay || "").slice(0, 7) === thang).length;
+        return String((st || {}).ngayLeTet || "").split(/[,;\n]+/).map(x => x.trim()).filter(Boolean).filter(x => {
+          const m = x.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);          
+          return m && (m[3] + "-" + m[2].padStart(2, "0")) === thang;
+        }).length;
+      } catch (e) { return 0; }
+    }
+
     const ChamCongCore = {
 
       
@@ -4303,11 +4367,28 @@ function writeSheet(ss, sheetName, headers, rowsData){
       },
 
       
+       
+      caMacDinhCua(maNV, st, data) {
+        try {
+          if (!maNV) return null;
+          const kho = data || (typeof DataService !== "undefined" ? DataService.getData() : null);
+          const nv = ((kho || {}).nhanVien || []).find(n => n.id === maNV);
+          if (!nv) return null;
+          const dsCa = st.caLamViec || [];
+          const maCa = nv.caMacDinh || ((st.caPhongBan || {})[nv.phongBan || ""] || "");
+          if (!maCa) return null;
+          return dsCa.find(c => String(c.ma).toUpperCase() === String(maCa).toUpperCase()) || null;
+        } catch (e) { return null; }
+      },
+
       timCa(banGhi, st) {
         const dsCa = st.caLamViec || [];
         const chuoi = String(banGhi.caLam || banGhi.tenCa || "").toUpperCase();
         let ca = dsCa.find(c => chuoi.indexOf(String(c.ma).toUpperCase()) >= 0);
         if (ca) return ca;
+         
+        const caMD = this.caMacDinhCua(banGhi.maNV, st, null);
+        if (caMD) return caMD;
         const pv = this.phut(banGhi.gioVao);
         if (pv == null) return dsCa[0] || null;
         let tot = null, chenhMin = 121;
@@ -4337,14 +4418,23 @@ function writeSheet(ss, sheetName, headers, rowsData){
          
         if (Array.isArray(banGhi.cacLan) && banGhi.cacLan.length) {
           const quang = banGhi.cacLan.concat([{ vao: banGhi.vaoLanNay || banGhi.gioVao, ra: banGhi.gioRa }]);
+           
+          let nghiTu97 = this.phut(ca.nghiTu), nghiDen97 = this.phut(ca.nghiDen);
+          const coNghi97 = nghiTu97 != null && nghiDen97 != null && nghiDen97 !== nghiTu97;
+          if (coNghi97 && ca.quaDem && nghiDen97 <= vaoCa) { nghiTu97 += 1440; nghiDen97 += 1440; }
           let tongPhut = 0, dau = null, cuoi = null;
           quang.forEach(q => {
             let v = this.phut(q.vao), r = this.phut(q.ra);
             if (v == null || r == null) return;
             if (ca.quaDem && r < v) r += 1440;                         
+             
+            if (ca.quaDem && v <= raCa0) { v += 1440; r += 1440; }
             if (dau == null || v < dau) dau = v;
             if (cuoi == null || r > cuoi) cuoi = r;
-            tongPhut += Math.max(0, Math.min(r, raCa) - Math.max(v, vaoCa));
+            const vK = Math.max(v, vaoCa), rK = Math.min(r, raCa);     
+            let phutQ = Math.max(0, rK - vK);
+            if (coNghi97) phutQ -= Math.max(0, Math.min(rK, nghiDen97) - Math.max(vK, nghiTu97)); 
+            tongPhut += Math.max(0, phutQ);
           });
           const tre94 = Math.max(0, (dau == null ? vaoCa : dau) - vaoCa);
           const som94 = Math.max(0, raCa - (cuoi == null ? raCa : cuoi));
@@ -5192,7 +5282,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.78" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.82" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -5421,7 +5511,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.78"
+                version: "4.0.82"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -5890,21 +5980,18 @@ function writeSheet(ss, sheetName, headers, rowsData){
       
       const thieuDuLieuCong = (congDiLam < congChuan * 0.5);
 
+       
       const congPhep = (kho.donTu || [])
-        .filter(d => d.maNV === nv.id && d.trangThai === "da_duyet" && /phep/i.test(d.loaiDon || ""))
+        .filter(d => d.maNV === nv.id && d.trangThai === "da_duyet" && /phep/i.test(d.loaiDon || "")
+          && d.hinhThuc !== "gio"                                  
+          && String(d.tuNgay || "").slice(0, 7) === kyLuong)       
         .reduce((tong, d) => tong + (Number(d.soNgay) || 0), 0);
 
       
 
-      const congLe = (function () {
-        const raw = String(st.ngayLeTet || "");
-        if (!raw.trim()) return 0;
-        return raw.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean).filter(s => {
-          const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);   
-          if (!m) return false;
-          return (m[3] + "-" + m[2].padStart(2, "0")) === kyLuong;  
-        }).length;
-      })();
+      
+
+      const congLe = soNgayLeTrongThang(st, kyLuong);
 
       
       
@@ -6034,13 +6121,15 @@ function writeSheet(ss, sheetName, headers, rowsData){
       const tyLeCong = congChuan > 0 ? Math.min(1, congThucTe / congChuan) : 1;
       const pcTrachNhiem = Math.round((Number(nv.pcTrachNhiem) || 0) * tyLeCong);
       const pcChuyenCan = Math.round((Number(nv.pcChuyenCan) || 0) * tyLeCong);
-      const pcXangXe = Number(nv.pcXangXe) || 0;          
+       
+      const _hsPC96 = (st.phuCapTheoCong === false) ? 1 : Math.min(1, tyLeCong);
+      const pcXangXe = Math.round((Number(nv.pcXangXe) || 0) * _hsPC96);          
       const chenhLechBHXH = Number(nv.chenhLechBHXH) || 0;
-      const hoTroAnCa = Number(nv.hoTroAnCa) || 0;
+      const hoTroAnCa = Math.round((Number(nv.hoTroAnCa) || 0) * _hsPC96);
       
-      const hoTroHetViec = Number(nv.hoTroHetViec) || 0;
+      const hoTroHetViec = Math.round((Number(nv.hoTroHetViec) || 0) * _hsPC96);
       const congKhac = Number(nv.congKhac) || 0;
-      const phuCapKhac = Number(nv.phuCap) || 0;          
+      const phuCapKhac = Math.round((Number(nv.phuCap) || 0) * _hsPC96);          
 
       const dsPhuCapThem = Array.isArray(nv.phuCapThem) ? nv.phuCapThem : [];
       const tongPhuCapThem = dsPhuCapThem.reduce((s, x) => s + (Number(x.tien) || 0), 0);
@@ -7028,6 +7117,14 @@ function writeSheet(ss, sheetName, headers, rowsData){
       
 
        
+       
+      epGuiNgay() {
+        try {
+          clearTimeout(this._guiTimer);
+          if (this._guiNgayCb) { const cb = this._guiNgayCb; this._guiNgayCb = null; cb(); }
+        } catch (e) {}
+      },
+
       _baoTuChoi(tuChoi) {
         try {
           if (!tuChoi || !tuChoi.length) return;
@@ -7174,7 +7271,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
           
           clearTimeout(this._guiTimer);
           const S = this;
-          this._guiTimer = setTimeout(function () {
+           
+          const _chayGui96 = function () {
             fetch(s.gasUrl, { method: "POST", body: JSON.stringify({
               action: "ghiDong", payload: { session: ve, dsGhi: guiDi.slice(0, 200) } }) })
               .then(r => r.json())
@@ -7193,7 +7291,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 try { guiDi.slice(0, 200).forEach(function (x) { S.xepVaoHangDoi("ghiDong", x.banGhi, x.bang); }); } catch (e) {}
                 CoreService.showToast("⚠️ Mất mạng — thay đổi đã lưu trong máy và ĐANG XẾP HÀNG chờ gửi, app sẽ tự gửi lại khi có mạng.", "warning");
               });
-          }, 800);   
+          };
+          S._guiNgayCb = _chayGui96;
+          this._guiTimer = setTimeout(_chayGui96, 800);   
         } catch (e) {}
       },
 
@@ -10353,10 +10453,11 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
           
           const capBac = (typeof PhanQuyenService !== "undefined") ? PhanQuyenService.capBacCua(role) : role;
-          const isManager = role === "manager";
-          const isHR = role === "hr";
-          const isDirector = role === "director";
-          const isITAdmin = role === "it_admin";
+           
+          const isManager = capBac === "manager";
+          const isHR = capBac === "hr";
+          const isDirector = capBac === "director";
+          const isITAdmin = capBac === "it_admin";
 
           
 
@@ -10612,6 +10713,14 @@ function writeSheet(ss, sheetName, headers, rowsData){
                     <option value="net">Lương NET (công ty bao thuế & BHXH)</option>
                   </select>
                 </div>
+                <!-- [THÊM MỚI 07/09/2026 — V4 đợt 99] Ca mặc định — khai ngay lúc thêm người mới. -->
+                <div class="form-group">
+                  <label class="form-label" title="Người này thường làm ca nào. Khai rồi thì màn chấm công tự chọn sẵn ca đó">Ca Làm Việc Mặc Định</label>
+                  <select id="inpCaMacDinh" class="form-control">
+                    <option value="">↳ Theo phòng ban / tự đoán theo giờ chấm</option>
+                    ${((getCompanySettings().caLamViec) || []).map(c => `<option value="${c.ma}">${c.ma} — ${c.ten} (${c.vao}–${c.ra})</option>`).join("")}
+                  </select>
+                </div>
                 <div class="form-group">
                   <label class="form-label" title="Chỉ dùng cho hệ 'Theo giờ': tiền 1 giờ làm việc">Đơn Giá Giờ (hệ Theo giờ)</label>
                   <input type="number" id="inpDonGiaGioLuong" class="form-control" step="1000" placeholder="VD: 50000">
@@ -10729,6 +10838,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
                   
                   loaiLuong: (document.getElementById("inpLoaiLuong") || {}).value || "thoi_gian",
                   donGiaGioLuong: parseFloat((document.getElementById("inpDonGiaGioLuong") || {}).value) || 0,
+                  
+                  caMacDinh: (document.getElementById("inpCaMacDinh") || {}).value || "",
                   phanTramHoaHong: parseFloat((document.getElementById("inpPhanTramHoaHong") || {}).value) || 0,
                   luongNet: parseFloat((document.getElementById("inpLuongNet") || {}).value) || 0,   
                   
@@ -10941,6 +11052,15 @@ function writeSheet(ss, sheetName, headers, rowsData){
                     <option value="khong_ot" ${(nv.cheDoOT === 'khong_ot') ? 'selected' : ''}>③ Không tính tiền làm thêm (khối quản lý)</option>
                   </select>
                 </div>
+                <!-- [THÊM MỚI 07/09/2026 — V4 đợt 99] CA MẶC ĐỊNH của người này. Ưu tiên: ô này →
+                     ca gán cho phòng (Cài đặt 6.2 mục 4) → app đoán theo giờ chấm (như bản cũ). -->
+                <div class="form-group">
+                  <label class="form-label" title="Người này thường làm ca nào. Khai rồi thì màn chấm công tự chọn sẵn ca đó, và file máy chấm vân tay không ghi mã ca cũng tính đúng ca">Ca Làm Việc Mặc Định</label>
+                  <select id="editCaMacDinh" class="form-control">
+                    <option value="" ${!nv.caMacDinh ? "selected" : ""}>↳ Theo phòng ban / tự đoán theo giờ chấm</option>
+                    ${((getCompanySettings().caLamViec) || []).map(c => `<option value="${c.ma}" ${(nv.caMacDinh === c.ma) ? "selected" : ""}>${c.ma} — ${c.ten} (${c.vao}–${c.ra})</option>`).join("")}
+                  </select>
+                </div>
                 <div class="form-group">
                   <label class="form-label" title="Chỉ dùng cho hệ 'Theo giờ': tiền 1 giờ làm việc">Đơn Giá Giờ (hệ Theo giờ)</label>
                   <input type="number" id="editDonGiaGioLuong" class="form-control" step="1000" value="${nv.donGiaGioLuong || ''}" placeholder="VD: 50000">
@@ -11137,6 +11257,11 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 if (document.getElementById("editCheDoOT")) {
                   const _cdo = document.getElementById("editCheDoOT").value;
                   if (_cdo) nv.cheDoOT = _cdo; else delete nv.cheDoOT;
+                }
+                
+                if (document.getElementById("editCaMacDinh")) {
+                  const _cmd = document.getElementById("editCaMacDinh").value;
+                  if (_cmd) nv.caMacDinh = _cmd; else delete nv.caMacDinh;
                 }
                 if (document.getElementById("editDonGiaGioLuong")) nv.donGiaGioLuong = parseFloat(document.getElementById("editDonGiaGioLuong").value) || 0;
                 if (document.getElementById("editPhanTramHoaHong")) nv.phanTramHoaHong = parseFloat(document.getElementById("editPhanTramHoaHong").value) || 0;
@@ -11766,13 +11891,17 @@ function writeSheet(ss, sheetName, headers, rowsData){
                          ChamCongCore.timCa khớp đúng ca theo mã → tính công/OT đúng ca đã chọn.
                          Muốn thêm "ca online/linh hoạt" thì thêm 1 ca ở Cài đặt 6.2 mục 4. -->
                     <!-- [SỬA 07/09/2026 — V4 đợt 90] Ca TỰ GỢI Ý theo giờ hiện tại (goiYCa) — vẫn đổi tay được. -->
-                    <select id="selCaLamViec" class="form-control" style="font-weight:500;">
+                    <select id="selCaLamViec" class="form-control" style="font-weight:500;" onchange="AppModules.self_attendance.capNhatInfoCa97()">
                       ${(() => { const caGoiY = this.goiYCa();
                         return ((getCompanySettings().caLamViec) || []).map(c => {
                           const nhan = `${c.ma} — ${c.ten} (${c.vao}–${c.ra})`;
                           return `<option value="${nhan}"${nhan === caGoiY ? " selected" : ""}>${nhan}</option>`;
                         }).join("") || `<option value="Ca Hành Chính">Ca Hành Chính</option>`; })()}
                     </select>
+                    <!-- [THÊM MỚI 07/09/2026 — V4 đợt 97] Dòng thông tin ca NGAY TẠI VỊ TRÍ CHẤM CÔNG
+                         (chủ app yêu cầu): giờ làm = mấy công · nghỉ giữa ca thế nào · làm thêm tính
+                         GỘP hay RIÊNG (chế độ 3 kiểu của đợt 31, ưu tiên cá nhân → phòng → công ty). -->
+                    <div id="ccInfoCa97" style="margin-top:6px;font-size:11.5px;color:var(--text-secondary);line-height:1.6;background:var(--bg-hover);border:1px solid var(--border-light);border-radius:8px;padding:6px 10px;">${this._thongTinCa97()}</div>
                   </div>
                   <div class="form-group" style="margin-top:10px;">
                     <label class="form-label"><i class="fa-solid fa-pen-to-square"></i> Ghi chú công việc / Địa điểm</label>
@@ -12295,10 +12424,38 @@ function writeSheet(ss, sheetName, headers, rowsData){
           } catch (e) { return '<span class="badge badge-secondary">—</span>'; }
         },
 
+        /* [THÊM MỚI 07/09/2026 — V4 đợt 97] DÒNG THÔNG TIN CA dưới ô chọn ca ở màn chấm công.
+           Nói cho người chấm biết TRƯỚC: ca này làm mấy giờ = mấy công, nghỉ giữa ca có bị trừ
+           không, và làm thêm của MÌNH đang tính kiểu gì (3 kiểu — đổi ở Cài đặt 6.2 mục 4 hoặc
+           hồ sơ từng người, KHÔNG đổi ở đây để nhân viên không tự sửa luật). */
+        _thongTinCa97() {
+          try {
+            const sel = document.getElementById("selCaLamViec");
+            const nhan = String((sel && sel.value) || this.goiYCa() || "").toUpperCase();
+            const st = getCompanySettings();
+            const dsCa = st.caLamViec || [];
+            const ca = dsCa.find(c => nhan.indexOf(String(c.ma).toUpperCase()) >= 0);
+            if (!ca) return "";
+            const coNghi = ca.nghiTu && ca.nghiDen;
+            const nghiChu = coNghi
+              ? `nghỉ <strong>${ca.nghiTu}–${ca.nghiDen}</strong> (không tính công — ra/vào trùm qua giờ này bị trừ)`
+              : (Number(ca.truAnCa) ? `nghỉ/ăn ca ${ca.truAnCa}h <em>tính trong giờ làm</em>` : "không khai giờ nghỉ");
+            
+            const u = CoreService.currentUser || {};
+            const nv = (DataService.getData().nhanVien || []).find(n => n.id === u.id) || {};
+            const cd = nv.cheDoOT || ((st.otPhongBan || {})[nv.phongBan]) || ((st.quyTacCong || {}).cheDoOT) || "phat_sinh";
+            const tenOT = { phat_sinh: "tính RIÊNG ngay theo giờ phát sinh", bu_du_cong: "GỘP bù đủ công chuẩn tháng trước, phần dư mới là OT", khong_ot: "không tính OT" }[cd] || cd;
+            return `🕐 Ca này làm <strong>${ca.gioLam}h = ${ca.soCong} công</strong> · ${nghiChu}<br>⏱ Làm thêm của bạn: <strong>${tenOT}</strong> <span style="color:var(--text-muted);">(HCNS đổi ở Cài đặt 6.2 mục 4 / hồ sơ)</span>`;
+          } catch (e) { return ""; }
+        },
+        capNhatInfoCa97() { const o = document.getElementById("ccInfoCa97"); if (o) o.innerHTML = this._thongTinCa97(); },
         goiYCa() {
           try {
             const ds = (getCompanySettings().caLamViec) || [];
             if (!ds.length) return "";
+             
+            const _caMD = ChamCongCore.caMacDinhCua((CoreService.currentUser || {}).id, getCompanySettings(), null);
+            if (_caMD) return _caMD.ma + " — " + _caMD.ten + " (" + _caMD.vao + "–" + _caMD.ra + ")";
             const nay = new Date();
             const phut = nay.getHours() * 60 + nay.getMinutes();
             const doiPhut = g => { const p = String(g || "").split(":"); return (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0); };
@@ -12308,7 +12465,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
               const om = c.quaDem ? (phut >= v || phut <= r) : (phut >= v && phut <= r);
               if (om && !dangOm) dangOm = c;
               let lech = Math.abs(phut - v);
-              lech = Math.min(lech, 1440 - lech);          // 23:50 so 00:10 chỉ lệch 20 phút, không phải 23 tiếng
+              lech = Math.min(lech, 1440 - lech);          
               if (lech < lechMin) { lechMin = lech; ganNhat = c; }
             });
             const c = dangOm || ganNhat;
@@ -12319,18 +12476,16 @@ function writeSheet(ss, sheetName, headers, rowsData){
         async submitCheckIn() {
           const user = CoreService.currentUser;
 
-          // [SỬA 28/08/2026] Cổng xác thực vị trí chấm công "Tại Nhà Máy" theo CÀI ĐẶT (IP/GPS/kết hợp).
-          // Áp dụng khi chế độ khác "off" và admin đã khai IP HOẶC tọa độ công ty. Badge chưa "matched"
-          // thì kiểm lại một lần cho chắc; admin bật "bắt buộc" mà vẫn không đạt thì CHẶN, kèm lý do rõ.
+          
+          
           const stCty = getCompanySettings();
           const cheDoCC = stCty.chamCongCheDo || "ip";
           const coIPcty = !!(stCty.chamCongIPCty && String(stCty.chamCongIPCty).trim());
-          const coGPScty = dsDiaDiemChamCong(stCty).length > 0;   // trụ sở HOẶC bất kỳ chi nhánh nào
+          const coGPScty = dsDiaDiemChamCong(stCty).length > 0;   
           const batAp = cheDoCC !== "off" && (coIPcty || coGPScty);
           if (this.currentMode === "nha_may" && batAp) {
             if (this.netTrangThai !== "matched") {
-              // [THÊM MỚI đợt 91] Báo NGAY đang xác thực — trước đây bấm nút xong màn đứng im
-              // 1-2 giây (đang dò IP/GPS ở nền) làm người chấm tưởng app đơ, bấm thêm lần nữa.
+
               CoreService.showToast("⏳ Đang xác thực vị trí, chờ một nhịp...", "info");
               await this.kiemTraMangCongTy();
             }
@@ -12357,9 +12512,6 @@ function writeSheet(ss, sheetName, headers, rowsData){
           data.bangCong = data.bangCong || [];
           const existIdx = data.bangCong.findIndex(b => b.maNV === user.id && b.ngay === todayStr);
 
-          /* [SỬA 07/09/2026 — V4 đợt 91] CHẤM LẠI LÀ SỬA LUÔN, KHỎI HỎI (chủ app: "nếu chấm
-             công lại thì mặc định sửa lại luôn"). Giờ cũ vẫn được nêu trong toast xác nhận
-             ở cuối để người chấm biết mình vừa đè lên giờ nào — không mất dấu vết. */
           const _gioVaoCu91 = existIdx >= 0 ? data.bangCong[existIdx].gioVao : "";
 
           const hinhThucLabel = this.currentMode === "online" 
@@ -12372,15 +12524,14 @@ function writeSheet(ss, sheetName, headers, rowsData){
             ? `${this.currentGps.latitude.toFixed(6)}, ${this.currentGps.longitude.toFixed(6)}` 
             : "";
 
-          // [THÊM MỚI 31/08/2026] Bản ghi CŨ của ngày hôm nay (nếu có) — để check-in LẠI không xóa dữ liệu
-          //   check-out đã chấm. Trước đây tạo mới đè sạch giờ ra + OT → mất công.
+          
           const banGhiCu = existIdx >= 0 ? data.bangCong[existIdx] : null;
           const newRecord = {
             maNV: user.id,
             ngay: todayStr,
             caLam: caLam,
             gioVao: nowTime,
-            // [SỬA 31/08/2026] Nếu ngày này ĐÃ check-out mà check-in lại → GIỮ giờ ra/OT cũ (không reset về mặc định).
+            
             gioRa: (banGhiCu && banGhiCu.hasCheckedOut) ? banGhiCu.gioRa : (getCompanySettings().gioRaChuan || "17:00"),
             gioOT: (banGhiCu && banGhiCu.hasCheckedOut) ? (banGhiCu.gioOT || 0) : 0,
             trangThai: "du_cong",
@@ -12390,58 +12541,46 @@ function writeSheet(ss, sheetName, headers, rowsData){
             diaChi: this.gpsAddress || "",
             anhCheckIn: this.currentPhoto || (banGhiCu ? banGhiCu.anhCheckIn : "") || "",
             ghiChu: ghiChu,
-            // [THÊM MỚI 27/08/2026] Dấu vết xác thực mạng công ty. Chỉ có ý nghĩa với chế độ
-            // "Tại Nhà Máy": true=đã xác thực đúng mạng cty, false=chấm nhưng ngoài mạng cty.
-            // Chế độ Online/Thị Trường để null (không áp dụng). ipChamCong lưu IP lúc chấm.
+
+            
             xacThucMang: this.currentMode === "nha_may" ? (this.netTrangThai === "matched") : null,
             ipChamCong: this.netIP || "",
-            // [THÊM MỚI 28/08/2026] Khoảng cách (mét) từ chỗ chấm tới công ty theo GPS — để HR đối
-            // chiếu khi nghi ngờ. null nếu không dùng GPS hoặc chưa bắt được tọa độ.
+
             khoangCachCty: this.currentMode === "nha_may" ? (this.netKhoangCach != null ? this.netKhoangCach : null) : null,
-            // [SỬA 31/08/2026] Giữ trạng thái đã check-out nếu ngày này từng check-out (check-in lại không "mở ca" lại).
+            
             hasCheckedOut: (banGhiCu && banGhiCu.hasCheckedOut) ? true : false,
-            nguon: "app",   // [THÊM MỚI 29/08/2026] đánh dấu NGUỒN để đối chiếu với máy chấm công / bảng phòng
-            /* [THÊM MỚI 07/09/2026 — V4 đợt 94] Khung nhiều lần vào/ra: cacLan = các quãng đã
-               đóng trong ngày; vaoLanNay = giờ vào của quãng đang mở (khối dưới sẽ điền đúng). */
+            nguon: "app",   
+             
             cacLan: [], vaoLanNay: nowTime
           };
 
-          /* [SỬA 07/09/2026 — V4 đợt 94] VÀO/RA NHIỀU LẦN TRONG NGÀY (chủ app: "vào xong ra,
-             ra xong vào — vẫn phải ghi nhận TỔNG thời gian"):
-             · Hôm nay ĐÃ RA CA mà vào lại → MỞ QUÃNG MỚI: quãng cũ cất vào cacLan, giờ vào
-               NGÀY giữ lần đầu, trạng thái quay về "đang làm" (trước đây bị coi vẫn-đã-ra-ca).
-             · Chưa ra ca mà bấm vào lần nữa → chỉ SỬA GIỜ VÀO của quãng hiện tại (đợt 91). */
           if (banGhiCu) {
             const dsLan94 = Array.isArray(banGhiCu.cacLan) ? banGhiCu.cacLan.slice() : [];
             if (banGhiCu.hasCheckedOut) {
-              dsLan94.push({ vao: banGhiCu.vaoLanNay || banGhiCu.gioVao, ra: banGhiCu.gioRa });   // đóng sổ quãng trước
+              dsLan94.push({ vao: banGhiCu.vaoLanNay || banGhiCu.gioVao, ra: banGhiCu.gioRa });   
               newRecord.cacLan = dsLan94;
-              newRecord.gioVao = banGhiCu.gioVao;                                                  // giờ vào NGÀY = lần đầu
+              newRecord.gioVao = banGhiCu.gioVao;                                                  
               newRecord.vaoLanNay = nowTime;
-              newRecord.gioRa = getCompanySettings().gioRaChuan || "17:00";                        // quãng mở: giờ ra tạm = chuẩn
-              newRecord.hasCheckedOut = false;                                                     // MỞ CA LẠI — đang làm tiếp
+              newRecord.gioRa = getCompanySettings().gioRaChuan || "17:00";                        
+              newRecord.hasCheckedOut = false;                                                     
             } else {
               newRecord.cacLan = dsLan94;
               newRecord.vaoLanNay = nowTime;
-              if (dsLan94.length) newRecord.gioVao = banGhiCu.gioVao;   // đã có quãng trước → giữ giờ vào đầu ngày
+              if (dsLan94.length) newRecord.gioVao = banGhiCu.gioVao;   
             }
           }
-          // [SỬA 29/08/2026] Trước: tự đè theo (NV+ngày). Nay đi qua CỬA CHUNG ChamCongCore.ghiNhanCong
-          //   để gộp nguồn đúng ưu tiên (Máy > App > Phòng) + tự bắt lệch giờ giữa các nguồn.
+
           const kqGop = ChamCongCore.ghiNhanCong(data, newRecord);
           if (kqGop === "lech") CoreService.showToast("⚠️ Giờ chấm app LỆCH với nguồn khác quá ngưỡng — vào tab Đối Chiếu Công để xác nhận.", "warning");
 
-          // [SỬA 01/09/2026] Khi ĐỒNG BỘ dùng chung đang BẬT: KHÔNG đẩy cả khối (tránh nhiều người chấm đè
-          //   nhau); thay vào đó GHI TỪNG DÒNG bản ghi chấm công này lên server (backend có khóa, an toàn).
+          
           const _dongBo = DataService.syncBat();
           DataService.saveData(data, { khongDayLen: _dongBo });
           if (_dongBo) DataService.guiChamCong(newRecord).then(kq => { if (!kq.ok) CoreService.showToast("Chưa lưu được chấm công lên máy chủ: " + (kq.err || ""), "warning"); });
           this.stopCamera();
-          // [THÊM MỚI 31/08/2026] Reset ảnh/GPS tạm sau khi check-in — nếu không, lúc check-out mà không chụp
-          //   ảnh mới sẽ bị DÍNH lại ảnh check-in (gán nhầm sang anhCheckOut).
+
           this.currentPhoto = null; this.currentGps = null; this.gpsAddress = "";
-          // [SỬA đợt 94] 3 tình huống nói 3 kiểu: vào LẦN THỨ N (sau khi đã ra ca) · SỬA giờ vào
-          // quãng hiện tại · vào ca lần đầu trong ngày. App cộng TỔNG các quãng khi tính công.
+
           CoreService.showToast((banGhiCu && banGhiCu.hasCheckedOut)
             ? `🟢 VÀO CA LẦN THỨ ${(newRecord.cacLan || []).length + 1} lúc ${nowTime} — app sẽ CỘNG TỔNG thời gian các lần trong ngày. (${hinhThucLabel})`
             : _gioVaoCu91
@@ -12464,9 +12603,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
             return;
           }
 
-          // [SỬA 31/08/2026] Tính OT theo GIỜ RA CỦA CHÍNH CA đã chọn (không dùng giờ ra chuẩn CHUNG nữa).
-          //   Trước đây luôn so với gioRaChuan (vd 17:00) → ca chiều 14–22h bấm ra 22:00 bị tính KHỐNG ~5h OT.
-          //   Nay lấy ca của bản ghi qua ChamCongCore.timCa → dùng ca.ra; ca QUA ĐÊM thì +24h để so đúng mốc.
+          
+          
           const stCC = getCompanySettings();
           const caRa = ChamCongCore.timCa(data.bangCong[existIdx], stCC);
           const gioRaCa = (caRa && caRa.ra) ? caRa.ra : (stCC.gioRaChuan || "17:00");
@@ -12474,15 +12612,15 @@ function writeSheet(ss, sheetName, headers, rowsData){
           let phutRaChuan = phutTuGio(gioRaCa);
           if (phutRaChuan == null) phutRaChuan = 17 * 60;
           let phutRaThucTe = nowH * 60 + nowM;
-          const pVaoCa = caRa ? phutTuGio(caRa.vao) : null;   // giờ vào ca (để xử lý ca qua đêm)
+          const pVaoCa = caRa ? phutTuGio(caRa.vao) : null;   
           if (caRa && caRa.quaDem && pVaoCa != null) {
-            // Ca qua đêm: giờ nào ≤ giờ vào ca thì thuộc HÔM SAU → cộng 24h cho so sánh đúng.
+            
             if (phutRaChuan <= pVaoCa) phutRaChuan += 1440;
             if (phutRaThucTe <= pVaoCa) phutRaThucTe += 1440;
           }
           let otHours = 0;
           if (phutRaThucTe > phutRaChuan) {
-            otHours = Math.round(((phutRaThucTe - phutRaChuan) / 60) * 10) / 10;   // làm tròn 0,1 giờ
+            otHours = Math.round(((phutRaThucTe - phutRaChuan) / 60) * 10) / 10;   
           }
 
           data.bangCong[existIdx].gioRa = nowTime;
@@ -12490,12 +12628,11 @@ function writeSheet(ss, sheetName, headers, rowsData){
           if (otHours > 0) data.bangCong[existIdx].gioOT = otHours;
           if (this.currentPhoto) data.bangCong[existIdx].anhCheckOut = this.currentPhoto;
 
-          // [SỬA 01/09/2026] Giống check-in: đồng bộ bật → ghi từng dòng (không đẩy cả khối) để không đè nhau.
           const _dongBoRa = DataService.syncBat();
           DataService.saveData(data, { khongDayLen: _dongBoRa });
           if (_dongBoRa) DataService.guiChamCong(data.bangCong[existIdx]).then(kq => { if (!kq.ok) CoreService.showToast("Chưa lưu được chấm công ra ca lên máy chủ: " + (kq.err || ""), "warning"); });
           this.stopCamera();
-          // [THÊM MỚI 31/08/2026] Reset ảnh/GPS tạm sau check-out để lần chấm sau không dùng lại dữ liệu cũ.
+          
           this.currentPhoto = null; this.currentGps = null; this.gpsAddress = "";
           CoreService.showToast(`🔴 Chấm công Ra Ca thành công lúc ${nowTime}! ${otHours > 0 ? `(Ghi nhận ${otHours}h OT)` : ''}`, "success");
           this.render();
@@ -12510,9 +12647,6 @@ function writeSheet(ss, sheetName, headers, rowsData){
           }, 150);
         },
 
-        /* [THÊM MỚI 02/09/2026] MÀN CHẤM CÔNG 2 TAB: "chamcong" (điểm danh GPS/Ảnh) | "sanluong" (khai khoán).
-           Tab Khai báo: chọn NGÀY LÀM → khai NHIỀU công đoạn (1 ngày nhiều việc) kiểu bảng Excel → Gửi →
-           trạng thái CHỜ DUYỆT → Quản lý duyệt ở Trung tâm Phê Duyệt / mục 3 → chốt vào công/lương. */
         chonTab(k) { this.subTab = k; this.render(); },
         _tabBar() {
           const b = (k, ic, ten) => `<button class="btn btn-sm ${this.subTab === k ? "btn-primary" : "btn-secondary"}" onclick="AppModules.self_attendance.chonTab('${k}')">${ic} ${ten}</button>`;
@@ -12742,14 +12876,18 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const userDept = currentUser.phongBan || "";
 
           let baseList = [];
-          if (role === "employee") {
+           
+          if (capBac === "employee") {
             baseList = (data.donTu || []).filter(d => d.maNV === currentUser.id);
           } else if (isManager) {
             
             baseList = (data.donTu || []).filter(d => PhanQuyenService.phuTrachPhong(currentUser, d.phongBan) || d.maNV === currentUser.id);
-          } else {
+          } else if (isHR || isDirector || isITAdmin) {
             
             baseList = data.donTu || [];
+          } else {
+            baseList = (data.donTu || []).filter(d => d.maNV === currentUser.id
+              || PhanQuyenService.phuTrachPhong(currentUser, d.phongBan));
           }
 
           let donTuList = baseList;
@@ -16992,6 +17130,18 @@ function writeSheet(ss, sheetName, headers, rowsData){
           }
 
           DataService.saveData(data);
+           
+          try {
+            const _uNT = CoreService.currentUser || {};
+            if (cv.nguoiNhan && String(cv.nguoiNhan) !== String(_uNT.id)) {
+              if (status === "hoan_thanh")
+                DataService.guiThongBaoDen([cv.nguoiNhan], "🎉 Việc đã được nghiệm thu: " + cv.tenCV,
+                  (_uNT.hoTen || "Quản lý") + " đã nghiệm thu và chấm điểm KPI cho việc này.", "task");
+              else
+                DataService.guiThongBaoDen([cv.nguoiNhan], "↩️ Việc bị TRẢ LẠI: " + cv.tenCV,
+                  (_uNT.hoTen || "Quản lý") + " yêu cầu làm lại. Lý do: " + (cv.lyDoTraLai || "(không ghi)"), "task");
+            }
+          } catch (e) {}
           CoreService.showToast(status === "hoan_thanh" ? "Đã nghiệm thu & tính điểm KPI!" : "Đã TRẢ LẠI việc — yêu cầu làm lại.", status === "hoan_thanh" ? "success" : "warning");
           this.closeDrawer();
         },
@@ -17121,6 +17271,13 @@ function writeSheet(ss, sheetName, headers, rowsData){
               const cv = (d.congViec || []).find(c => c.id === cvId); if (!cv) return;
               cv.trangThai = "tra_lai"; cv.lyDoTraLai = lyDo; cv.danhGiaNote = lyDo; cv.giaiDoan = "thuc_thi";
               DataService.saveData(d);
+               
+              try {
+                const _uTL = CoreService.currentUser || {};
+                if (cv.nguoiNhan && String(cv.nguoiNhan) !== String(_uTL.id))
+                  DataService.guiThongBaoDen([cv.nguoiNhan], "↩️ Việc bị TRẢ LẠI: " + cv.tenCV,
+                    (_uTL.hoTen || "Quản lý") + " yêu cầu làm lại. Lý do: " + lyDo, "task");
+              } catch (e) {}
               CoreService.closeModal();
               CoreService.showToast("Đã trả lại việc — yêu cầu làm lại.", "warning");
               this.render();
@@ -17219,6 +17376,13 @@ function writeSheet(ss, sheetName, headers, rowsData){
           if (cv.checklist) cv.checklist.forEach(c => c.done = true);
 
           DataService.saveData(data);
+           
+          try {
+            const _uNop = CoreService.currentUser || {};
+            if (cv.nguoiGiaoId && String(cv.nguoiGiaoId) !== String(_uNop.id))
+              DataService.guiThongBaoDen([cv.nguoiGiaoId], "✅ Việc chờ bạn nghiệm thu: " + cv.tenCV,
+                (_uNop.hoTen || "Nhân viên") + " đã nộp 100% và chờ bạn nghiệm thu, chấm điểm.", "task");
+          } catch (e) {}
           CoreService.showToast("Đã nộp nghiệm thu cho Quản lý / Trưởng phòng!", "success");
           this.openTaskDrawer(cvId);
         },
@@ -17820,6 +17984,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 DataService.saveData(data);
 
                 try { AppModules.tasks.baoGiaoViec(newCV, "giao_moi"); } catch (eB) {}
+                try { DataService.epGuiNgay(); } catch (eE96) {}   
                 CoreService.closeModal();
                 CoreService.showToast("Đã giao việc thành công!", "success");
                 AppModules.tasks.render();
@@ -17994,6 +18159,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 });
                 DataService.saveData(data);
                 try { AppModules.tasks.baoGiaoViec(cv, "giao_lai"); } catch (eB) {}
+                try { DataService.epGuiNgay(); } catch (eE96b) {}   
                 if (nguoiNhanCu && nguoiNhanCu !== nvMoi.id) {
                   DataService.guiThongBaoDen([nguoiNhanCu], "↪️ Việc đã chuyển cho người khác: " + cv.tenCV,
                     (u.hoTen || "") + " đã giao lại việc này cho " + nvMoi.hoTen + ".", "task");
@@ -18611,9 +18777,16 @@ function writeSheet(ss, sheetName, headers, rowsData){
           
           const thangCC = CoreService.thangLamViec();
           const allEmployees = (data.nhanVien || []).filter(n => n.trangThai !== "dinh_chi");
-          const targetEmployees = isManager ? allEmployees : allEmployees.filter(n => n.id === currentUser.id);
-          const rawAttendanceList = isManager ? (data.bangCong || []) : (data.bangCong || []).filter(b => b.maNV === currentUser.id);
-          const approvedLeaves = (data.donTu || []).filter(d => d.trangThai === "da_duyet" && (isManager ? true : d.maNV === currentUser.id));
+           
+          const _toanCtyCC2 = ["hr", "director", "it_admin"].indexOf(_capCC2) >= 0;
+          const _trongTamCC2 = n => _toanCtyCC2 || PhanQuyenService.phuTrachPhong(currentUser, n.phongBan) || n.id === currentUser.id;
+          const _phongCuaMa = ma => ((data.nhanVien || []).find(n => n.id === ma) || {}).phongBan || "";
+          const targetEmployees = isManager ? allEmployees.filter(_trongTamCC2) : allEmployees.filter(n => n.id === currentUser.id);
+          const rawAttendanceList = isManager
+            ? (data.bangCong || []).filter(b => _toanCtyCC2 || b.maNV === currentUser.id || PhanQuyenService.phuTrachPhong(currentUser, _phongCuaMa(b.maNV)))
+            : (data.bangCong || []).filter(b => b.maNV === currentUser.id);
+          const approvedLeaves = (data.donTu || []).filter(d => d.trangThai === "da_duyet"
+            && (isManager ? (_toanCtyCC2 || d.maNV === currentUser.id || PhanQuyenService.phuTrachPhong(currentUser, d.phongBan || _phongCuaMa(d.maNV))) : d.maNV === currentUser.id));
 
           
           if (!isManager && ["nhan_su", "doi_chieu", "theo_phong_ban", "bao_cao_bang_cong"].indexOf(this.currentSubTab) >= 0) {
@@ -19284,9 +19457,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 const congPhepCua = (maNV) => (data.donTu || [])
                   .filter(d => d.trangThai === "da_duyet" && d.maNV === maNV && d.hinhThuc !== "gio" && String(d.tuNgay || "").slice(0, 7) === thang)
                   .reduce((s, d) => s + (Number(d.soNgay) || 0), 0);
+
                 
-                const congLe = String(settings.ngayLeTet || "").split(",").map(s => s.trim()).filter(Boolean)
-                  .filter(s => { const p = s.split("/"); return p.length === 3 && (p[2] + "-" + String(p[1]).padStart(2, "0")) === thang; }).length;
+                const congLe = soNgayLeTrongThang(settings, thang);
                 const nvCua = (id) => (data.nhanVien || []).find(n => n.id === id) || {};
                 const dsCong = isManager ? th : th.filter(r => r.maNV === currentUser.id);   
                 const rowsCong = dsCong.map((r, i) => {
@@ -19771,7 +19944,11 @@ function writeSheet(ss, sheetName, headers, rowsData){
           });
           let thieu = 0;
           for (let d = 1; d <= denNgay; d++) {
-            if (new Date(yy, mm - 1, d).getDay() === 0) continue;   // 0 = Chủ Nhật → bỏ (nghỉ tuần)
+            /* [SỬA 07/09/2026 — V4 đợt 99] TRƯỚC: viết CỨNG "Chủ Nhật là ngày nghỉ" → công ty nghỉ
+               thứ Hai, hoặc nghỉ cả T7+CN, đều bị app báo "thiếu chấm công" oan.
+               NAY đọc Cài đặt 6.2 mục 2 (ngayNghiTuan). Chưa khai gì = [0] = Chủ Nhật, y như cũ. */
+            const _nghiTuan99 = (getCompanySettings().ngayNghiTuan || [0]);
+            if (_nghiTuan99.indexOf(new Date(yy, mm - 1, d).getDay()) >= 0) continue;   // ngày nghỉ tuần → không tính là thiếu chấm
             if (!coCham.has(d) && !coDon.has(d)) thieu++;
           }
           return thieu;
@@ -20461,6 +20638,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const xuLyThieuSanLuong = (document.getElementById("qtXuLyThieuSL") || {}).value || "canh_bao";
           st.quyTacCong = Object.assign({}, st.quyTacCong, { uuTienNguon, phongCanSanLuong, xuLyThieuSanLuong });
           localStorage.setItem(CONFIG.STORAGE_KEY_SETTINGS, JSON.stringify(st));
+           
+          try { const _kho = DataService.getData(); _kho.uuTienNguonCC = uuTienNguon; DataService.saveData(_kho); } catch (e99) {}
           CoreService.showToast("✅ Đã lưu quy tắc nguồn công (" + (chonEl ? chonEl.value : "A") + " · " + phongCanSanLuong.length + " phòng cần sản lượng · " + (xuLyThieuSanLuong === "khong_cong" ? "chặt" : "cảnh báo") + ").", "success");
           this.render();
         },
@@ -20997,7 +21176,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                       // Ghi chú nhỏ cạnh số công để người làm lương biết số này tin được tới đâu
                       const ghiChuCong = uocTinhCong
                         ? '<div style="font-size:10px;color:#b45309">chưa có bảng công</div>'
-                        : (thieuDuLieuCong ? '<div style="font-size:10px;color:#b45309">bảng công chưa đủ</div>' : '');
+                        : (thieuDuLieuCong ? '<div style="font-size:10px;color:#b45309" title="Tháng này chưa chốt đủ bảng công — Thực Lĩnh đang là TẠM TÍNH theo số công hiện có; chốt công xong số sẽ tự đúng.">bảng công chưa đủ ⓘ</div>' : '');   // [SỬA đợt 96] thêm tooltip giải thích
 
                       return `
                         <tr>
@@ -21446,6 +21625,13 @@ function writeSheet(ss, sheetName, headers, rowsData){
           this.render();
         },
         viewPhieuLuong(maNV) {
+           
+          const _uPL = CoreService.currentUser || {};
+          const _capPL = PhanQuyenService.capBacCua(_uPL.role || "employee");
+          if (String(maNV) !== String(_uPL.id) && ["hr", "director"].indexOf(_capPL) < 0) {
+            CoreService.showToast("Bạn chỉ xem được phiếu lương của chính mình.", "danger");
+            return;
+          }
           const data = DataService.getData();
           const nv = data.nhanVien.find(n => n.id === maNV);
           if (!nv) return;
@@ -21738,6 +21924,12 @@ function writeSheet(ss, sheetName, headers, rowsData){
           img.src = svgUrl;
         },
         exportPayrollExcel() {
+           
+          const _capXL = PhanQuyenService.capBacCua((CoreService.currentUser || {}).role || "employee");
+          if (["hr", "director"].indexOf(_capXL) < 0) {
+            CoreService.showToast("Bạn không có quyền xuất bảng lương công ty.", "danger");
+            return;
+          }
           const data = DataService.getData();
           const settings = getCompanySettings();
           const rows = (data.nhanVien || []).filter(n => n.trangThai !== "dinh_chi").map(nv => {
@@ -25895,7 +26087,14 @@ function writeSheet(ss, sheetName, headers, rowsData){
             if (!u.id) return false;
             if (y && y.nguoiGui === u.id) return false;              // không tự ký đơn của mình
             const cap = PhanQuyenService.capBacCua(u.role || "employee");
-            if (["manager", "hr", "director", "it_admin"].indexOf(cap) >= 0) return true;
+            /* [SỬA 07/09/2026 — V4 đợt 98] KÝ NHẦM PHIẾU TIỀN — đã đo ra lỗi thật.
+                TRƯỚC: hễ là quản lý bất kỳ (TP/HC/GĐ/IT) là trả TRUE NGAY, chưa hỏi thang duyệt.
+                Hậu quả đo được: Trưởng phòng Kỹ thuật ký được phiếu tạm ứng 5 triệu của phòng
+                Hành chính (không phải phòng mình); Giám đốc ký được cả phiếu mà sổ Quy trình
+                duyệt KHÔNG khai Giám đốc → khai quy trình xong vẫn bị ký vượt.
+                NAY: IT giữ quyền gỡ kẹt hệ thống, còn lại ĐỀU đi qua duyetDuocChungTu — hàm đó
+                xét đúng thang đã khai + bắt Trưởng phòng phải PHỤ TRÁCH phòng của người gửi. */
+            if (cap === "it_admin") return true;
             const data = DataService.getData();
             const nguoiGui = (data.nhanVien || []).find(n => n.id === y.nguoiGui) || {};
             return PhanQuyenService.duyetDuocChungTu(u, DataService.maChungTuCuaYeuCau(y), y.phongBan || nguoiGui.phongBan || "");
@@ -27220,10 +27419,30 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
                   <!-- [THÊM MỚI 31/08/2026] NGÀY NGHỈ LỄ/TẾT (nghỉ CÓ LƯƠNG) — cộng vào công có lương cho mọi người.
                        Nhập danh sách ngày dd/mm/yyyy cách nhau dấu phẩy; chỉ ngày rơi vào tháng lương mới được tính. -->
+                  <!-- [SỬA 07/09/2026 — V4 đợt 99] NGÀY LỄ: từ Ô GÕ TAY → BẢNG CHỌN NGÀY.
+                       VÌ SAO: gõ tay sai định dạng (vd 2026-01-01 thay vì 01/01/2026) là app bỏ qua
+                       ÂM THẦM, mất công lễ của cả công ty mà không ai biết. Nay chọn bằng lịch nên
+                       không thể sai định dạng, lại ghi được TÊN NGÀY LỄ cho dễ soát. -->
                   <div class="form-group" style="margin-bottom:12px;">
-                    <label class="form-label" style="font-size:11.5px;"><i class="fa-solid fa-calendar-day"></i> Ngày nghỉ Lễ/Tết (nghỉ có lương) <span style="font-weight:400;color:var(--text-muted);">— nhập dd/mm/yyyy, cách nhau dấu phẩy</span></label>
-                    <input type="text" id="setNgayLeTet" class="form-control" value="${companySettings.ngayLeTet || ""}" placeholder="VD: 01/01/2026, 30/04/2026, 01/05/2026, 02/09/2026" style="font-size:12.5px;">
-                    <small style="font-size:10px;color:var(--text-muted);">Mỗi ngày lễ rơi vào tháng lương được cộng 1 công có lương cho tất cả nhân viên. Để trống nếu không dùng.</small>
+                    <label class="form-label" style="font-size:11.5px;"><i class="fa-solid fa-calendar-day"></i> Ngày nghỉ Lễ/Tết (nghỉ có lương) <span style="font-weight:400;color:var(--text-muted);">— chọn bằng lịch, mỗi dòng 1 ngày</span></label>
+                    <div style="overflow-x:auto;">
+                      <table class="bang-excel" style="width:100%;min-width:360px;border-collapse:collapse;font-size:11.5px;">
+                        <thead><tr style="color:var(--text-secondary);"><th style="padding:3px;text-align:left;">Ngày</th><th style="padding:3px;text-align:left;">Tên ngày lễ</th><th style="width:34px;"></th></tr></thead>
+                        <tbody id="bangNgayLeBody">${(AppModules.settings._dsNgayLe99(companySettings)).map(x => AppModules.settings._rowNgayLe(x)).join("")}</tbody>
+                      </table>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-secondary" style="margin-top:6px;font-size:11px;" onclick="AppModules.settings.themNgayLe()"><i class="fa-solid fa-plus"></i> Thêm ngày lễ</button>
+                    <small style="font-size:10px;color:var(--text-muted);display:block;margin-top:4px;">Mỗi ngày lễ rơi vào tháng lương được cộng 1 công có lương cho tất cả nhân viên. Bỏ trống bảng nếu không dùng.</small>
+                  </div>
+
+                  <!-- [THÊM MỚI 07/09/2026 — V4 đợt 99] NGÀY NGHỈ HẰNG TUẦN — trước đây Chủ Nhật bị
+                       viết CỨNG trong mã, công ty nghỉ thứ Hai hoặc nghỉ 2 ngày/tuần không khai được. -->
+                  <div class="form-group" style="margin-bottom:12px;">
+                    <label class="form-label" style="font-size:11.5px;"><i class="fa-solid fa-calendar-week"></i> Ngày nghỉ hằng tuần <span style="font-weight:400;color:var(--text-muted);">— tích thứ nào là ngày đó KHÔNG bị coi là "quên chấm công"</span></label>
+                    <div style="display:flex;flex-wrap:wrap;gap:10px;padding:6px 8px;background:var(--bg-hover);border:1px solid var(--border-light);border-radius:8px;">
+                      ${[[1,"Thứ 2"],[2,"Thứ 3"],[3,"Thứ 4"],[4,"Thứ 5"],[5,"Thứ 6"],[6,"Thứ 7"],[0,"Chủ Nhật"]].map(([so,ten]) => `<label class="o-nghi-tuan" style="display:inline-flex;align-items:center;gap:4px;font-size:11.5px;cursor:pointer;"><input type="checkbox" class="chkNghiTuan" value="${so}" ${((companySettings.ngayNghiTuan || [0]).indexOf(so) >= 0) ? "checked" : ""} style="width:15px;height:15px;"> ${ten}</label>`).join("")}
+                    </div>
+                    <small style="font-size:10px;color:var(--text-muted);">Ngày nghỉ tuần KHÔNG tự cộng công (đã nằm trong ngày công chuẩn tháng) — chỉ để app thôi báo "thiếu chấm công" và tô màu đúng trên bảng công.</small>
                   </div>
 
                   <!-- [SỬA 31/08/2026] Khối "Giai đoạn % riêng theo nhóm" đã CHUYỂN xuống nhóm ③ Chấm điểm KPI (card dưới). -->
@@ -27352,12 +27571,17 @@ function writeSheet(ss, sheetName, headers, rowsData){
                   <div style="background:var(--bg-hover);border:1px solid var(--border-light);border-radius:10px;padding:10px 12px;">
                     <div style="font-weight:700;font-size:12px;color:#0f766e;margin-bottom:6px;"><i class="fa-solid fa-clock"></i> Ca Làm Việc (Ca 1/2/3, Kíp 12h, Hành chính...)</div>
                     <div style="overflow-x:auto;">
-                      <table class="bang-excel" style="width:100%;min-width:560px;border-collapse:collapse;font-size:11.5px;">
+                      <table class="bang-excel" style="width:100%;min-width:820px;border-collapse:collapse;font-size:11.5px;">
                         <thead><tr style="color:var(--text-secondary);">
                           <th style="text-align:left;padding:3px;">Mã</th><th style="text-align:left;padding:3px;">Tên ca</th>
                           <th style="padding:3px;">Vào</th><th style="padding:3px;">Ra</th>
-                          <th style="padding:3px;" title="Số giờ làm thực của ca (đã trừ nghỉ)">Giờ làm</th>
-                          <th style="padding:3px;" title="Số giờ trừ ăn ca — dùng tính giờ chuẩn ca cho chấm công sản lượng">Ăn ca (giờ)</th>
+                          <!-- [THÊM MỚI 07/09/2026 — V4 đợt 97] 2 cột "Nghỉ từ/đến": khai giờ nghỉ
+                               KHÔNG hưởng công (vd HC 12:00–13:00) — chấm công trùm qua giờ này bị trừ.
+                               Ca kíp liên tục (nghỉ vẫn tính công) thì ĐỂ TRỐNG. -->
+                          <th style="padding:3px;" title="Giờ bắt đầu nghỉ giữa ca KHÔNG tính công (vd 12:00). Ca kíp nghỉ vẫn hưởng công thì để trống">Nghỉ từ</th>
+                          <th style="padding:3px;" title="Giờ kết thúc nghỉ giữa ca (vd 13:00)">Nghỉ đến</th>
+                          <th style="padding:3px;" title="Số giờ làm thực của ca (khung ca trừ nghỉ) — sửa Vào/Ra/Nghỉ app tự tính lại, vẫn gõ đè được">Giờ làm</th>
+                          <th style="padding:3px;" title="Số giờ nghỉ/ăn ca — dùng tính giờ chuẩn ca cho chấm công sản lượng">Nghỉ (giờ)</th>
                           <th style="padding:3px;" title="1 ca quy ra bao nhiêu công (kíp 12h công ty tự quyết)">= Công</th>
                           <th style="padding:3px;" title="Ca đêm: giờ Ra thuộc ngày hôm sau">Qua đêm</th><th></th>
                         </tr></thead>
@@ -27365,6 +27589,20 @@ function writeSheet(ss, sheetName, headers, rowsData){
                       </table>
                     </div>
                     <button type="button" class="btn btn-sm btn-secondary" style="margin-top:6px;font-size:11px;" onclick="AppModules.settings.themCa()"><i class="fa-solid fa-plus"></i> Thêm ca</button>
+                    <!-- [THÊM MỚI 07/09/2026 — V4 đợt 99] GÁN CA MẶC ĐỊNH CHO TỪNG PHÒNG. Người nào
+                         khai ca riêng trong hồ sơ thì lấy của người đó; phòng để "—" thì app đoán
+                         theo giờ chấm như bản cũ. -->
+                    <div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--border-color);">
+                      <div style="font-weight:700;font-size:11.5px;color:#0f766e;margin-bottom:5px;">🏢 Ca mặc định theo phòng ban <span style="font-weight:400;color:var(--text-muted);">— khỏi phải tự chọn ca mỗi lần chấm</span></div>
+                      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px;">
+                        ${(PhanQuyenService.goiY("phongBan") || []).map(pb => `<div style="display:flex;align-items:center;gap:6px;">
+                          <span style="font-size:11.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${pb}">${pb}</span>
+                          <select class="selCaPhong form-control" data-phong="${pb}" style="font-size:11.5px;padding:3px 5px;width:150px;">
+                            <option value="">— tự đoán theo giờ —</option>
+                            ${((companySettings.caLamViec) || []).map(c => `<option value="${c.ma}" ${(((companySettings.caPhongBan || {})[pb]) === c.ma) ? "selected" : ""}>${c.ma} — ${c.ten}</option>`).join("")}
+                          </select></div>`).join("")}
+                      </div>
+                    </div>
                   </div>
 
                   <!-- (B) BẢNG KÝ HIỆU CÔNG -->
@@ -27580,6 +27818,11 @@ function writeSheet(ss, sheetName, headers, rowsData){
                         <input type="number" id="setThuongKpiRate" class="form-control" value="${companySettings.thuongKpiRate ?? 15}" step="1" min="0" style="font-size:12.5px;font-weight:600;">
                       </div>
                       <small style="font-size:10px;color:var(--text-muted);">Khoản riêng của app (bảng lương thật của công ty không có) — tắt nếu không dùng.</small>
+                      <!-- [THÊM MỚI 07/09/2026 — V4 đợt 96] Công tắc PHỤ CẤP × TỶ LỆ CÔNG. -->
+                      <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;cursor:pointer;margin-top:8px;" title="BẬT: xăng xe · ăn ca · hỗ trợ hết việc · ô Phụ cấp nhân theo tỷ lệ công (0 công = 0đ, nửa công = nửa tiền). Chênh lệch BHXH, Cộng khác và phụ cấp tự thêm vẫn trả đủ. TẮT: trả đủ phụ cấp bất kể công (kiểu cũ).">
+                        <input type="checkbox" id="setPhuCapTheoCong" ${companySettings.phuCapTheoCong !== false ? "checked" : ""} style="width:auto;">
+                        <span><strong>Phụ cấp × theo công</strong> (0 công = 0 phụ cấp)</span>
+                      </label>
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
                       <label class="form-label" style="font-size:11.5px;">Kiểu làm tròn lương thực lĩnh</label>
@@ -28654,6 +28897,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
           if (st.dungThamNien !== false) phan.push(xanh("+ Thâm niên"));
           if (st.dungOT !== false) phan.push(xanh("+ Tiền tăng ca"));
           if (st.batThuongKpi !== false) phan.push(xanh("+ Thưởng KPI" + (st.thuongKpiTheoCong === false ? "" : " × tỷ lệ công")));
+          
+          if (st.phuCapTheoCong !== false) phan.push(xanh("Phụ cấp (xăng xe · ăn ca · hỗ trợ · ô Phụ cấp) × tỷ lệ công — 0 công = 0đ; chênh lệch BHXH + Cộng khác + phụ cấp tự thêm vẫn trả đủ"));
           (dsKhoan || []).forEach(tp => {
             if (!tp || !String(tp.ten || "").trim() || !String(tp.congThuc || "").trim()) return;
             const mota = tp.ten + " (" + this._moTaNhanhCT(tp.congThuc) + ")" + (tp.phongBan ? " — riêng " + tp.phongBan : "");
@@ -28990,8 +29235,12 @@ function writeSheet(ss, sheetName, headers, rowsData){
             <td style="padding:2px;"><input data-k="ten" class="form-control" value="${(c.ten || "")}" style="font-size:11.5px;padding:3px 5px;min-width:90px;"></td>
             <!-- [SỬA 31/08/2026] Nới 82px→120px: ô type=time (locale 12h) cần đủ chỗ cho "08:00 SA" + nút đồng hồ,
                  82px làm giờ bị CẮT hiển thị xấu ("08:00 S"). 120px hiện đủ, dễ chỉnh. -->
-            <td style="padding:2px;"><input data-k="vao" type="time" class="form-control o-gio-ca" value="${(c.vao || "08:00")}" style="font-size:11.5px;padding:3px 6px;width:120px;min-width:120px;"></td>
-            <td style="padding:2px;"><input data-k="ra" type="time" class="form-control o-gio-ca" value="${(c.ra || "17:00")}" style="font-size:11.5px;padding:3px 6px;width:120px;min-width:120px;"></td>
+            <td style="padding:2px;"><input data-k="vao" type="time" class="form-control o-gio-ca" value="${(c.vao || "08:00")}" oninput="AppModules.settings.goiYGioLam(this)" style="font-size:11.5px;padding:3px 6px;width:120px;min-width:120px;"></td>
+            <td style="padding:2px;"><input data-k="ra" type="time" class="form-control o-gio-ca" value="${(c.ra || "17:00")}" oninput="AppModules.settings.goiYGioLam(this)" style="font-size:11.5px;padding:3px 6px;width:120px;min-width:120px;"></td>
+            <!-- [THÊM MỚI 07/09/2026 — V4 đợt 97] Giờ nghỉ giữa ca không tính công; để trống = nghỉ vẫn hưởng công.
+                 Sửa Vào/Ra/Nghỉ → oninput tự tính lại ô Giờ làm (goiYGioLam), người dùng vẫn gõ đè được. -->
+            <td style="padding:2px;"><input data-k="nghiTu" type="time" class="form-control o-gio-ca" value="${(c.nghiTu || "")}" oninput="AppModules.settings.goiYGioLam(this)" style="font-size:11.5px;padding:3px 6px;width:120px;min-width:120px;"></td>
+            <td style="padding:2px;"><input data-k="nghiDen" type="time" class="form-control o-gio-ca" value="${(c.nghiDen || "")}" oninput="AppModules.settings.goiYGioLam(this)" style="font-size:11.5px;padding:3px 6px;width:120px;min-width:120px;"></td>
             <td style="padding:2px;"><input data-k="gioLam" type="number" step="0.5" class="form-control" value="${c.gioLam ?? 8}" style="font-size:11.5px;padding:3px 4px;width:58px;text-align:center;"></td>
             <td style="padding:2px;"><input data-k="truAnCa" type="number" step="0.25" class="form-control" value="${c.truAnCa ?? 0}" style="font-size:11.5px;padding:3px 4px;width:58px;text-align:center;"></td>
             <td style="padding:2px;"><input data-k="soCong" type="number" step="0.25" class="form-control" value="${c.soCong ?? 1}" style="font-size:11.5px;padding:3px 4px;width:58px;text-align:center;"></td>
@@ -28999,6 +29248,24 @@ function writeSheet(ss, sheetName, headers, rowsData){
             <td style="padding:2px;"><button type="button" class="btn btn-sm btn-secondary" style="padding:3px 7px;font-size:11px;" onclick="this.closest('tr').remove()" title="Xóa dòng (bấm Lưu mới có hiệu lực)"><i class="fa-solid fa-xmark" style="color:#dc2626"></i></button></td>
           </tr>`;
         },
+         
+        _dsNgayLe99(st) {
+          if (Array.isArray(st.dsNgayLe) && st.dsNgayLe.length) return st.dsNgayLe;
+          return String(st.ngayLeTet || "").split(/[,;\n]+/).map(x => x.trim()).filter(Boolean).map(x => {
+            const m = x.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);          
+            return m ? { ngay: m[3] + "-" + m[2].padStart(2, "0") + "-" + m[1].padStart(2, "0"), ten: "" } : null;
+          }).filter(Boolean);
+        },
+        
+        _rowNgayLe(x) {
+          x = x || {};
+          return `<tr>
+            <td style="padding:2px;"><input data-k="ngay" type="date" class="form-control" value="${x.ngay || ""}" style="font-size:11.5px;padding:3px 5px;width:150px;"></td>
+            <td style="padding:2px;"><input data-k="ten" class="form-control" value="${(x.ten || "").replace(/"/g, "&quot;")}" placeholder="VD: Tết Dương lịch" style="font-size:11.5px;padding:3px 5px;min-width:120px;"></td>
+            <td style="padding:2px;text-align:center;"><button type="button" class="btn btn-sm btn-secondary" style="padding:3px 7px;font-size:11px;" onclick="this.closest('tr').remove()" title="Xoá dòng (bấm Lưu mới có hiệu lực)"><i class="fa-solid fa-xmark" style="color:#dc2626"></i></button></td>
+          </tr>`;
+        },
+        themNgayLe() { const tb = document.getElementById("bangNgayLeBody"); if (tb) tb.insertAdjacentHTML("beforeend", this._rowNgayLe({})); },
         
         _rowKyHieu(k) {
           return `<tr>
@@ -29046,7 +29313,25 @@ function writeSheet(ss, sheetName, headers, rowsData){
           </tr>`;
         },
         
-        themCa() { const tb = document.getElementById("bangCaBody"); if (tb) tb.insertAdjacentHTML("beforeend", this._rowCa({ ma: "", ten: "", vao: "08:00", ra: "17:00", gioLam: 8, soCong: 1, quaDem: false })); },
+        themCa() { const tb = document.getElementById("bangCaBody"); if (tb) tb.insertAdjacentHTML("beforeend", this._rowCa({ ma: "", ten: "", vao: "08:00", ra: "17:00", gioLam: 8, truAnCa: 1, nghiTu: "12:00", nghiDen: "13:00", soCong: 1, quaDem: false })); }, 
+         
+        goiYGioLam(inp) {
+          try {
+            const tr = inp.closest("tr"); if (!tr) return;
+            const doc = k => { const o = tr.querySelector('[data-k="' + k + '"]'); return o ? o.value : ""; };
+            const phut = g => { const m = String(g || "").match(/^(\d{1,2}):(\d{2})/); return m ? (+m[1]) * 60 + (+m[2]) : null; };
+            const v = phut(doc("vao")), r0 = phut(doc("ra"));
+            if (v == null || r0 == null) return;
+            const quaDem = !!(tr.querySelector('[data-k="quaDem"]') || {}).checked;
+            const r = (quaDem || r0 <= v) ? r0 + 1440 : r0;             
+            let nghi = 0;
+            const nTu = phut(doc("nghiTu")), nDen = phut(doc("nghiDen"));
+            if (nTu != null && nDen != null && nDen > nTu) nghi = nDen - nTu;
+            const gio = Math.round(((r - v - nghi) / 60) * 100) / 100;
+            const o = tr.querySelector('[data-k="gioLam"]');
+            if (o && gio > 0) o.value = gio;
+          } catch (e) {}
+        },
         themDinhMuc() { const tb = document.getElementById("bangDinhMucBody"); if (tb) tb.insertAdjacentHTML("beforeend", this._rowDinhMuc({ maCV: "", tenCV: "", heSo: 1 })); },
         
         triggerImportDinhMuc() { CoreService.triggerImportExcel("dinhmuc_sl"); },
@@ -29399,7 +29684,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
           st.caLamViec = this._docBangDom("bangCaBody")
             .filter(c => String(c.ma || "").trim())               
             
-            .map(c => ({ ma: String(c.ma).trim().toUpperCase(), ten: c.ten || "", vao: c.vao || "08:00", ra: c.ra || "17:00", gioLam: parseFloat(c.gioLam) || 8, truAnCa: parseFloat(c.truAnCa) || 0, soCong: parseFloat(c.soCong) || 1, quaDem: !!c.quaDem }));
+            .map(c => ({ ma: String(c.ma).trim().toUpperCase(), ten: c.ten || "", vao: c.vao || "08:00", ra: c.ra || "17:00", gioLam: parseFloat(c.gioLam) || 8, truAnCa: parseFloat(c.truAnCa) || 0, nghiTu: c.nghiTu || "", nghiDen: c.nghiDen || "", soCong: parseFloat(c.soCong) || 1, quaDem: !!c.quaDem })); 
           st.maKyHieuCong = this._docBangDom("bangKyHieuBody")
             .filter(k => String(k.ky || "").trim())
             .map(k => ({ ky: String(k.ky).trim(), ten: k.ten || "", soCong: parseFloat(k.soCong) || 0, truPhep: !!k.truPhep, mau: k.mau || "#64748b" }));
@@ -30423,8 +30708,24 @@ function writeSheet(ss, sheetName, headers, rowsData){
               return isNaN(v) ? [0, 10, 50, 80, 100][i] : Math.max(0, Math.min(100, v));
             });
           }
+
+          let dsNgayLe = oldSet.dsNgayLe || [];
+          let ngayLeTet = oldSet.ngayLeTet || "";
+          const _tbLe = document.getElementById("bangNgayLeBody");
+          if (_tbLe) {
+            dsNgayLe = [..._tbLe.querySelectorAll("tr")].map(tr => ({
+              ngay: (tr.querySelector('[data-k="ngay"]') || {}).value || "",
+              ten: ((tr.querySelector('[data-k="ten"]') || {}).value || "").trim()
+            })).filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x.ngay));
+            ngayLeTet = dsNgayLe.map(x => { const p = x.ngay.split("-"); return p[2] + "/" + p[1] + "/" + p[0]; }).join(", ");
+          }
           
-          const ngayLeTet = document.getElementById("setNgayLeTet") ? document.getElementById("setNgayLeTet").value.trim() : (oldSet.ngayLeTet || "");
+          const _chkNT = document.querySelectorAll(".chkNghiTuan");
+          const ngayNghiTuan = _chkNT.length ? [..._chkNT].filter(c => c.checked).map(c => +c.value) : (oldSet.ngayNghiTuan || [0]);
+          
+          const _selCP = document.querySelectorAll(".selCaPhong");
+          let caPhongBan = oldSet.caPhongBan || {};
+          if (_selCP.length) { caPhongBan = {}; _selCP.forEach(sel => { if (sel.value) caPhongBan[sel.getAttribute("data-phong")] = sel.value; }); }
           
           const giamTruBanThan = document.getElementById("setGiamTruBanThan") ? (parseFloat(document.getElementById("setGiamTruBanThan").value) || 11000000) : (oldSet.giamTruBanThan || 11000000);
           const giamTruPhuThuoc = document.getElementById("setGiamTruPhuThuoc") ? (parseFloat(document.getElementById("setGiamTruPhuThuoc").value) || 4400000) : (oldSet.giamTruPhuThuoc || 4400000);
@@ -30441,6 +30742,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const congDoanRate = document.getElementById("setCongDoanRate") ? (parseFloat(document.getElementById("setCongDoanRate").value) || 0) : (oldSet.congDoanRate ?? 0.5);
           const batThuongKpi = document.getElementById("setBatThuongKpi") ? document.getElementById("setBatThuongKpi").checked : (oldSet.batThuongKpi !== false);
           const thuongKpiTheoCong = document.getElementById("setThuongKpiTheoCong") ? document.getElementById("setThuongKpiTheoCong").checked : (oldSet.thuongKpiTheoCong !== false);   
+          const phuCapTheoCong = document.getElementById("setPhuCapTheoCong") ? document.getElementById("setPhuCapTheoCong").checked : (oldSet.phuCapTheoCong !== false);   
           
           const _boolSet = (id, cu) => { const el = document.getElementById(id); return el ? el.checked : (cu !== false); };
           const dungThamNien = _boolSet("setDungThamNien", oldSet.dungThamNien);
@@ -30502,7 +30804,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
           }
 
           
-          const newSettings = { ...oldSet, companyName, address, diaDanh, congChuan, bhxhRate, tranLuongDongBHXH, tranLuongDongBHTN, tuDongMienThueOtAnCa, mauLuongPhongBan, phone, email, directorName, hrManagerName, logo, gasUrl, chamCongIPCty, chamCongBatBuocMang, chamCongCheDo, chamCongLat, chamCongLng, chamCongBanKinh, chamCongDiaDiem, gioVaoChuan, gioRaChuan, giaiDoanKPI, ngayLeTet, giamTruBanThan, giamTruPhuThuoc, congDoanRate, batThuongKpi, thuongKpiTheoCong, thuongKpiRate, kieuLamTron, kpiTrongSoHoanThanh, kpiTrongSoDungHan, kpiTrongSoChatLuong, heSoRuiRo, mucApDungThoiGian, giaiDoanKPINhom, kpiBacThang, hoaHongBacThang, dungThamNien, dungOT, dungCongDoan, dungTNCN, dungKpiNangCao,
+          const newSettings = { ...oldSet, companyName, address, diaDanh, congChuan, bhxhRate, tranLuongDongBHXH, tranLuongDongBHTN, tuDongMienThueOtAnCa, mauLuongPhongBan, phone, email, directorName, hrManagerName, logo, gasUrl, chamCongIPCty, chamCongBatBuocMang, chamCongCheDo, chamCongLat, chamCongLng, chamCongBanKinh, chamCongDiaDiem, gioVaoChuan, gioRaChuan, giaiDoanKPI, ngayLeTet, dsNgayLe, ngayNghiTuan, caPhongBan, giamTruBanThan, giamTruPhuThuoc, congDoanRate, batThuongKpi, thuongKpiTheoCong, phuCapTheoCong, thuongKpiRate, kieuLamTron, kpiTrongSoHoanThanh, kpiTrongSoDungHan, kpiTrongSoChatLuong, heSoRuiRo, mucApDungThoiGian, giaiDoanKPINhom, kpiBacThang, hoaHongBacThang, dungThamNien, dungOT, dungCongDoan, dungTNCN, dungKpiNangCao,
             bacThueTNCN, bacThamNien, thanhPhanLuong, heLuongRieng, thongSoRieng, nguongThueVangLai, suatThueVangLai, tranMienAnCa };   
 
           
