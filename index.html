@@ -4334,6 +4334,29 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!ca) return { gio: 8, cong: 1, otGio: Number(banGhi.gioOT) || 0, treSomPhut: 0, vuotDungSai: false, tenCa: "" };
         const vaoCa = this.phut(ca.vao), raCa0 = this.phut(ca.ra);
         const raCa = ca.quaDem ? raCa0 + 1440 : raCa0;                 
+         
+        if (Array.isArray(banGhi.cacLan) && banGhi.cacLan.length) {
+          const quang = banGhi.cacLan.concat([{ vao: banGhi.vaoLanNay || banGhi.gioVao, ra: banGhi.gioRa }]);
+          let tongPhut = 0, dau = null, cuoi = null;
+          quang.forEach(q => {
+            let v = this.phut(q.vao), r = this.phut(q.ra);
+            if (v == null || r == null) return;
+            if (ca.quaDem && r < v) r += 1440;                         
+            if (dau == null || v < dau) dau = v;
+            if (cuoi == null || r > cuoi) cuoi = r;
+            tongPhut += Math.max(0, Math.min(r, raCa) - Math.max(v, vaoCa));
+          });
+          const tre94 = Math.max(0, (dau == null ? vaoCa : dau) - vaoCa);
+          const som94 = Math.max(0, raCa - (cuoi == null ? raCa : cuoi));
+          const treSom94 = tre94 + som94;
+          const vuot94 = treSom94 > (Number(qt.dungSaiPhut) || 15);
+          let gio94 = Math.min(tongPhut / 60, ca.gioLam);              
+          if (vuot94 && qt.xuLyVuotDungSai === "nua_cong") gio94 = Math.min(gio94, ca.gioLam / 2);
+          const cong94 = Math.round((gio94 / ca.gioLam) * ca.soCong * 100) / 100;
+          const ot94 = Math.max(0, (cuoi == null ? raCa : cuoi) - raCa);
+          return { gio: Math.round(gio94 * 100) / 100, cong: cong94, otGio: Math.round(ot94 / 60 * 100) / 100,
+                   treSomPhut: treSom94, vuotDungSai: vuot94, tenCa: ca.ma, soLanVaoRa: quang.length };
+        }
         let vao = this.phut(banGhi.gioVao), ra = this.phut(banGhi.gioRa);
         if (vao == null || ra == null) {
           
@@ -5169,7 +5192,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.76" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.78" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -5398,7 +5421,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.76"
+                version: "4.0.78"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -11928,6 +11951,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                         </td>
                         <td style="text-align:center" class="col-so">
                           <span style="color:#059669; font-weight:600;">${item.gioVao || "—"}</span>
+                          ${(item.cacLan && item.cacLan.length) ? `<br><small class="badge badge-info" style="font-size:10px" title="${item.cacLan.map(q => q.vao + "–" + q.ra).join("  ·  ")}  ·  ${item.vaoLanNay || ""}–${item.hasCheckedOut ? item.gioRa : "…"}">↔ ${item.cacLan.length + 1} lần vào/ra</small>` : ""}
                         </td>
                         <td style="text-align:center" class="col-so">
                           <span style="color:#dc2626; font-weight:600;">${item.hasCheckedOut ? item.gioRa : (item.gioRa && item.gioRa !== (getCompanySettings().gioRaChuan || '17:00') ? item.gioRa : '—')}</span>
@@ -12376,9 +12400,32 @@ function writeSheet(ss, sheetName, headers, rowsData){
             khoangCachCty: this.currentMode === "nha_may" ? (this.netKhoangCach != null ? this.netKhoangCach : null) : null,
             // [SỬA 31/08/2026] Giữ trạng thái đã check-out nếu ngày này từng check-out (check-in lại không "mở ca" lại).
             hasCheckedOut: (banGhiCu && banGhiCu.hasCheckedOut) ? true : false,
-            nguon: "app"   // [THÊM MỚI 29/08/2026] đánh dấu NGUỒN để đối chiếu với máy chấm công / bảng phòng
+            nguon: "app",   // [THÊM MỚI 29/08/2026] đánh dấu NGUỒN để đối chiếu với máy chấm công / bảng phòng
+            /* [THÊM MỚI 07/09/2026 — V4 đợt 94] Khung nhiều lần vào/ra: cacLan = các quãng đã
+               đóng trong ngày; vaoLanNay = giờ vào của quãng đang mở (khối dưới sẽ điền đúng). */
+            cacLan: [], vaoLanNay: nowTime
           };
 
+          /* [SỬA 07/09/2026 — V4 đợt 94] VÀO/RA NHIỀU LẦN TRONG NGÀY (chủ app: "vào xong ra,
+             ra xong vào — vẫn phải ghi nhận TỔNG thời gian"):
+             · Hôm nay ĐÃ RA CA mà vào lại → MỞ QUÃNG MỚI: quãng cũ cất vào cacLan, giờ vào
+               NGÀY giữ lần đầu, trạng thái quay về "đang làm" (trước đây bị coi vẫn-đã-ra-ca).
+             · Chưa ra ca mà bấm vào lần nữa → chỉ SỬA GIỜ VÀO của quãng hiện tại (đợt 91). */
+          if (banGhiCu) {
+            const dsLan94 = Array.isArray(banGhiCu.cacLan) ? banGhiCu.cacLan.slice() : [];
+            if (banGhiCu.hasCheckedOut) {
+              dsLan94.push({ vao: banGhiCu.vaoLanNay || banGhiCu.gioVao, ra: banGhiCu.gioRa });   // đóng sổ quãng trước
+              newRecord.cacLan = dsLan94;
+              newRecord.gioVao = banGhiCu.gioVao;                                                  // giờ vào NGÀY = lần đầu
+              newRecord.vaoLanNay = nowTime;
+              newRecord.gioRa = getCompanySettings().gioRaChuan || "17:00";                        // quãng mở: giờ ra tạm = chuẩn
+              newRecord.hasCheckedOut = false;                                                     // MỞ CA LẠI — đang làm tiếp
+            } else {
+              newRecord.cacLan = dsLan94;
+              newRecord.vaoLanNay = nowTime;
+              if (dsLan94.length) newRecord.gioVao = banGhiCu.gioVao;   // đã có quãng trước → giữ giờ vào đầu ngày
+            }
+          }
           // [SỬA 29/08/2026] Trước: tự đè theo (NV+ngày). Nay đi qua CỬA CHUNG ChamCongCore.ghiNhanCong
           //   để gộp nguồn đúng ưu tiên (Máy > App > Phòng) + tự bắt lệch giờ giữa các nguồn.
           const kqGop = ChamCongCore.ghiNhanCong(data, newRecord);
@@ -12393,8 +12440,11 @@ function writeSheet(ss, sheetName, headers, rowsData){
           // [THÊM MỚI 31/08/2026] Reset ảnh/GPS tạm sau khi check-in — nếu không, lúc check-out mà không chụp
           //   ảnh mới sẽ bị DÍNH lại ảnh check-in (gán nhầm sang anhCheckOut).
           this.currentPhoto = null; this.currentGps = null; this.gpsAddress = "";
-          // [SỬA đợt 91] Chấm LẠI trong ngày → nói rõ vừa SỬA giờ vào từ mấy giờ thành mấy giờ.
-          CoreService.showToast(_gioVaoCu91
+          // [SỬA đợt 94] 3 tình huống nói 3 kiểu: vào LẦN THỨ N (sau khi đã ra ca) · SỬA giờ vào
+          // quãng hiện tại · vào ca lần đầu trong ngày. App cộng TỔNG các quãng khi tính công.
+          CoreService.showToast((banGhiCu && banGhiCu.hasCheckedOut)
+            ? `🟢 VÀO CA LẦN THỨ ${(newRecord.cacLan || []).length + 1} lúc ${nowTime} — app sẽ CỘNG TỔNG thời gian các lần trong ngày. (${hinhThucLabel})`
+            : _gioVaoCu91
             ? `🟢 Đã CẬP NHẬT lại giờ Vào Ca: ${_gioVaoCu91} → ${nowTime}. (${hinhThucLabel})`
             : `🟢 Chấm công Vào Ca thành công lúc ${nowTime}! (${hinhThucLabel})`, "success");
           this.render();
@@ -29842,12 +29892,41 @@ function writeSheet(ss, sheetName, headers, rowsData){
                           <code>https://tên-tài-khoản.github.io/tên-kho/</code>.
                           <div style="margin-top:4px;color:var(--text-muted);">Vì sao Cách 1 không có nút sao chép: tệp app nặng gần <strong>2 MB</strong>,
                           giao diện web của GitHub không nhận dán tệp lớn như vậy — phải tải về rồi <em>Upload</em> mới chắc.</div>
+                          <!-- [THÊM MỚI 07/09/2026 — V4 đợt 95] Hướng dẫn ĐĂNG KÝ GitHub cho người chưa có
+                               tài khoản (chủ app: "hướng dẫn chi tiết cho người không biết làm được ngay").
+                               Gập mặc định — ai có tài khoản rồi không bị vướng mắt. -->
+                          <details style="margin-top:6px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:7px 10px;">
+                            <summary style="cursor:pointer;font-weight:700;color:#5b21b6;font-size:11.5px;">📝 Chưa có tài khoản GitHub? Bấm xem cách đăng ký (miễn phí, ~3 phút)</summary>
+                            <div style="margin-top:6px;line-height:1.7;">
+                              <a href="https://github.com/signup" target="_blank" rel="noopener" class="btn btn-sm btn-primary" style="text-decoration:none;font-size:11.5px;padding:4px 10px;margin-bottom:6px;display:inline-block;">🔗 Mở trang đăng ký GitHub</a>
+                              <div>① Điền <strong>Email</strong> (email nào của bạn cũng được) → bấm <em>Continue</em>.</div>
+                              <div>② Đặt <strong>mật khẩu</strong> (tối thiểu 8 ký tự, nên có số + chữ) → <em>Continue</em>.</div>
+                              <div>③ Đặt <strong>Username</strong> — CHÍNH LÀ "tên-tài-khoản" trong link web sau này
+                                (<code>https://tên-tài-khoản.github.io/…</code>) → đặt <strong>chữ thường, không dấu, không khoảng trắng</strong>, vd <code>congty-abc</code> → <em>Continue</em>.</div>
+                              <div>④ Máy hỏi câu đố xác minh người thật → làm theo → bấm <em>Create account</em>.</div>
+                              <div>⑤ GitHub gửi <strong>mã 8 số</strong> vào email — mở email, chép mã dán vào là XONG (được hỏi gói thì chọn <em>Free</em>).</div>
+                              <div style="color:var(--text-muted);margin-top:4px;">Đăng ký xong quay lại đây làm tiếp: tạo kho → Upload tệp → bật Pages như hướng dẫn trên.</div>
+                            </div>
+                          </details>
                           <div style="margin-top:6px;"><strong>Cách 2</strong> — bấm <strong>Sao chép mã HTML</strong> → trong Apps Script bấm <strong>+ → HTML</strong>,
                           đặt tên đúng chữ <code>index</code> (không gõ đuôi .html) → <strong>Ctrl+A</strong> xoá hết mẫu → <strong>Ctrl+V</strong> → <strong>Ctrl+S</strong> → Deploy lại.
                           Link chính là URL <code>/exec</code>.
                           <span style="color:var(--text-muted);">Dán gần 2 MB nên trình soạn thảo đứng vài giây là bình thường — chờ nó chạy xong.</span></div>
                           <div style="margin-top:6px;color:#b45309;">⚠️ <strong>Cách 2 hay bị lỗi trên điện thoại</strong>: Apps Script bọc trang trong khung iframe, mà điện thoại
                           chặn bộ nhớ trong iframe → app có thể <strong>trắng màn hình</strong>. Đã gặp thật ở bản trước. Nếu dùng Cách 2 thì phải thử trên điện thoại trước khi phát cho cả công ty.</div>
+                          <!-- [THÊM MỚI 07/09/2026 — V4 đợt 95] Hướng dẫn ĐĂNG KÝ tài khoản Google — cần cho
+                               Cách 2 (Apps Script) và cho cả Bước 1 (Google Sheets). Gập mặc định. -->
+                          <details style="margin-top:6px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:7px 10px;">
+                            <summary style="cursor:pointer;font-weight:700;color:#1d4ed8;font-size:11.5px;">📝 Chưa có tài khoản Google (Gmail)? Bấm xem cách đăng ký (miễn phí, ~3 phút)</summary>
+                            <div style="margin-top:6px;line-height:1.7;">
+                              <a href="https://accounts.google.com/signup" target="_blank" rel="noopener" class="btn btn-sm btn-primary" style="text-decoration:none;font-size:11.5px;padding:4px 10px;margin-bottom:6px;display:inline-block;">🔗 Mở trang đăng ký Google</a>
+                              <div>① Điền <strong>Họ và Tên</strong> → <em>Tiếp theo</em> → điền ngày sinh, giới tính → <em>Tiếp theo</em>.</div>
+                              <div>② Chọn <strong>"Tạo địa chỉ Gmail của riêng bạn"</strong> → gõ tên hộp thư (chữ thường không dấu, vd <code>congtyabc.hcns</code>) → <em>Tiếp theo</em>.</div>
+                              <div>③ Đặt <strong>mật khẩu</strong> 2 lần → <em>Tiếp theo</em>.</div>
+                              <div>④ Nhập <strong>số điện thoại</strong> → Google nhắn <strong>mã xác minh</strong> → gõ mã vào → <em>Tiếp theo</em> → kéo xuống bấm <em>Tôi đồng ý</em>.</div>
+                              <div style="color:var(--text-muted);margin-top:4px;">Tài khoản này dùng cho CẢ Bước 1 (tạo Google Sheets) lẫn Cách 2 (Apps Script). Công ty nên tạo 1 tài khoản riêng cho app (đừng dùng Gmail cá nhân của nhân viên — người đó nghỉ việc là kẹt).</div>
+                            </div>
+                          </details>
                         </div>
                       </div>
 
