@@ -2826,7 +2826,7 @@ var CHUNK         = 45000;               // 1 ô Sheet tối đa ~50.000 ký t�
    mã CŨ và không có dấu hiệu nào để biết — đã dính lỗi này nhiều lần. Nay mọi phản hồi đều
    kèm số bản; nút "Kiểm tra kết nối" ở mục 6.4 hiện số đó ra để đối chiếu.
    ⚠️ MỖI LẦN SỬA MÃ NÀY PHẢI TĂNG SỐ (r1 → r2 …). */
-var CODE_VERSION  = "HCNS-BE-2026-09-07-r14";   // [SỬA đợt 99] r13 → r14: gộp bảng công theo THỨ TỰ ƯU TIÊN NGUỒN (sản lượng > máy > app > phòng > tay) thay vì "dòng sau đè dòng trước"; ô HCNS sửa tay trên tab vẫn luôn thắng   // [SỬA đợt 89] r12 → r13: chấm công giữ đủ trường phụ khi gộp (ảnh, cờ ra ca, nguồn, IP, GPS) — hết "dữ liệu chấm công bị mất bị nhảy"   // [SỬA đợt 80c] r7 → r10: THÊM lệnh ghiDong dùng chung (trước đây gần như MỌI chức năng — đơn từ, góp ý, sáng kiến, dự trù, KPI… — đều không lưu được lên kho khi làm từ điện thoại) · CHẶN nhân viên tự duyệt đơn của chính mình · và sửa lỗi DUYỆT TRÊN MÁY QUẢN TRỊ KHÔNG ĂN (dòng cũ trong tab đè ngược bản vừa duyệt)
+var CODE_VERSION  = "HCNS-BE-2026-09-07-r15";   // [SỬA đợt 103] r14 → r15: thêm cửa hỏi nhẹ api=kiemMoc để máy KHÔNG phải kéo cả kho mỗi 30 giây (200-500 người dùng cùng lúc)   // [SỬA đợt 99] r13 → r14: gộp bảng công theo THỨ TỰ ƯU TIÊN NGUỒN (sản lượng > máy > app > phòng > tay) thay vì "dòng sau đè dòng trước"; ô HCNS sửa tay trên tab vẫn luôn thắng   // [SỬA đợt 89] r12 → r13: chấm công giữ đủ trường phụ khi gộp (ảnh, cờ ra ca, nguồn, IP, GPS) — hết "dữ liệu chấm công bị mất bị nhảy"   // [SỬA đợt 80c] r7 → r10: THÊM lệnh ghiDong dùng chung (trước đây gần như MỌI chức năng — đơn từ, góp ý, sáng kiến, dự trù, KPI… — đều không lưu được lên kho khi làm từ điện thoại) · CHẶN nhân viên tự duyệt đơn của chính mình · và sửa lỗi DUYỆT TRÊN MÁY QUẢN TRỊ KHÔNG ĂN (dòng cũ trong tab đè ngược bản vừa duyệt)
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    [THÊM MỚI 05/09/2026 — V4 đợt 51] BẤM ▶ CHẠY THÌ CHẠY HÀM NÀY (KIEM_TRA_NHANH).
@@ -3240,6 +3240,24 @@ function doGet(e){
   try {
     var p = (e && e.parameter) || {};
     if (p.api === "ping") return _json({ status: "success", message: "Backend Auto HCNS đang chạy tốt.", codeVersion: CODE_VERSION });   // [SỬA đợt 49] kèm số bản
+
+    /* [THÊM MỚI 07/09/2026 — V4 đợt 103 · r15] CỬA HỎI NHẸ: "KHO CÓ GÌ MỚI KHÔNG?"
+       VÌ SAO CÓ: trước đây cứ 30 giây MỖI máy lại tải TOÀN BỘ kho về (công ty 200 người, dữ
+       liệu 1 năm là ~8 MB mỗi lượt). 200 máy cùng mở app là vài GB mỗi phút dồn vào Google —
+       quá hạn mức, nên máy chậm và dữ liệu về không kịp.
+       NAY app hỏi cửa này trước. Máy chủ chỉ trả VÀI CHỤC BYTE: mốc lần cuối kho được lưu +
+       số dòng của các tab đệm. App so với lần hỏi trước: GIỐNG thì thôi, KHÁC mới tải kho về.
+       Trả lời nhẹ nên gọi bao nhiêu lần cũng không tốn gì đáng kể. */
+    if (p.api === "kiemMoc"){
+      if (!_ok(p.token, p.session)) return _json({ status: "error", error: "Chưa đăng nhập hoặc phiên đã hết hạn." });
+      var ssKM = SpreadsheetApp.getActiveSpreadsheet();
+      var mocKM = 0;
+      try { mocKM = Number(PropertiesService.getDocumentProperties().getProperty("HCNS_LUU_LUC") || 0); } catch (eKM) {}
+      // Đếm số dòng các tab đệm — người khác vừa gửi gì lên là con số này đổi.
+      var demKM = function (ten){ try { var sh = ssKM.getSheetByName(ten); return sh ? sh.getLastRow() : 0; } catch (e) { return 0; } };
+      return _json({ status: "success", codeVersion: CODE_VERSION,
+        dauVet: [mocKM, demKM("GhiMoi"), demKM("ViecMoi"), demKM("ThongBaoMoi"), demKM("BangCong"), demKM("XinKey")].join("-") });
+    }
     /* [THÊM MỚI 04/09/2026 — V3] Trả MÃ CÔNG TY cho app dùng khi hỏi bản quyền. */
     if (p.api === "maCongTy"){
       if (_chuaDatKhoa()) return _json({ status: "error", error: "Backend chưa đặt mã bí mật." });
@@ -4528,8 +4546,15 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
       tongHopThang(data, st, thang) {
         const kq = [];
+         
+        const _theoNguoi102 = {};
+        (data.bangCong || []).forEach(b => {
+          if (!b || !b.maNV) return;
+          if (String(b.ngay || "").slice(0, 7) !== thang) return;      
+          (_theoNguoi102[b.maNV] = _theoNguoi102[b.maNV] || []).push(b);
+        });
         (data.nhanVien || []).filter(n => n.trangThai !== "dinh_chi").forEach(nv => {
-          const rows = (data.bangCong || []).filter(b => b.maNV === nv.id && String(b.ngay || "").slice(0, 7) === thang);
+          const rows = _theoNguoi102[nv.id] || [];
           let tongGio = 0, tongCong = 0, otGio = 0, tc1 = 0, tc2 = 0, tc3 = 0, tc4 = 0;   
           const demKyHieu = {}, oNgay = {};
            
@@ -5312,7 +5337,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.84" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.86" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -5541,7 +5566,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.84"
+                version: "4.0.86"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -6762,7 +6787,17 @@ function writeSheet(ss, sheetName, headers, rowsData){
       saveData(data, opts) {   
 
         try { if (typeof tinhLuongThang === "function") tinhLuongThang._memo = null; } catch (e) {}
-        localStorage.setItem(CONFIG.STORAGE_KEY_DATA, JSON.stringify(data));
+         
+        try {
+          localStorage.setItem(CONFIG.STORAGE_KEY_DATA, JSON.stringify(data));
+        } catch (eLuu) {
+          let cuuDuoc = false;
+          try { this.donAnhCu(); localStorage.setItem(CONFIG.STORAGE_KEY_DATA, JSON.stringify(data)); cuuDuoc = true; } catch (e2) {}
+          if (!cuuDuoc) {
+            try { CoreService.showToast("🛑 BỘ NHỚ MÁY ĐÃ ĐẦY — KHÔNG LƯU ĐƯỢC dữ liệu vừa nhập! Hãy vào Cài đặt 6.4 bấm dọn ảnh chấm công cũ, hoặc dùng máy khác. ĐỪNG tắt app trước khi xử lý.", "danger"); } catch (e3) {}
+            throw eLuu;                                   
+          }
+        }
         this._khoDem = data;   
          
         try {
@@ -6822,6 +6857,23 @@ function writeSheet(ss, sheetName, headers, rowsData){
          
         try { return this._docHangDoi().filter(x => x && (x.loai === "ghiDong" || x.loai === "chamCong")).length; }
         catch (e) { return 0; }
+      },
+
+      async coGiMoiKhong() {
+        const s = getCompanySettings();
+        if (!s.gasUrl) return true;
+        try {
+          const ctrl = new AbortController();
+          const hetGio = setTimeout(() => ctrl.abort(), 8000);          
+          const r = await fetch(s.gasUrl + "?api=kiemMoc" + this._authQS(), { signal: ctrl.signal });
+          clearTimeout(hetGio);
+          const j = await r.json();
+          if (!j || j.status !== "success" || !j.dauVet) return true;   
+          const cu = localStorage.getItem("hcns4_dau_vet_kho") || "";
+          if (cu && cu === j.dauVet) return false;                      
+          localStorage.setItem("hcns4_dau_vet_kho", j.dauVet);
+          return true;
+        } catch (e) { return true; }                                    
       },
 
       async keoTuServer() {
@@ -7067,7 +7119,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
               x.soLanThu = (x.soLanThu || 0) + 1;
               x.hen = Date.now() + Math.min(8, Math.pow(2, x.soLanThu - 1)) * 60000;
             });
-            ds2 = ds2.filter(x => !(trong[x.id] && x.soLanThu >= 8));
+             
+            const _ketDong102 = ds2.filter(x => trong[x.id] && x.soLanThu === 8).length;
+            if (_ketDong102) { try { CoreService.showToast("⚠️ Có " + _ketDong102 + " thay đổi chưa gửi được lên kho chung (đang tự thử lại). Kiểm tra mạng giúp nhé.", "warning"); } catch (e) {} }
           }
           this._ghiHangDoi(ds2);
           return;                                  
@@ -7101,10 +7155,10 @@ function writeSheet(ss, sheetName, headers, rowsData){
             ds.splice(i, 1);                       
           } else {
             ds[i].soLanThu = (ds[i].soLanThu || 0) + 1;
-            if (ds[i].soLanThu >= 8) {
+            if (ds[i].soLanThu === 8) {
                
-              ds.splice(i, 1);
-              try { CoreService.showToast("⚠️ Không gửi được 1 bản ghi chấm công lên máy chủ sau nhiều lần thử. Báo phòng HCNS kiểm tra kết nối.", "danger"); } catch (e) {}
+              try { CoreService.showToast("⚠️ Bản ghi chấm công chưa gửi được lên kho chung — app vẫn đang tự thử lại. Nếu lâu quá, báo phòng HCNS kiểm tra mạng.", "warning"); } catch (e) {}
+              ds[i].hen = Date.now() + 8 * 60000;
             } else {
               
               ds[i].hen = Date.now() + Math.min(8, Math.pow(2, ds[i].soLanThu - 1)) * 60000;
@@ -7278,6 +7332,14 @@ function writeSheet(ss, sheetName, headers, rowsData){
               if (!x || !x.id) return;
               let js = ""; try { js = JSON.stringify(x); } catch (e) { return; }
               nay[x.id] = js;
+               
+              if (js.length > 45000) {
+                if (!this._daBaoToBanGhi) {
+                  this._daBaoToBanGhi = true;
+                  try { CoreService.showToast("⚠️ Một bản ghi quá nặng (thường do đính kèm tệp lớn) nên không gửi lên kho chung được. Hãy bỏ bớt tệp đính kèm, thay bằng link Drive.", "danger"); } catch (e) {}
+                }
+                return;                                                       
+              }
               if (cu[x.id] !== js) guiDi.push({ bang: kho, banGhi: x });     
             });
             Object.keys(cu).forEach(id => {
@@ -7328,7 +7390,19 @@ function writeSheet(ss, sheetName, headers, rowsData){
       },
 
       _dayTimer: null,
-      
+
+      _hangLaiCaKhoi(lan) {
+        const n = (lan || 0) + 1;
+        if (n > 5) {
+          try { CoreService.showToast("⚠️ Vẫn chưa đẩy được dữ liệu lên kho chung sau 5 lần thử. Kiểm tra mạng rồi vào Cài đặt 6.4 bấm \"Đẩy dữ liệu lên\".", "danger"); } catch (e) {}
+          return;
+        }
+        clearTimeout(this._hangLaiTimer);
+        this._hangLaiTimer = setTimeout(() => {
+          try { this._lanDayLai = n; this.dayLenServer(DataService.getData()); } catch (e) {}
+        }, 20000 * Math.pow(2, n - 1));                     
+      },
+
       dayLenServer(data) {
         const s = getCompanySettings();
         if (!s.sheetSyncBat || !s.gasUrl || (!s.sheetToken && !this.layVePhien())) return; 
@@ -7347,7 +7421,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
               
               localStorage.setItem("hcns4_day_len_lan_cuoi", JSON.stringify({ ok: !!ok, vi: ok ? "" : (vi || ""), luc: new Date().toISOString() }));
             } catch (e) {}
-            if (ok) return;
+             
+            if (ok) { try { DataService._lanDayLai = 0; clearTimeout(DataService._hangLaiTimer); } catch (e) {} return; }
+            try { DataService._hangLaiCaKhoi(DataService._lanDayLai || 0); } catch (e) {}
             
             try {
               const nay = Date.now(), truoc = Number(localStorage.getItem("hcns4_day_len_bao_luc") || 0);
@@ -7533,6 +7609,13 @@ function writeSheet(ss, sheetName, headers, rowsData){
             } catch (e) {}
           });
         }
+         
+        if (!this._daBatChamCuoi) {
+          this._daBatChamCuoi = true;
+          this._lucChamCuoi = Date.now();
+          const _ghiCham = () => { this._lucChamCuoi = Date.now(); };
+          ["click", "keydown", "touchstart"].forEach(sk => document.addEventListener(sk, _ghiCham, { passive: true }));
+        }
         if (this._dxtxTimer) return;
         this._dxtxTimer = setInterval(async () => {
           try {
@@ -7542,6 +7625,12 @@ function writeSheet(ss, sheetName, headers, rowsData){
             if (modal && modal.classList.contains("show")) return;   
              
             if (document.visibilityState === "hidden") return;
+             
+            const _imLau = Date.now() - (this._lucChamCuoi || 0) > 300000;
+            if (_imLau) { this._demNhipKeo = (this._demNhipKeo || 0) + 1; if (this._demNhipKeo % 4 !== 0) return; }
+            else { this._demNhipKeo = 0; }
+             
+            if (!(await DataService.coGiMoiKhong())) return;
             await DataService.keoTuServer();                  
              
             try { this._veLaiSauKhiKeo(); } catch (eV) {}
@@ -7823,10 +7912,62 @@ function writeSheet(ss, sheetName, headers, rowsData){
         } catch (e) { return true; }   
       },
 
+       
       _wq10x() {
-        this.showToast("⛔ Cổng nhân viên chưa được nối với hệ thống công ty. "
-          + "Hãy mở bằng ĐÚNG đường link mà công ty cấp cho bạn. "
-          + "Nếu bạn là quản trị, dùng bản cài trên máy tính.", "danger");
+        this.showToast("⛔ Cổng nhân viên chưa được nối với hệ thống công ty.", "danger");
+        try { this.moOChonKhoCongTy(); } catch (e) {}
+      },
+
+      moOChonKhoCongTy() {
+        if (document.getElementById("hopNoiKho102")) return;          
+        const cu = (function () { try { return String((getCompanySettings().gasUrl) || ""); } catch (e) { return ""; } })();
+        const body = `
+          <div style="font-size:13px;line-height:1.75;">
+            <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:9px 12px;margin-bottom:10px;">
+              Máy này <strong>chưa biết kho dữ liệu của công ty nằm ở đâu</strong> nên không đăng nhập được
+              và không đồng bộ được với máy tính ở văn phòng.
+            </div>
+            <div style="font-weight:700;margin-bottom:4px;">Người quản trị lấy địa chỉ ở đâu?</div>
+            <div style="color:var(--text-secondary);margin-bottom:8px;">
+              Mở app trên máy tính → <strong>Cài đặt → mục 6.4</strong> → chép ô <strong>“Địa chỉ máy chủ (Apps Script)”</strong>,
+              rồi dán vào đây. Chỉ cần làm <strong>một lần</strong> cho mỗi máy/điện thoại.
+            </div>
+            <input type="text" id="hopNoiKho102" class="form-control" placeholder="https://script.google.com/macros/s/..../exec" value="${cu.replace(/"/g, "&quot;")}" style="font-size:12.5px;">
+            <div id="hopNoiKhoTinh102" style="margin-top:7px;font-size:12px;color:var(--text-muted);">Dán xong bấm <strong>Kiểm tra &amp; Lưu</strong>.</div>
+          </div>`;
+        CoreService.openModal("🔗 Nối máy này với hệ thống công ty", body, [
+          { text: "Để sau", class: "btn-secondary" },
+          { text: "<i class='fa-solid fa-plug-circle-check'></i> Kiểm tra & Lưu", class: "btn-primary", close: false,
+            onClick: async () => {
+              const o = document.getElementById("hopNoiKho102");
+              const tinh = document.getElementById("hopNoiKhoTinh102");
+              const dc = String((o && o.value) || "").trim();
+              if (!/^https:\/\/script\.google\.com\/macros\/s\/.+\/exec/.test(dc)) {
+                if (tinh) tinh.innerHTML = "<span style='color:#dc2626'>❌ Địa chỉ chưa đúng dạng. Phải bắt đầu bằng https://script.google.com/macros/s/… và kết thúc bằng /exec</span>";
+                return;
+              }
+              if (tinh) tinh.innerHTML = "⏳ Đang gọi thử máy chủ…";
+              let ok = false, soBan = "";
+              try {
+                const r = await fetch(dc + "?api=ping");            
+                const j = await r.json();
+                ok = !!(j && j.status === "success");
+                soBan = (j && j.codeVersion) || "";
+              } catch (e) { ok = false; }
+              if (!ok) {
+                if (tinh) tinh.innerHTML = "<span style='color:#dc2626'>❌ Không gọi được địa chỉ này. Kiểm tra lại link, hoặc hỏi người quản trị xem đã Triển khai mã máy chủ chưa.</span>";
+                return;
+              }
+              try {
+                const st = getCompanySettings();
+                st.gasUrl = dc; st.sheetSyncBat = true; st.sheetToken = "";   
+                localStorage.setItem(CONFIG.STORAGE_KEY_SETTINGS, JSON.stringify(st));
+                localStorage.setItem(CONFIG.GAS_ENDPOINT_KEY, dc);
+              } catch (e) {}
+              if (tinh) tinh.innerHTML = "<span style='color:#15803d'>✅ Đã nối" + (soBan ? " (máy chủ bản " + soBan + ")" : "") + ". Đang mở lại app…</span>";
+              setTimeout(function () { location.reload(); }, 900);
+            } }
+        ]);
       },
 
       handleLoginSubmit(e) {
@@ -7847,7 +7988,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this._wq09x()) { this._wq10x(); return; }
 
         const data = DataService.getData();
-        const user = data.nhanVien.find(n => (n.id.toLowerCase() === userInp.toLowerCase() || n.email.toLowerCase() === userInp.toLowerCase()));
+         
+        const _chuanDN = v => String(v == null ? "" : v).toLowerCase();
+        const user = data.nhanVien.find(n => (_chuanDN(n.id) === _chuanDN(userInp) || _chuanDN(n.email) === _chuanDN(userInp)));
         if (!user) {
           this.showToast("Mã nhân viên hoặc Email không tồn tại!", "danger");
           return;
