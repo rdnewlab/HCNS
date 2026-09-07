@@ -5337,7 +5337,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.86" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.87" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -5566,7 +5566,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.86"
+                version: "4.0.87"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -7461,6 +7461,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
         
         this._apDungCauHinhPhatHanh();
+         
+        try { if (this._nhanKhoTuLink105()) this.showToast("🔗 Đã nối máy này với hệ thống công ty.", "success"); } catch (e) {}
         DataService.initDefaultData();
          
         try { DataService.donAnhCu(); } catch (e) {}
@@ -7699,6 +7701,23 @@ function writeSheet(ss, sheetName, headers, rowsData){
       },
 
       
+       
+      _nhanKhoTuLink105() {
+        try {
+          const sp = new URLSearchParams(location.search);
+          const dc = String(sp.get("kho") || "").trim();
+          if (!dc) return false;
+          
+          if (!/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(dc)) return false;
+          const st = getCompanySettings();
+          if (String(st.gasUrl || "") === dc) return false;            
+          st.gasUrl = dc; st.sheetSyncBat = true; st.sheetToken = "";  
+          localStorage.setItem(CONFIG.STORAGE_KEY_SETTINGS, JSON.stringify(st));
+          try { localStorage.setItem(CONFIG.GAS_ENDPOINT_KEY, dc); } catch (e) {}
+          return true;
+        } catch (e) { return false; }
+      },
+
       _apDungCauHinhPhatHanh() {
         try {
           const c = (typeof CAU_HINH_PHAT_HANH !== "undefined") ? CAU_HINH_PHAT_HANH : null;
@@ -12066,6 +12085,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
                     <!-- [SỬA 07/09/2026 — V4 đợt 90] Ca TỰ GỢI Ý theo giờ hiện tại (goiYCa) — vẫn đổi tay được. -->
                     <select id="selCaLamViec" class="form-control" style="font-weight:500;" onchange="AppModules.self_attendance.capNhatInfoCa97()">
                       ${(() => { const caGoiY = this.goiYCa();
+
+                        
+                        this._caAppGoiY104 = caGoiY;
                         return ((getCompanySettings().caLamViec) || []).map(c => {
                           const nhan = `${c.ma} — ${c.ten} (${c.vao}–${c.ra})`;
                           return `<option value="${nhan}"${nhan === caGoiY ? " selected" : ""}>${nhan}</option>`;
@@ -12253,7 +12275,10 @@ function writeSheet(ss, sheetName, headers, rowsData){
                         </td>
                         <td style="text-align:center" class="col-so">
                           <span style="color:#059669; font-weight:600;">${ChamCongCore.hienGio(item.gioVao)}</span>
-                          ${(item.cacLan && item.cacLan.length) ? `<br><small class="badge badge-info" style="font-size:10px" title="${item.cacLan.map(q => ChamCongCore.hienGio(q.vao) + "–" + ChamCongCore.hienGio(q.ra)).join("  ·  ")}  ·  ${ChamCongCore.hienGio(item.vaoLanNay)}–${item.hasCheckedOut ? ChamCongCore.hienGio(item.gioRa) : "…"}">↔ ${item.cacLan.length + 1} lần vào/ra</small>` : ""}
+                          <!-- [SỬA 07/09/2026 — V4 đợt 104] Trước gói cả các lượt vào MỘT nhãn nhỏ, phải rê
+                               chuột mới thấy. Nay chỉ ghi số lượt ở đây, còn TỪNG LƯỢT hiện thành dòng
+                               riêng ngay dưới (xem _dongCacLuot104) cho dễ nhìn và dễ cộng sổ. -->
+                          ${(item.cacLan && item.cacLan.length) ? `<br><small class="badge badge-info" style="font-size:10px">↔ ${item.cacLan.length + 1} lượt vào/ra</small>` : ""}
                         </td>
                         <td style="text-align:center" class="col-so">
                           <span style="color:#dc2626; font-weight:600;">${item.hasCheckedOut ? ChamCongCore.hienGio(item.gioRa) : (item.gioRa && item.gioRa !== (getCompanySettings().gioRaChuan || '17:00') ? ChamCongCore.hienGio(item.gioRa) : '—')}</span>
@@ -12280,6 +12305,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                           ${this.badgeTrangThaiCong(item)}
                         </td>
                       </tr>
+                      ${this._dongCacLuot104(item)}
                     `).join("")}
                   </tbody>
                 </table>
@@ -12581,6 +12607,42 @@ function writeSheet(ss, sheetName, headers, rowsData){
              · Đã ra ca → tính công THẬT qua ChamCongCore.tinhCongNgay (chính hàm bảng công/
                lương đang dùng — một nguồn, không chế công thức riêng): đủ 1 công → Đủ công;
                chưa đủ → Thiếu giờ (hiện rõ x công). */
+        /* [THÊM MỚI 07/09/2026 — V4 đợt 104] DỰNG CÁC DÒNG PHỤ "TỪNG LƯỢT VÀO/RA" của một ngày.
+           Nhận : item = bản ghi công của ngày đó.
+           Trả  : chuỗi HTML các dòng <tr> phụ — ngày nào chỉ vào/ra MỘT lượt thì trả chuỗi rỗng
+                  (bảng nhìn y như cũ, không ai bị rối thêm).
+           VÌ SAO: chủ app cần nhìn thấy từng lượt và cộng sổ được, thay vì phải rê chuột vào một
+           cái nhãn nhỏ mới biết hôm đó ra vào mấy lần, mỗi lần mấy giờ.
+           CÁCH GHÉP: cacLan = các lượt ĐÃ ĐÓNG (có cả giờ vào lẫn giờ ra) + lượt ĐANG MỞ hiện tại
+           (vaoLanNay → gioRa nếu đã ra ca, chưa ra thì để dấu "…"). */
+        _dongCacLuot104(item) {
+          if (!item || !Array.isArray(item.cacLan) || !item.cacLan.length) return "";
+          const G = g => ChamCongCore.hienGio(g);
+          const phut = g => { const m = String(g || "").match(/^(\d{1,2}):(\d{2})/); return m ? (+m[1]) * 60 + (+m[2]) : null; };
+          // Gộp các lượt đã đóng + lượt đang mở thành một danh sách để đánh số 1, 2, 3…
+          const luot = item.cacLan.map(q => ({ vao: q.vao, ra: q.ra, dangMo: false }));
+          luot.push({ vao: item.vaoLanNay || item.gioVao, ra: item.hasCheckedOut ? item.gioRa : "", dangMo: !item.hasCheckedOut });
+          return luot.map((q, i) => {
+            // Số giờ của lượt này (chỉ để người xem dễ cộng sổ — KHÔNG phải số công chính thức,
+            // vì công còn trừ giờ nghỉ giữa ca và cắt theo khung ca ở ChamCongCore).
+            const pv = phut(q.vao), pr = phut(q.ra);
+            let dai = "—";
+            // Số giờ hiện theo kiểu Việt Nam (dấu PHẨY thập phân), vd 3,5h — không phải 3.5h.
+            if (pv != null && pr != null) { let d = pr - pv; if (d < 0) d += 1440; dai = String(Math.round(d / 6) / 10).replace(".", ",") + "h"; }
+            return `<tr style="background:var(--bg-hover);">
+              <td class="col-stt"></td>
+              <td colspan="2" style="padding-left:26px;font-size:11.5px;color:var(--text-secondary);">
+                ↳ Lượt ${i + 1}${q.dangMo ? ' <span class="badge badge-warning" style="font-size:10px">đang làm</span>' : ""}
+              </td>
+              <td style="text-align:center;font-size:11.5px;color:var(--text-muted);">—</td>
+              <td style="text-align:center;font-size:12px;"><span style="color:#059669;font-weight:600;">${G(q.vao)}</span></td>
+              <td style="text-align:center;font-size:12px;"><span style="color:#dc2626;font-weight:600;">${q.dangMo ? "…" : G(q.ra)}</span></td>
+              <td class="col-so" style="font-size:11.5px;color:var(--text-secondary);">${dai}</td>
+              <td colspan="3" style="font-size:11px;color:var(--text-muted);">${i === luot.length - 1 ? "Tổng giờ công của ngày tính ở dòng trên (đã trừ giờ nghỉ giữa ca)" : ""}</td>
+            </tr>`;
+          }).join("");
+        },
+
         badgeTrangThaiCong(item) {
           try {
             const homNay = new Date().toISOString().split("T")[0];
@@ -12597,10 +12659,6 @@ function writeSheet(ss, sheetName, headers, rowsData){
           } catch (e) { return '<span class="badge badge-secondary">—</span>'; }
         },
 
-        /* [THÊM MỚI 07/09/2026 — V4 đợt 97] DÒNG THÔNG TIN CA dưới ô chọn ca ở màn chấm công.
-           Nói cho người chấm biết TRƯỚC: ca này làm mấy giờ = mấy công, nghỉ giữa ca có bị trừ
-           không, và làm thêm của MÌNH đang tính kiểu gì (3 kiểu — đổi ở Cài đặt 6.2 mục 4 hoặc
-           hồ sơ từng người, KHÔNG đổi ở đây để nhân viên không tự sửa luật). */
         _thongTinCa97() {
           try {
             const sel = document.getElementById("selCaLamViec");
@@ -12646,6 +12704,21 @@ function writeSheet(ss, sheetName, headers, rowsData){
           } catch (e) { return ""; }
         },
 
+        _caDungLucBam104() {
+          const o = document.getElementById("selCaLamViec");
+          const dangChon = o ? o.value : "";
+          if (!dangChon) return "Ca Hành Chính";
+          if (this._caAppGoiY104 && dangChon === this._caAppGoiY104) {
+            const moi = this.goiYCa();                      
+            if (moi && moi !== dangChon) {
+              try { o.value = moi; this.capNhatInfoCa97(); } catch (e) {}
+              try { CoreService.showToast("⏰ Đã tự đổi sang " + moi + " cho đúng giờ bấm.", "info"); } catch (e) {}
+              return moi;
+            }
+          }
+          return dangChon;
+        },
+
         async submitCheckIn() {
           const user = CoreService.currentUser;
 
@@ -12679,7 +12752,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const todayStr = new Date().toISOString().split("T")[0];
           const nowTime = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
 
-          const caLam = document.getElementById("selCaLamViec") ? document.getElementById("selCaLamViec").value : "Ca Hành Chính";
+          const caLam = this._caDungLucBam104();
           const ghiChu = document.getElementById("inpCheckInNote") ? document.getElementById("inpCheckInNote").value.trim() : "";
 
           data.bangCong = data.bangCong || [];
@@ -29389,6 +29462,17 @@ function writeSheet(ss, sheetName, headers, rowsData){
           return { html: goc, daGoKhoa, daNhungDiaChi, tuTepGoc: dungLaApp, canhBao };
         },
 
+        chepLinkMoi105() {
+          const st = getCompanySettings();
+          const oLink = document.getElementById("linkCongNVInp");
+          const nen = String((oLink && oLink.value) || st.linkCongNV || "").trim();
+          const kho = String(st.gasUrl || "").trim();
+          if (!nen) { CoreService.showToast("Chưa có địa chỉ cổng nhân viên — điền ô bên trái trước (link web công ty đã đưa lên mạng).", "warning"); return; }
+          if (!kho) { CoreService.showToast("Máy này chưa nối kho dữ liệu — làm Bước 1/Bước 2 ở mục 6.4 trước đã.", "warning"); return; }
+          const link = nen + (nen.indexOf("?") >= 0 ? "&" : "?") + "kho=" + encodeURIComponent(kho);
+          CoreService.copyToClipboard(link, "✅ Đã chép LINK MỜI. Gửi link này cho nhân viên — bấm vào là máy họ tự nối với công ty.");
+        },
+
         async chepMaHtml() {
           try {
             const kq = await this._dungBanWebSach();
@@ -30462,6 +30546,10 @@ function writeSheet(ss, sheetName, headers, rowsData){
                         <div style="display:flex;gap:6px;flex-wrap:wrap;">
                           <input type="text" id="linkCongNVInp" class="form-control" style="flex:1;min-width:220px;font-family:var(--font-mono);font-size:12px;"
                                  placeholder="https://tên-tài-khoản.github.io/tên-kho/" value="${(companySettings.linkCongNV || "").replace(/"/g, "&quot;")}">
+                          <!-- [THÊM MỚI 07/09/2026 — V4 đợt 105] Nút chép LINK MỜI: ghép sẵn địa chỉ kho
+                               vào link cổng nhân viên. Ai bấm link này là máy TỰ NỐI với công ty, khỏi
+                               phải dán tay từng máy — cách chắc ăn nhất để 3 bản thông với nhau. -->
+                          <button type="button" class="btn btn-sm btn-primary" style="white-space:nowrap;" onclick="AppModules.settings.chepLinkMoi105()"><i class="fa-solid fa-link"></i> Chép link mời nhân viên</button>
                           <button class="btn btn-sm btn-primary" style="flex-shrink:0;" onclick="AppModules.settings.luuLinkCongNV()"><i class="fa-solid fa-floppy-disk"></i> Lưu link</button>
                         </div>
                         <div style="font-size:11.5px;color:var(--text-secondary);margin-top:6px;line-height:1.65;">
