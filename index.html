@@ -1164,6 +1164,9 @@
     .table-responsive {
       width: 100%;
       overflow-x: auto;
+      
+      max-height: max(320px, calc(100vh - 240px));
+      overflow-y: auto;
       border: 1px solid var(--border-color);
       border-radius: var(--radius-lg);
       background-color: var(--bg-surface);
@@ -5166,7 +5169,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.75" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.76" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -5395,7 +5398,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.75"
+                version: "4.0.76"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -6555,6 +6558,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
         }
       },
       getData() {
+         
+        if (this._khoDem) return this._khoDem;
         this.initDefaultData();
         try {
           let data = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY_DATA)) || {};
@@ -6606,6 +6611,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
           if (!data.maTranQuyen) data.maTranQuyen = {};
 
           if (!data.khauTruThang) data.khauTruThang = {};
+          this._khoDem = data;   
           return data;
         } catch (e) {
           return {};
@@ -6615,6 +6621,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
         try { if (typeof tinhLuongThang === "function") tinhLuongThang._memo = null; } catch (e) {}
         localStorage.setItem(CONFIG.STORAGE_KEY_DATA, JSON.stringify(data));
+        this._khoDem = data;   
          
         try {
           clearTimeout(this._hieuTimer);
@@ -6723,6 +6730,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
               });
             } catch (eAG) {}
             localStorage.setItem(CONFIG.STORAGE_KEY_DATA, JSON.stringify(j.data));
+            this._khoDem = null;   
              
             try { localStorage.setItem("hcns4_ban_kho_luc", String(Number(j.luuLuc) || Date.now())); } catch (eML) {}
              
@@ -7036,7 +7044,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const ds = (this.getData().nhanVien || []).filter(n => {
             if (!n || n.id === boQuaId) return false;
             const cb = PhanQuyenService.capBacCua(n.role || "employee");
-            if (cb === "hr" || cb === "director" || cb === "it_admin") return true;
+            if (cb === "hr" || cb === "director") return true;
+             
+            if (cb === "it_admin") { const vt = PhanQuyenService.timVaiTro(n.role); return !!(vt && vt.xemCVToanCty); }
             if (cb === "manager") return PhanQuyenService.phuTrachPhong(n, phongBan);
             return false;
           }).map(n => n.id);
@@ -7137,6 +7147,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
             try { _du.forEach(x => this.xepVaoHangDoi("ghiDong", x.banGhi, x.bang)); } catch (e) {}
             try { CoreService.showToast("Đang gửi " + guiDi.length + " thay đổi lên kho chung (gửi làm nhiều lượt, app tự lo).", "info"); } catch (e) {}
           }
+
           
           clearTimeout(this._guiTimer);
           const S = this;
@@ -7159,7 +7170,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 try { guiDi.slice(0, 200).forEach(function (x) { S.xepVaoHangDoi("ghiDong", x.banGhi, x.bang); }); } catch (e) {}
                 CoreService.showToast("⚠️ Mất mạng — thay đổi đã lưu trong máy và ĐANG XẾP HÀNG chờ gửi, app sẽ tự gửi lại khi có mạng.", "warning");
               });
-          }, 2000);
+          }, 800);   
         } catch (e) {}
       },
 
@@ -25457,14 +25468,22 @@ function writeSheet(ss, sheetName, headers, rowsData){
             if (y.trangThai === "cho_duyet") m.cho++; else if (y.trangThai === "da_duyet") m.duyet++; else if (y.trangThai === "tu_choi") m.tuChoi++;
           });
           const rows = Object.keys(map).map(k => map[k]).sort((a, b) => b.ngay.localeCompare(a.ngay));
+           
+          const _dau10 = rows.slice(0, 10);
+          const _conLai = rows.slice(10);
+          const _gop = (ds) => ds.reduce((g, r) => ({ tong: g.tong + r.tong, cho: g.cho + r.cho, duyet: g.duyet + r.duyet, tuChoi: g.tuChoi + r.tuChoi }), { tong: 0, cho: 0, duyet: 0, tuChoi: 0 });
+          const _truoc = _gop(_conLai), _tatCa = _gop(rows);
+          const _oSo = (v, mau) => v ? `<td class="col-so" style="color:${mau};font-weight:600">${v}</td>` : '<td class="col-so" style="color:var(--text-muted)">0</td>';
           return `<div style="margin-bottom:12px;">
-            <div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;"><i class="fa-solid fa-calendar-day"></i> Tổng hợp theo ngày</div>
-            <div class="table-responsive"><table><thead><tr>
+            <div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;"><i class="fa-solid fa-calendar-day"></i> Tổng hợp theo ngày <span style="font-weight:400;color:var(--text-muted);">(10 ngày gần nhất)</span></div>
+            <div class="table-responsive" style="max-width:560px;"><table><thead><tr>
               <th class="col-ngay">Ngày</th><th class="col-so">Số YC</th>
               <th class="col-so">Chờ</th><th class="col-so">Đã duyệt</th><th class="col-so">Từ chối</th>
             </tr></thead><tbody>
-              ${rows.map(r => `<tr><td class="col-ngay">${formatDateDisplay(r.ngay)}</td><td class="col-so">${r.tong}</td>
-                <td class="col-so" style="color:#d97706">${r.cho || "—"}</td><td class="col-so" style="color:#16a34a">${r.duyet || "—"}</td><td class="col-so" style="color:#dc2626">${r.tuChoi || "—"}</td></tr>`).join("")}
+              ${_dau10.map(r => `<tr><td class="col-ngay">${formatDateDisplay(r.ngay)}</td><td class="col-so" style="font-weight:600">${r.tong}</td>
+                ${_oSo(r.cho, "#d97706")}${_oSo(r.duyet, "#16a34a")}${_oSo(r.tuChoi, "#dc2626")}</tr>`).join("")}
+              ${_conLai.length ? `<tr style="color:var(--text-muted)"><td class="col-ngay">Trước đó (${_conLai.length} ngày)</td><td class="col-so">${_truoc.tong}</td>${_oSo(_truoc.cho, "#d97706")}${_oSo(_truoc.duyet, "#16a34a")}${_oSo(_truoc.tuChoi, "#dc2626")}</tr>` : ""}
+              <tr style="background:var(--bg-hover);font-weight:700;border-top:2px solid var(--border-color)"><td>TỔNG CỘNG</td><td class="col-so">${_tatCa.tong}</td>${_oSo(_tatCa.cho, "#d97706")}${_oSo(_tatCa.duyet, "#16a34a")}${_oSo(_tatCa.tuChoi, "#dc2626")}</tr>
             </tbody></table></div></div>`;
         },
 
