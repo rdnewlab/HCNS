@@ -2826,7 +2826,7 @@ var CHUNK         = 45000;               // 1 ô Sheet tối đa ~50.000 ký t�
    mã CŨ và không có dấu hiệu nào để biết — đã dính lỗi này nhiều lần. Nay mọi phản hồi đều
    kèm số bản; nút "Kiểm tra kết nối" ở mục 6.4 hiện số đó ra để đối chiếu.
    ⚠️ MỖI LẦN SỬA MÃ NÀY PHẢI TĂNG SỐ (r1 → r2 …). */
-var CODE_VERSION  = "HCNS-BE-2026-09-07-r18";   // [SỬA đợt 107] r17 → r18: hiểu thêm kho kiểu "từ điển" (bảng lương đã chốt, khấu trừ, doanh số, ma trận quyền) — thiếu phần này thì mấy kho đó kéo về bị sai kiểu, màn hình trắng   // r16 → r17: MỞ 22 KHO còn thiếu (nhân sự/kế toán/giám đốc làm trên điện thoại hoặc bản web không còn bị mất dữ liệu im lặng) + cửa hỏi "có gì mới" có bộ nhớ đệm 15 giây (nhẹ tải cho công ty đông người) + sửa 2 chỗ màn hình cho làm mà máy chủ từ chối   // [SỬA đợt 106] r15 → r16: thêm cửa api=layMoi — máy chỉ tải NHỮNG DÒNG vừa đổi (vài KB) thay vì tải lại cả kho (vài MB) mỗi khi có người chấm công   // [SỬA đợt 103] r14 → r15: thêm cửa hỏi nhẹ api=kiemMoc để máy KHÔNG phải kéo cả kho mỗi 30 giây (200-500 người dùng cùng lúc)   // [SỬA đợt 99] r13 → r14: gộp bảng công theo THỨ TỰ ƯU TIÊN NGUỒN (sản lượng > máy > app > phòng > tay) thay vì "dòng sau đè dòng trước"; ô HCNS sửa tay trên tab vẫn luôn thắng   // [SỬA đợt 89] r12 → r13: chấm công giữ đủ trường phụ khi gộp (ảnh, cờ ra ca, nguồn, IP, GPS) — hết "dữ liệu chấm công bị mất bị nhảy"   // [SỬA đợt 80c] r7 → r10: THÊM lệnh ghiDong dùng chung (trước đây gần như MỌI chức năng — đơn từ, góp ý, sáng kiến, dự trù, KPI… — đều không lưu được lên kho khi làm từ điện thoại) · CHẶN nhân viên tự duyệt đơn của chính mình · và sửa lỗi DUYỆT TRÊN MÁY QUẢN TRỊ KHÔNG ĂN (dòng cũ trong tab đè ngược bản vừa duyệt)
+var CODE_VERSION  = "HCNS-BE-2026-09-07-r19";   // [SỬA đợt 108] r18 → r19: hễ có người chấm công / gửi đơn / giao việc là XOÁ NGAY bộ nhớ tạm của cửa hỏi — máy quản lý biết tin sau một nhịp thay vì chờ tới 45 giây ("ghi nhận chậm, không nhạy")   // [SỬA đợt 107] r17 → r18: hiểu thêm kho kiểu "từ điển" (bảng lương đã chốt, khấu trừ, doanh số, ma trận quyền) — thiếu phần này thì mấy kho đó kéo về bị sai kiểu, màn hình trắng   // r16 → r17: MỞ 22 KHO còn thiếu (nhân sự/kế toán/giám đốc làm trên điện thoại hoặc bản web không còn bị mất dữ liệu im lặng) + cửa hỏi "có gì mới" có bộ nhớ đệm 15 giây (nhẹ tải cho công ty đông người) + sửa 2 chỗ màn hình cho làm mà máy chủ từ chối   // [SỬA đợt 106] r15 → r16: thêm cửa api=layMoi — máy chỉ tải NHỮNG DÒNG vừa đổi (vài KB) thay vì tải lại cả kho (vài MB) mỗi khi có người chấm công   // [SỬA đợt 103] r14 → r15: thêm cửa hỏi nhẹ api=kiemMoc để máy KHÔNG phải kéo cả kho mỗi 30 giây (200-500 người dùng cùng lúc)   // [SỬA đợt 99] r13 → r14: gộp bảng công theo THỨ TỰ ƯU TIÊN NGUỒN (sản lượng > máy > app > phòng > tay) thay vì "dòng sau đè dòng trước"; ô HCNS sửa tay trên tab vẫn luôn thắng   // [SỬA đợt 89] r12 → r13: chấm công giữ đủ trường phụ khi gộp (ảnh, cờ ra ca, nguồn, IP, GPS) — hết "dữ liệu chấm công bị mất bị nhảy"   // [SỬA đợt 80c] r7 → r10: THÊM lệnh ghiDong dùng chung (trước đây gần như MỌI chức năng — đơn từ, góp ý, sáng kiến, dự trù, KPI… — đều không lưu được lên kho khi làm từ điện thoại) · CHẶN nhân viên tự duyệt đơn của chính mình · và sửa lỗi DUYỆT TRÊN MÁY QUẢN TRỊ KHÔNG ĂN (dòng cũ trong tab đè ngược bản vừa duyệt)
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    [THÊM MỚI 05/09/2026 — V4 đợt 51] BẤM ▶ CHẠY THÌ CHẠY HÀM NÀY (KIEM_TRA_NHANH).
@@ -2872,6 +2872,16 @@ function KIEM_TRA_NHANH(){
    CÙNG MỘT GIÂY thì cả hai cùng đọc mốc cũ, cùng thấy hợp lệ → một bên mất trắng thay đổi.
    Hàm này bắt các lượt ghi XẾP HÀNG, ai tới trước làm trước (chờ tối đa 25 giây).
    Nhận: hàm việc cần làm. Trả: kết quả của hàm đó; hết giờ chờ thì báo lỗi rõ ràng. */
+/* [THÊM MỚI 07/09/2026 — V4 đợt 108] XOÁ BỘ NHỚ TẠM CỦA CỬA HỎI "CÓ GÌ MỚI KHÔNG".
+   VÌ SAO: bản trước cho cửa hỏi nhớ tạm câu trả lời 15 giây để đỡ tốn lượt gọi Google khi công
+   ty đông người. Nhưng chủ app dùng thật thì kêu "ghi nhận chậm, không nhạy": nhân viên bấm ra
+   ca xong, máy của quản lý phải chờ tới 45 giây (15 giây nhớ tạm + 30 giây nhịp hỏi) mới biết.
+   NAY: hễ có ai GHI gì lên kho là xoá ngay bộ nhớ tạm đó → lần hỏi kế tiếp lấy số liệu thật,
+   máy khác biết tin sau đúng một nhịp hỏi. Lúc không ai ghi thì vẫn nhớ tạm như cũ (vẫn nhẹ tải).
+   Gọi hàm này ở MỌI lệnh ghi — nó đã được gọi sẵn trong _ghiCoKhoa nên không sót lệnh nào. */
+function _xoaDemDauVet(){
+  try { CacheService.getScriptCache().remove("dauvet_v1"); } catch (e) {}
+}
 function _ghiCoKhoa(viec){
   /* [THÊM đợt 51] Van an toàn: hàm này app tự gọi qua mạng, KHÔNG dành để bấm ▶ Chạy.
      Nếu ai đó chạy tay (không truyền "việc" vào) thì trả lời tử tế thay vì quăng lỗi đỏ
@@ -2888,7 +2898,8 @@ function _ghiCoKhoa(viec){
       return _json({ status: "error", error: "Máy khác đang lưu dữ liệu, vui lòng bấm lại sau vài giây." });
     }
   } catch (eL) { return viec(); }   // môi trường không có khoá thì vẫn chạy, không chặn người dùng
-  try { return viec(); } finally { try { lock.releaseLock(); } catch (e2) {} }
+  // [SỬA đợt 108] Ghi xong là xoá bộ nhớ tạm của cửa hỏi, để máy khác biết tin ngay nhịp sau.
+  try { return viec(); } finally { _xoaDemDauVet(); try { lock.releaseLock(); } catch (e2) {} }
 }
 
 // Trả JSON chuẩn cho mọi phản hồi.
@@ -4606,6 +4617,54 @@ function writeSheet(ss, sheetName, headers, rowsData){
         return "";
       },
 
+       
+      giaiThichGioCong(banGhi, st) {
+        try {
+          if (!banGhi) return "";
+          const ca = this.timCa(banGhi, st);
+          if (!ca) return "";
+          
+          const luot = (Array.isArray(banGhi.cacLan) ? banGhi.cacLan.slice() : []);
+          luot.push({ vao: banGhi.vaoLanNay || banGhi.gioVao, ra: banGhi.hasCheckedOut ? banGhi.gioRa : "" });
+          let phutDongHo = 0;
+          luot.forEach(q => {
+            const v = this.phut(q.vao), r = this.phut(q.ra);
+            if (v == null || r == null) return;
+            let d = r - v; if (d < 0) d += 1440;              
+            phutDongHo += d;
+          });
+          if (!phutDongHo) return "";
+
+          let nghiTu = this.phut(ca.nghiTu), nghiDen = this.phut(ca.nghiDen);
+          const coNghi = nghiTu != null && nghiDen != null && nghiDen !== nghiTu;
+          let phutNghi = 0;
+          if (coNghi) {
+            const vaoCa0 = this.phut(ca.vao);
+            if (ca.quaDem && nghiDen <= vaoCa0) { nghiTu += 1440; nghiDen += 1440; }   
+            luot.forEach(q => {
+              const v = this.phut(q.vao); let r = this.phut(q.ra);
+              if (v == null || r == null) return;
+              if (r < v) r += 1440;
+              phutNghi += Math.max(0, Math.min(r, nghiDen) - Math.max(v, nghiTu));
+            });
+          }
+          const t = this.tinhCongNgay(banGhi, st);
+          const gioCong = Number(t.gio) || 0;
+          
+          const gioNgoaiCa = phutDongHo / 60 - gioCong - phutNghi / 60;
+          const so = x => String(Math.round(x * 10) / 10).replace(".", ",");   
+          if (gioNgoaiCa < 0.1) return "";                      
+          return "Có mặt " + so(phutDongHo / 60) + "h theo đồng hồ, nhưng ca " + (ca.ma || ca.ten) +
+                 " chạy " + ca.vao + "–" + ca.ra + " nên " + so(gioNgoaiCa) + "h ở NGOÀI GIỜ CA không được tính công" +
+                 (phutNghi > 0 ? " (chưa kể " + so(phutNghi / 60) + "h nghỉ giữa ca)" : "") +
+                 " → còn " + so(gioCong) + "h tính công." +
+
+                 ((Number(t.otGio) || 0) >= 0.1
+                   ? " Trong đó " + so(Number(t.otGio)) + "h đã được ghi nhận thành tăng ca."
+                   : " Muốn tính phần ngoài ca thì làm đơn tăng ca.");
+        } catch (e) { return ""; }
+      },
+
       doiGio(v) {
         if (v == null || v === "") return "";
         const hai = n => ("0" + n).slice(-2);
@@ -5576,7 +5635,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.89" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.90" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -5805,7 +5864,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.89"
+                version: "4.0.90"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -12976,7 +13035,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
               <td style="text-align:center;font-size:12px;"><span style="color:#059669;font-weight:600;">${G(q.vao)}</span></td>
               <td style="text-align:center;font-size:12px;"><span style="color:#dc2626;font-weight:600;">${q.dangMo ? "…" : G(q.ra)}</span></td>
               <td class="col-so" style="font-size:11.5px;color:var(--text-secondary);">${dai}</td>
-              <td colspan="3" style="font-size:11px;color:var(--text-muted);">${i === luot.length - 1 ? "Tổng giờ công của ngày tính ở dòng trên (đã trừ giờ nghỉ giữa ca)" : ""}</td>
+              <td colspan="3" style="font-size:11px;color:var(--text-muted);">${i === luot.length - 1 ? (ChamCongCore.giaiThichGioCong(item, getCompanySettings()) || "Tổng giờ công của ngày tính ở dòng trên (đã trừ giờ nghỉ giữa ca)") : ""}</td>
             </tr>`;
           }).join("");
         },
@@ -19357,6 +19416,109 @@ function writeSheet(ss, sheetName, headers, rowsData){
           this.render();
         },
 
+        _dongLuotQuanLy108(item) {
+          if (!item || !Array.isArray(item.cacLan) || !item.cacLan.length) return "";
+          const G = g => ChamCongCore.hienGio(g);
+          const phut = g => { const m = String(g || "").match(/^(\d{1,2}):(\d{2})/); return m ? (+m[1]) * 60 + (+m[2]) : null; };
+          
+          const luot = item.cacLan.map(q => ({ vao: q.vao, ra: q.ra, dangMo: false }));
+          luot.push({ vao: item.vaoLanNay || item.gioVao, ra: item.hasCheckedOut ? item.gioRa : "", dangMo: !item.hasCheckedOut });
+          return luot.map((q, i) => {
+            const pv = phut(q.vao), pr = phut(q.ra);
+            let dai = "—";
+
+            
+            if (pv != null && pr != null) { let d = pr - pv; if (d < 0) d += 1440; dai = String(Math.round(d / 6) / 10).replace(".", ",") + "h"; }
+            return `<tr style="background:var(--bg-hover);">
+              <td class="col-stt"></td>
+              <td colspan="3" style="padding-left:26px;font-size:11.5px;color:var(--text-secondary);">
+                ↳ Lượt ${i + 1}${q.dangMo ? ' <span class="badge badge-warning" style="font-size:10px">chưa có tin ra</span>' : ""}
+              </td>
+              <td style="text-align:center;font-size:11.5px;color:var(--text-muted);">—</td>
+              <td style="text-align:center;font-size:12px;"><span style="color:#059669;font-weight:600;">${G(q.vao)}</span></td>
+              <td style="text-align:center;font-size:12px;"><span style="color:#dc2626;font-weight:600;">${q.dangMo ? "…" : G(q.ra)}</span></td>
+              <td class="col-so" style="font-size:11.5px;color:var(--text-secondary);">${dai}</td>
+              <td class="col-so" style="font-size:11.5px;color:var(--text-muted);">—</td>
+              <td colspan="4" style="font-size:11px;color:var(--text-muted);">${i === luot.length - 1 ? (ChamCongCore.giaiThichGioCong(item, getCompanySettings()) || "Tổng giờ và tổng công của cả ngày nằm ở dòng trên (đã trừ giờ nghỉ giữa ca)") : ""}</td>
+            </tr>`;
+          }).join("");
+        },
+
+         
+        _thanhLienThong108() {
+          const bat = DataService.syncBat();
+          const st = getCompanySettings();
+          const coKho = !!(st.gasUrl || "");
+          let moc = 0;
+          try { moc = Number(localStorage.getItem("hcns4_ban_kho_luc") || 0); } catch (e) {}
+          const gioVe = moc ? new Date(moc).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }) : "";
+          
+          const phutTruoc = moc ? Math.floor((Date.now() - moc) / 60000) : -1;
+          const cu = phutTruoc > 3;
+          let mau, chu, loi;
+          if (!coKho) {
+            mau = "#fee2e2"; chu = "#dc2626";
+            loi = "<strong>MÁY NÀY CHƯA NỐI KHO CHUNG.</strong> Bảng dưới chỉ là dữ liệu của riêng máy này — nhân viên chấm công ở máy khác sẽ KHÔNG hiện ở đây. Vào Cài đặt ▸ 6.4 để nối kho công ty.";
+          } else if (!bat) {
+            mau = "#fef9c3"; chu = "#d97706";
+            loi = "<strong>Đồng bộ đang TẮT.</strong> Máy này không tự nhận dữ liệu từ máy khác. Bật lại ở Cài đặt ▸ 6.4.";
+          } else if (!moc) {
+            mau = "#fef9c3"; chu = "#d97706";
+            loi = "Đã nối kho nhưng <strong>chưa nhận được dữ liệu lần nào</strong>. Bấm \"Tải ngay\" để lấy về.";
+          } else if (cu) {
+            mau = "#fef9c3"; chu = "#d97706";
+            loi = "Dữ liệu nhận về lần cuối lúc <strong>" + gioVe + "</strong> (" + phutTruoc + " phút trước) — hơi lâu. Nếu ai đó vừa chấm công mà chưa thấy, bấm \"Tải ngay\".";
+          } else {
+            mau = "#dcfce7"; chu = "#16a34a";
+            loi = "Đang liên thông với kho công ty · dữ liệu nhận về lúc <strong>" + gioVe + "</strong>. Nhân viên chấm ở điện thoại hay máy khác đều về đây.";
+          }
+          return `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:${mau};border:1px solid ${chu}33;border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:12px;color:${chu};line-height:1.5;">
+            <span style="flex:1;min-width:240px;">🔗 ${loi}</span>
+            <button class="btn btn-sm btn-secondary" style="white-space:nowrap" onclick="AppModules.attendance._taiNgay108(this)">
+              <i class="fa-solid fa-rotate"></i> Tải ngay
+            </button>
+          </div>`;
+        },
+
+        async _taiNgay108(nut) {
+          if (!DataService.syncBat()) { CoreService.showToast("Máy này chưa bật đồng bộ — vào Cài đặt 6.4 để nối kho công ty.", "warning"); return; }
+          const chuCu = nut ? nut.innerHTML : "";
+          if (nut) { nut.disabled = true; nut.innerHTML = "⏳ Đang tải…"; }
+          try {
+            
+            const nhe = await DataService.layPhanMoi106();
+            if (!nhe) await DataService.keoTuServer();
+            CoreService.showToast("✅ Đã tải dữ liệu mới nhất từ kho công ty.", "success");
+            this.render();
+          } catch (e) {
+            CoreService.showToast("Chưa tải được: " + (e && e.message ? e.message : "lỗi mạng") + ". Kiểm tra kết nối ở Cài đặt 6.4.", "danger");
+            if (nut) { nut.disabled = false; nut.innerHTML = chuCu; }
+          }
+        },
+
+        _dongTongApp108(ds, st) {
+          let tongGio = 0, tongCong = 0, tongOT = 0;
+          (ds || []).forEach(b => {
+            try {
+              const t = ChamCongCore.tinhCongNgay(b, st);
+              tongGio += Number(t.gio) || 0;
+              tongCong += Number(t.cong) || 0;
+            } catch (e) {}
+            tongOT += Number(b.gioOT) || 0;
+          });
+          const soNguoi = new Set((ds || []).map(b => b.maNV)).size;
+          return `<tr style="background:var(--primary-lighter,#dbeafe);font-weight:700;">
+            <td colspan="7" style="text-align:right;padding-right:12px;">
+              ${ ""}
+              TỔNG CỘNG — ${(ds || []).length} ngày-công của ${soNguoi} người
+            </td>
+            <td class="col-so">${formatNumber(tongGio, 1)}h</td>
+            <td class="col-so" style="color:var(--primary-dark)">${formatNumber(tongCong, 2)}</td>
+            <td class="col-so">${formatNumber(tongOT, 1)}h</td>
+            <td colspan="3"></td>
+          </tr>`;
+        },
+
         renderSubTabContent() {
           const data = DataService.getData();
           const settings = getCompanySettings();
@@ -19581,6 +19743,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                   </button>
                 </div>
                 <div style="background:var(--bg-hover);border:1px solid var(--border-light);border-radius:8px;padding:8px 12px;font-size:11.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:10px;">
+                  ${this._thanhLienThong108()}
                   📱 Bản ghi do nhân viên <strong>tự chấm bằng app</strong> (nguồn <code>app</code>). Cùng với nguồn máy/sản lượng, các bản ghi này được gộp ở mục <strong>5. Đối chiếu công</strong> theo thứ tự ưu tiên (Sản lượng &gt; Máy &gt; App &gt; Phòng).
                 </div>
                 <div class="table-responsive">
@@ -19594,6 +19757,10 @@ function writeSheet(ss, sheetName, headers, rowsData){
                         <th>Ca Làm Việc</th>
                         <th style="text-align:center">Giờ Vào</th>
                         <th style="text-align:center">Giờ Ra</th>
+                        <!-- [THÊM MỚI 07/09/2026 — V4 đợt 108] 2 cột TỔNG. Chủ app: "chưa tính tổng được".
+                             Trước bảng này chỉ có giờ vào / giờ ra thô, người xem phải tự nhẩm. -->
+                        <th class="col-so" title="Số giờ làm thật trong ca (đã trừ giờ nghỉ giữa ca)">Tổng Giờ</th>
+                        <th class="col-so" title="Số công quy đổi của ngày (theo ca + dung sai)">Tổng Công</th>
                         <th class="col-so">Giờ OT</th>
                         <th style="text-align:center">Hình Thức</th>
                         <th style="text-align:center">Xác Thực Vị Trí</th>
@@ -19602,21 +19769,41 @@ function writeSheet(ss, sheetName, headers, rowsData){
                     </thead>
                     <tbody>
                       ${dsApp.length === 0 ? `<tr><td colspan="11" class="col-action o-rong">Chưa có nhân viên nào tự chấm công bằng app trong tháng ${CoreService.nhanThang(thangCC)}</td></tr>` : dsApp.map((item, idx) => `
-                        ${(idx === 0 || dsApp[idx - 1].ngay !== item.ngay) ? `<tr><td colspan="11" style="background:var(--bg-hover);font-weight:700;font-size:12px;padding:5px 10px;color:var(--primary-dark);">📅 Ngày ${formatDateDisplay(item.ngay)} — ${dsApp.filter(x => x.ngay === item.ngay).length} lượt chấm</td></tr>` : ""}
+                        ${(idx === 0 || dsApp[idx - 1].ngay !== item.ngay) ? `<tr><td colspan="11" style="background:var(--bg-hover);font-weight:700;font-size:12px;padding:5px 10px;color:var(--primary-dark);">📅 Ngày ${formatDateDisplay(item.ngay)} — ${dsApp.filter(x => x.ngay === item.ngay).length} người chấm công</td></tr>` : ""}
                         <tr>
                           <td class="col-stt">${idx + 1}</td>
                           <td class="col-ma">${item.maNV}</td>
                           <td><strong>${_tenNV90[item.maNV] || "—"}</strong></td>
                           <td class="col-ngay">${formatDateDisplay(item.ngay)}</td>
                           <td>${item.caLam || "—"}</td>
-                          <td style="text-align:center; font-weight:bold; color:var(--primary-dark)">${ChamCongCore.hienGio(item.gioVao)}</td>
-                          <td style="text-align:center; font-weight:bold; color:${item.hasCheckedOut ? "var(--primary-dark)" : "var(--text-muted)"}">${item.hasCheckedOut ? ChamCongCore.hienGio(item.gioRa) : (String(item.ngay || "") < new Date().toISOString().split("T")[0] ? '<span style="color:#dc2626">⚠️ Quên ra</span>' : "Đang làm")}</td>
+                          <td style="text-align:center; font-weight:bold; color:var(--primary-dark)">${ChamCongCore.hienGio(item.gioVao)}${(item.cacLan && item.cacLan.length) ? `<br><small class="badge badge-info" style="font-size:10px">↔ ${item.cacLan.length + 1} lượt vào/ra</small>` : ""}</td>
+                          <!-- [SỬA 07/09/2026 — V4 đợt 108] Cột Giờ Ra nói RÕ NGHĨA.
+                               TRƯỚC: chưa chấm ra thì ghi trống trơn "Đang làm" — chủ app nhìn vào không
+                               phân biệt được "người ta đang thật sự làm" với "người ta ra rồi mà máy này
+                               chưa nhận được". NAY ghi thêm giờ ra dự kiến của ca và dấu hỏi để biết là
+                               CHƯA CÓ TIN, chứ không khẳng định người ta đang ở nhà máy. -->
+                          <td style="text-align:center; font-weight:bold; color:${item.hasCheckedOut ? "var(--primary-dark)" : "var(--text-muted)"}">${item.hasCheckedOut
+                            ? ChamCongCore.hienGio(item.gioRa)
+                            : (String(item.ngay || "") < new Date().toISOString().split("T")[0]
+                              ? '<span style="color:#dc2626">⚠️ Quên chấm ra</span>'
+                              : '<span title="Máy này chưa nhận được lượt ra ca. Nếu nhân viên đã bấm ra rồi thì chờ đồng bộ, hoặc bấm Kiểm tra kết nối ở Cài đặt 6.4.">⏳ Chưa có tin ra</span>')}</td>
+                          <!-- [THÊM MỚI đợt 108] Tổng giờ + tổng công của ngày — tính bằng ĐÚNG hàm mà
+                               phiếu lương dùng (ChamCongCore.tinhCongNgay), nên 3 màn không thể lệch nhau. -->
+                          ${(() => {
+                            let _t108 = null;
+                            try { _t108 = ChamCongCore.tinhCongNgay(item, settings); } catch (e) { _t108 = null; }
+                            const _gio = _t108 ? formatNumber(_t108.gio || 0, 1) + "h" : "—";
+                            const _cong = _t108 ? formatNumber(_t108.cong || 0, 2) : "—";
+                            return `<td class="col-so" style="font-weight:600">${_gio}</td><td class="col-so" style="font-weight:700;color:var(--primary-dark)">${_cong}</td>`;
+                          })()}
                           <td class="col-so">${formatNumber(item.gioOT || 0, 1)}h</td>
                           <td style="text-align:center;font-size:11px">${item.viTri || (item.hinhThuc === "online" ? "Online (WFH)" : item.hinhThuc === "thi_truong" ? "Thị trường" : "Nhà máy")}</td>
                           <td style="text-align:center">${moTaXacThucChamCong(item)}</td>
                           <td style="text-align:center">${item.anhCheckIn ? `<img src="${item.anhCheckIn}" onclick="AppModules.self_attendance.viewImageModal('${item.anhCheckIn}','Ảnh chấm công ${item.maNV} - ${formatDateDisplay(item.ngay)}')" style="width:30px;height:30px;border-radius:6px;object-fit:cover;cursor:pointer;" title="Bấm xem ảnh to">` : '<span class="text-muted">—</span>'}</td>
                         </tr>
+                        ${this._dongLuotQuanLy108(item)}
                       `).join("")}
+                      ${dsApp.length ? this._dongTongApp108(dsApp, settings) : ""}
                     </tbody>
                   </table>
                 </div>
