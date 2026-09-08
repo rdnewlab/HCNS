@@ -4321,6 +4321,21 @@ function writeSheet(ss, sheetName, headers, rowsData){
         } catch (e) { return false; }
       },
 
+      duocSuaCong(maNVBiSua, u) {
+        try {
+          const ng = u || CoreService.currentUser || {};
+          const cap = this.capBacCua(ng.role || "employee");
+          if (cap === "hr" || cap === "director") return { duoc: true };
+          if (cap === "it_admin") return { duoc: false, lyDo: "IT là vai trò kỹ thuật — sửa giờ công là việc của hành chính nhân sự." };
+          if (cap === "manager") {
+            const nv = (DataService.getData().nhanVien || []).find(n => n.id === maNVBiSua);
+            if (nv && this.phuTrachPhong(ng, nv.phongBan)) return { duoc: true };
+            return { duoc: false, lyDo: "Trưởng phòng chỉ sửa được công của người trong phòng mình phụ trách." };
+          }
+          return { duoc: false, lyDo: "Chỉ Hành chính nhân sự, Giám đốc (và Trưởng phòng với người phòng mình) mới sửa được giờ công. Bạn hãy báo hành chính bổ sung." };
+        } catch (e) { return { duoc: false, lyDo: "Không đọc được quyền." }; }
+      },
+
       coSuaVung(vungId, u) {
         try { const ng = u || CoreService.currentUser || {}; return this.coQuyen(ng.role || "employee", vungId, "sua"); }
         catch (e) { return true; }
@@ -5884,7 +5899,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.94" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.96" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -6113,13 +6128,22 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.94"
+                version: "4.0.96"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
                 const j = await r.json();
+                 
+                const _thanhCong113 = !!(j && (j.ok === true || j.success === true
+                  || String(j.status || "").toLowerCase() === "success" || String(j.status || "").toLowerCase() === "ok"));
                 CoreService.closeModal();
-                CoreService.showToast((j && j.msg) || "Đã gửi yêu cầu xin key tới nhà sản xuất.", "success");
+                if (_thanhCong113) {
+                  CoreService.showToast((j && j.msg) || "✅ Đã gửi yêu cầu xin key tới nhà sản xuất.", "success");
+                } else {
+                  CoreService.showToast("⚠️ Nhà sản xuất CHƯA nhận được yêu cầu ("
+                    + ((j && (j.error || j.msg)) || "máy chủ từ chối")
+                    + "). Hãy bấm \"Sao chép mã máy\" rồi gửi thẳng qua Zalo/điện thoại cho nhà sản xuất.", "warning");
+                }
               } catch (e) {
                 CoreService.showToast("Không gửi được (lỗi mạng). Hãy Copy mã máy gửi thủ công qua Zalo.", "warning");
               }
@@ -6419,6 +6443,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
       },
 
       xemNhatKyDongBo() {
+         
+        const esc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
         const so = DataService.docNhatKyDongBo();
         const dong = so.map(x => '<tr>'
           + '<td style="padding:4px 8px;white-space:nowrap">' + new Date(x.luc).toLocaleString("vi-VN") + '</td>'
@@ -8171,6 +8197,16 @@ function writeSheet(ss, sheetName, headers, rowsData){
       },
       KEY_HANG_DOI: "hcns3_hang_doi",
       GIAN_TOI_DA_PHUT: 30,          
+
+      gianGuiTuChon() {
+        try {
+          const so = (this.getData().nhanVien || []).filter(n => n && n.trangThai !== "dinh_chi").length;
+          if (so < 50) return 1;
+          if (so < 150) return 5;
+          if (so < 300) return 15;
+          return 30;
+        } catch (e) { return 5; }        
+      },
       _dangChayHangDoi: false,
 
       _docHangDoi() {
@@ -8186,7 +8222,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
        
       xepVaoHangDoi(loai, banGhi, bang) {
         const ds = this._docHangDoi();
-        const gian = Math.max(0, Number(getCompanySettings().gianGuiPhut ?? this.GIAN_TOI_DA_PHUT));
+         
+        const _khaiTay114 = getCompanySettings().gianGuiPhut;
+        const gian = Math.max(0, Number(_khaiTay114 ?? this.gianGuiTuChon()));
 
         
         const treMs = (loai === "ghiDong") ? 0 : Math.floor(Math.random() * gian * 60000);
@@ -11544,12 +11582,13 @@ function writeSheet(ss, sheetName, headers, rowsData){
         const nhom = this.NHOM_BANG.map(g => {
           const hang = g[1].filter(ma => S.BANG[ma] && S._duQuyen(ma)).map(ma => {
             const c = S.BANG[ma], n = S._demDong(ma);
-            return `<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;padding:6px 9px;border:1px solid var(--border-light);border-radius:8px;background:var(--bg-surface);min-height:40px;">
-              <div style="min-width:0;">
-                <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;">${c.ten}</div>
-                <div style="font-size:10.5px;color:var(--text-muted);">${n} dòng${c.chiJSON ? " · chỉ JSON" : ""}</div>
+             
+            return `<div style="display:flex;gap:8px;align-items:center;justify-content:space-between;padding:6px 9px;border:1px solid var(--border-light);border-radius:8px;background:var(--bg-surface);height:52px;box-sizing:border-box;">
+              <div style="min-width:0;flex:1;">
+                <div title="${String(c.ten).replace(/"/g, "&quot;")}" style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.ten}</div>
+                <div style="font-size:10.5px;color:var(--text-muted);white-space:nowrap;">${n} dòng${c.chiJSON ? " · chỉ JSON" : ""}</div>
               </div>
-              <div style="flex-shrink:0;">${S.thanhCongCu(ma)}</div>
+              <div style="flex-shrink:0;width:132px;display:flex;justify-content:flex-end;">${S.thanhCongCu(ma)}</div>
             </div>`;
           }).join("");
           if (!hang) return "";     
@@ -13214,9 +13253,18 @@ function writeSheet(ss, sheetName, headers, rowsData){
                   ? "💰 <strong>Theo dõi thu nhập</strong>: lương thỏa thuận & lương cơ bản hiện tại. Bấm <strong>Lịch sử tăng lương</strong> để xem/thêm các lần tăng — lương hiện tại luôn = lần tăng mới nhất."
                   : "🗂️ <strong>Hồ sơ chung</strong>: thông tin hành chính, liên hệ, bằng cấp, ngày vào, phép năm và lương. <strong>Chỉ HR &amp; Giám đốc</strong> xem được. Bấm nút bút chì để sửa hồ sơ."}
               </div>
-              <div class="table-responsive">
+              <!-- [SỬA 08/09/2026 — V4 đợt 113] THÊM KHUNG CUỘN DỌC + HÀNG TIÊU ĐỀ DÍNH.
+                   VÌ SAO: công ty vài trăm người thì bảng này kéo dài hàng chục màn hình, cuộn
+                   xuống là mất luôn tên cột (không biết cột nào là cột nào), và trình duyệt phải
+                   vẽ hết mọi dòng cùng lúc nên máy yếu bị khựng.
+                   NAY: bảng nằm trong khung cao tối đa 65% màn hình, cuộn TRONG khung; hàng tiêu
+                   đề dính lại trên cùng nên cuộn tới đâu vẫn đọc được tên cột.
+                   Ít người thì khung tự co lại vừa đủ, không để khoảng trống thừa. -->
+              <div class="table-responsive" style="max-height:65vh;overflow-y:auto;overflow-x:auto;">
                 ${this.tabHS === "yte" ? this._bangYte(list) : this.tabHS === "nangluc" ? this._bangNangLuc(list) : this.tabHS === "thu_nhap" ? this._bangThuNhap(list) : this._bangChung(list)}
               </div>
+              <!-- Nhắc nhỏ: chỉ hiện khi danh sách dài, để người dùng biết là cuộn được. -->
+              ${list.length > 12 ? `<div style="font-size:11px;color:var(--text-muted);margin-top:6px;">📜 Danh sách ${list.length} người — cuộn trong khung bảng để xem tiếp (tên cột luôn dính trên cùng).</div>` : ""}
             </div>
           `;
 
@@ -13225,27 +13273,28 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
         
         _bangChung(list) {
-          return `<table style="min-width:760px;"><!-- [SỬA 07/09/2026 — V4 đợt 35] chống bóp nát cột trên điện thoại (đã nằm trong .table-responsive nên sẽ cuộn ngang) -->
+           
+          return `<table style="min-width:1180px;font-size:0.80em;">
               <thead>
                 <tr>
-                  <th class="col-stt" style="width:44px">STT</th>
+                  <th class="col-stt" style="width:40px">STT</th>
                   <!-- [THÊM MỚI 31/08/2026] Cột ẢNH nhân viên (ảnh tròn), chưa có ảnh thì hiện chữ cái đầu. -->
-                  <th style="width:48px;text-align:center">Ảnh</th>
-                  <th class="col-ma">Mã NV</th>
-                  <th>Họ Và Tên</th>
-                  <th>Phòng Ban</th>
-                  <th>Chức Vụ</th>
-                  <th>Bằng Cấp</th>
-                  <th class="col-ngay">Ngày Vào</th>
-                  <th class="col-ngay">🎂 Ngày Sinh</th>
-                  <th>Sắp Tới</th>
-                  <th>Số Điện Thoại</th>
-                  <th>Email</th>
-                  <th>Địa Chỉ</th>
-                  <th class="col-so">Phép Năm</th>
-                  <th class="col-so">Lương Cơ Bản</th>
-                  <th style="text-align:center">Trạng Thái</th>
-                  <th class="col-action">Thao Tác</th>
+                  <th style="width:44px;text-align:center">Ảnh</th>
+                  <th class="col-ma" style="min-width:74px">Mã NV</th>
+                  <th style="min-width:150px">Họ Và Tên</th>
+                  <th style="min-width:130px">Phòng Ban</th>
+                  <th style="min-width:120px">Chức Vụ</th>
+                  <th style="min-width:150px">Bằng Cấp</th>
+                  <th class="col-ngay" style="min-width:86px">Ngày Vào</th>
+                  <th class="col-ngay" style="min-width:86px">🎂 Ngày Sinh</th>
+                  <th style="min-width:92px">Sắp Tới</th>
+                  <th style="min-width:118px">Số Điện Thoại</th>
+                  <th style="min-width:165px">Email</th>
+                  <th style="min-width:150px">Địa Chỉ</th>
+                  <th class="col-so" style="min-width:70px">Phép Năm</th>
+                  <th class="col-so" style="min-width:110px">Lương Cơ Bản</th>
+                  <th style="text-align:center;min-width:88px">Trạng Thái</th>
+                  <th class="col-action" style="min-width:64px">Thao Tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -14376,9 +14425,28 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 newRecord.coQuenRa = true;                   
                 newRecord.ghiChuQuenRa = "Lượt trước quên chấm ra — app tự chốt lúc " + _qh109.gioRaCa;
               } else {
+                 
+                const _pVaoCu114 = phutTuGio(banGhiCu.vaoLanNay || banGhiCu.gioVao);
+                const _pNay114 = phutTuGio(nowTime);
+                const _cach114 = (_pVaoCu114 != null && _pNay114 != null) ? Math.abs(_pNay114 - _pVaoCu114) : 0;
                 newRecord.cacLan = dsLan94;
                 newRecord.vaoLanNay = nowTime;
                 if (dsLan94.length) newRecord.gioVao = banGhiCu.gioVao;   
+                if (_cach114 > 15) {
+                  const _giuGioCu114 = confirm("Hôm nay bạn đã chấm VÀO lúc " + (banGhiCu.vaoLanNay || banGhiCu.gioVao)
+                    + " và CHƯA chấm ra.\n\nBấm ĐỒNG Ý để GIỮ giờ vào " + (banGhiCu.vaoLanNay || banGhiCu.gioVao)
+                    + " (app chỉ ghi nhận thêm lần bấm này — bạn không mất giờ công).\n"
+                    + "Bấm HUỶ nếu giờ vào cũ bị SAI và bạn muốn đổi thành " + nowTime + ".");
+                  if (_giuGioCu114) {
+                    newRecord.gioVao = banGhiCu.gioVao;                   
+                    newRecord.vaoLanNay = banGhiCu.vaoLanNay || banGhiCu.gioVao;
+                    newRecord.bamVaoThem = (Number(banGhiCu.bamVaoThem) || 0) + 1;
+                    newRecord.ghiChuBamThem = "Bấm vào thêm lúc " + nowTime + " (đã giữ giờ vào " + newRecord.gioVao + ")";
+                  } else {
+                    newRecord.gioVaoCu114 = banGhiCu.gioVao;              
+                    newRecord.ghiChuBamThem = "Người dùng tự đổi giờ vào " + banGhiCu.gioVao + " → " + nowTime;
+                  }
+                }
               }
             }
           }
@@ -14415,7 +14483,31 @@ function writeSheet(ss, sheetName, headers, rowsData){
           let existIdx = data.bangCong.findIndex(b => b.maNV === user.id && b.ngay === todayStr);
 
           if (existIdx < 0) {
-            CoreService.showToast("Bạn chưa Check-in vào ca hôm nay! Vui lòng bấm Check-in trước.", "warning");
+            const stTV = getCompanySettings();
+            const caTV = this._caDungLucBam104();                       
+            const caChiTiet = ChamCongCore.timCa({ caLam: caTV }, stTV);
+            const gioVaoCa = (caChiTiet && caChiTiet.vao) ? caChiTiet.vao : (stTV.gioVaoChuan || "08:00");
+            if (!confirm("Hôm nay CHƯA có giờ vào của bạn.\n\nApp sẽ ghi nhận lượt ra lúc " + nowTime
+                + " và tạm lấy giờ vào = " + gioVaoCa + " (giờ vào ca " + caTV + ").\n"
+                + "Hành chính nhân sự sẽ kiểm và sửa lại cho đúng.\n\nGhi nhận chứ?")) return;
+            const banGhiTV = {
+              maNV: user.id, ngay: todayStr, caLam: caTV,
+              gioVao: gioVaoCa, vaoLanNay: gioVaoCa,
+              gioRa: nowTime, hasCheckedOut: true, gioOT: 0,
+              trangThai: "du_cong", hinhThuc: this.currentMode,
+              viTri: "Bổ sung — thiếu giờ vào", cacLan: [],
+              anhCheckOut: this.currentPhoto || "",
+              nguon: "app",
+              thieuGioVao: true,                                        
+              ghiChuThieuVao: "Chỉ có giờ ra. Giờ vào tạm lấy theo ca (" + gioVaoCa + ") — HCNS kiểm lại."
+            };
+            ChamCongCore.ghiNhanCong(data, banGhiTV);
+            const _dbTV = DataService.syncBat();
+            DataService.saveData(data, { khongDayLen: _dbTV });
+            if (_dbTV) DataService.guiChamCong(banGhiTV).then(kq => { if (!kq.ok) CoreService.showToast("Chưa gửi được lên máy chủ: " + (kq.err || ""), "warning"); });
+            this.stopCamera(); this.currentPhoto = null;
+            CoreService.showToast("⚠️ Đã ghi lượt ra lúc " + nowTime + " — CÒN THIẾU GIỜ VÀO, hành chính sẽ bổ sung.", "warning");
+            this.render();
             return;
           }
 
@@ -14439,6 +14531,25 @@ function writeSheet(ss, sheetName, headers, rowsData){
             otHours = Math.round(((phutRaThucTe - phutRaChuan) / 60) * 10) / 10;   
           }
 
+          const _bgRa113 = data.bangCong[existIdx];
+          if (_bgRa113.hasCheckedOut && _bgRa113.gioRa) {
+            const pRaCu = phutTuGio(_bgRa113.gioRa);
+            const pRaMoi = phutTuGio(nowTime);
+            const cach = (pRaCu != null && pRaMoi != null) ? Math.abs(pRaMoi - pRaCu) : 999;
+            if (cach > 15) {
+              const quayLai = confirm("Bạn đã chấm RA lúc " + _bgRa113.gioRa + " rồi.\n\n"
+                + "Bấm ĐỒNG Ý nếu bạn QUAY LẠI LÀM sau đó (app mở thêm một lượt " + _bgRa113.gioRa + " → " + nowTime + ").\n"
+                + "Bấm HUỶ nếu chỉ muốn SỬA giờ ra thành " + nowTime + ".");
+              if (quayLai) {
+                const dsLan113 = Array.isArray(_bgRa113.cacLan) ? _bgRa113.cacLan.slice() : [];
+                dsLan113.push({ vao: _bgRa113.vaoLanNay || _bgRa113.gioVao, ra: _bgRa113.gioRa });  
+                _bgRa113.cacLan = dsLan113;
+                _bgRa113.vaoLanNay = _bgRa113.gioRa;        
+                _bgRa113.thieuGioVao = true;                
+                _bgRa113.ghiChuThieuVao = "Có lượt làm thêm " + _bgRa113.gioRa + "→" + nowTime + " nhưng KHÔNG bấm vào lại — HCNS kiểm giờ vào thật.";
+              }
+            }
+          }
           data.bangCong[existIdx].gioRa = nowTime;
           data.bangCong[existIdx].hasCheckedOut = true;
           if (otHours > 0) data.bangCong[existIdx].gioOT = otHours;
@@ -18470,6 +18581,119 @@ function writeSheet(ss, sheetName, headers, rowsData){
         },
         locThangBang(th) { this.thangBang = th || ""; this.render(); },
 
+        _dsChon113: [],                       
+
+        chonViec113(id, tick) {
+          const ds = this._dsChon113 || [];
+          const i = ds.indexOf(id);
+          if (tick && i < 0) ds.push(id);
+          if (!tick && i >= 0) ds.splice(i, 1);
+          this._dsChon113 = ds;
+          this._veThanhChon113();
+        },
+        chonHet113(tick) {
+          const o = document.querySelectorAll(".tickViec113");
+          this._dsChon113 = [];
+          [].forEach.call(o, e => { e.checked = !!tick; if (tick) this._dsChon113.push(e.getAttribute("data-id")); });
+          this._veThanhChon113();
+        },
+        boChon113() { this._dsChon113 = []; [].forEach.call(document.querySelectorAll(".tickViec113"), e => { e.checked = false; }); this._veThanhChon113(); },
+
+        _veThanhChon113() {
+          const o = document.getElementById("thanhChon113"); if (!o) return;
+          const n = (this._dsChon113 || []).length;
+          if (!n) { o.style.display = "none"; o.innerHTML = ""; return; }
+          o.style.display = "flex";
+          o.innerHTML = '<strong style="font-size:12.5px">Đã chọn ' + n + ' việc</strong>'
+            + '<button class="btn btn-sm btn-primary" onclick="AppModules.tasks.duyetNhieu113()" title="Nghiệm thu hàng loạt các việc đã chọn">✅ Nghiệm thu</button>'
+            + '<button class="btn btn-sm btn-secondary" onclick="AppModules.tasks.chuyenNhieu113()" title="Chuyển các việc đã chọn sang một giai đoạn khác">↔️ Chuyển giai đoạn</button>'
+            + '<button class="btn btn-sm btn-danger" onclick="AppModules.tasks.xoaNhieu113()" title="Xoá hẳn các việc đã chọn">🗑 Xoá</button>'
+            + '<button class="btn btn-sm btn-secondary" style="margin-left:auto" onclick="AppModules.tasks.boChon113()">✕ Bỏ chọn</button>';
+        },
+
+        xoaNhieu113() {
+          const ds = (this._dsChon113 || []).slice();
+          if (!ds.length) return;
+          if (!confirm("XOÁ HẲN " + ds.length + " việc đã chọn?\n\nViệc nào đã nghiệm thu hoặc bạn không có quyền xoá sẽ được BỎ QUA và app báo lại.")) return;
+          const d = DataService.getData();
+          let xoa = 0, boQua = 0;
+          const u = CoreService.currentUser || {};
+          const cap = PhanQuyenService.capBacCua(u.role || "employee");
+          const laQL = ["manager", "hr", "director", "it_admin"].indexOf(cap) >= 0;
+          ds.forEach(id => {
+            const i = (d.congViec || []).findIndex(c => c.id === id);
+            if (i < 0) { boQua++; return; }
+            const cv = d.congViec[i];
+            if (!laQL && String(cv.nguoiGiaoId || "") !== String(u.id)) { boQua++; return; }   
+            if (cv.trangThai === "hoan_thanh") { boQua++; return; }                            
+            d.congViec.splice(i, 1); xoa++;
+          });
+          if (xoa) DataService.saveData(d);
+          this._dsChon113 = [];
+          CoreService.showToast("🗑 Đã xoá " + xoa + " việc" + (boQua ? " · bỏ qua " + boQua + " việc (đã nghiệm thu hoặc không đủ quyền)" : "") + ".", xoa ? "success" : "warning");
+          this.render();
+        },
+
+        duyetNhieu113() {
+          const ds = (this._dsChon113 || []).slice();
+          if (!ds.length) return;
+          const d = DataService.getData();
+          const u = CoreService.currentUser || {};
+          if (!PhanQuyenService.coDuyetVung("tasks")) { CoreService.showToast("Bạn không có quyền nghiệm thu công việc.", "danger"); return; }
+          if (!confirm("Nghiệm thu " + ds.length + " việc đã chọn?\n\nViệc của CHÍNH BẠN hoặc chưa làm xong sẽ được bỏ qua.")) return;
+          let ok = 0, boQua = 0;
+          ds.forEach(id => {
+            const cv = (d.congViec || []).find(c => c.id === id);
+            if (!cv) { boQua++; return; }
+            if (cv.trangThai === "hoan_thanh") { boQua++; return; }
+            
+            const laCuaMinh = String(cv.nguoiNhan || "") === String(u.id);
+            if (laCuaMinh && !(PhanQuyenService.laCapCaoNhat && PhanQuyenService.laCapCaoNhat(u))) { boQua++; return; }
+            cv.trangThai = "hoan_thanh";
+            cv.tienDo = 100;
+            cv.nguoiNghiemThu = u.hoTen || u.id;
+            cv.ngayNghiemThu = new Date().toISOString().slice(0, 10);
+            ok++;
+          });
+          if (ok) DataService.saveData(d);
+          this._dsChon113 = [];
+          CoreService.showToast("✅ Đã nghiệm thu " + ok + " việc" + (boQua ? " · bỏ qua " + boQua + " việc (việc của bạn hoặc đã xong)" : "") + ".", ok ? "success" : "warning");
+          this.render();
+        },
+
+        chuyenNhieu113() {
+          const ds = (this._dsChon113 || []).slice();
+          if (!ds.length) return;
+          const GD = [["moi_phan_cong", "🔵 Mới phân công"], ["dang_lam", "🔄 Đang thực hiện"],
+                      ["cho_nghiem_thu", "⏳ Chờ nghiệm thu"], ["dinh_chi", "⛔ Đình chỉ"]];
+          CoreService.openModal("↔️ Chuyển " + ds.length + " việc sang giai đoạn khác",
+            '<div style="font-size:12.5px;line-height:1.6">'
+            + '<div style="margin-bottom:8px;color:var(--text-secondary)">Chọn giai đoạn muốn chuyển tới. Việc đã nghiệm thu sẽ được bỏ qua (muốn mở lại thì dùng nút Trả Lại trong từng việc).</div>'
+            + '<select id="gdChuyen113" class="form-control">' + GD.map(g => '<option value="' + g[0] + '">' + g[1] + '</option>').join("") + '</select>'
+            + '</div>', [
+              { text: "Hủy", class: "btn-secondary" },
+              { text: "↔️ Chuyển", class: "btn-primary", close: false, onClick: () => {
+                const gd = (document.getElementById("gdChuyen113") || {}).value || "";
+                if (!gd) return;
+                const d = DataService.getData();
+                let ok = 0, boQua = 0;
+                ds.forEach(id => {
+                  const cv = (d.congViec || []).find(c => c.id === id);
+                  if (!cv) { boQua++; return; }
+                  if (cv.trangThai === "hoan_thanh") { boQua++; return; }
+                  cv.trangThai = gd;
+                  if (gd === "moi_phan_cong") cv.tienDo = 0;
+                  ok++;
+                });
+                if (ok) DataService.saveData(d);
+                AppModules.tasks._dsChon113 = [];
+                CoreService.closeModal();
+                CoreService.showToast("↔️ Đã chuyển " + ok + " việc" + (boQua ? " · bỏ qua " + boQua + " việc đã nghiệm thu" : "") + ".", ok ? "success" : "warning");
+                AppModules.tasks.render();
+              } }
+            ]);
+        },
+
         renderTableView(taskList) {
            
           const _bo91 = x => String(x || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/g, "d");
@@ -18491,11 +18715,16 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 ${(this.tuKhoaBang || this.thangBang) ? `<button class="btn btn-sm btn-secondary" onclick="AppModules.tasks.locBang('');AppModules.tasks.locThangBang('')">✕ Bỏ lọc</button>` : ""}
                 <span style="font-size:11.5px;color:var(--text-muted);">${taskList.length} việc</span>
               </div>
+              <!-- [THÊM MỚI 08/09/2026 — V4 đợt 113] Thanh thao tác HÀNG LOẠT.
+                   Ẩn khi chưa chọn việc nào; tick một việc là hiện ra ngay. -->
+              <div id="thanhChon113" style="display:none;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 12px 0;padding:8px 10px;border:1px solid var(--border-light);border-radius:8px;background:rgba(37,99,235,.06);"></div>
               <!-- [SỬA đợt 91] Khung bảng cao đúng cỡ màn hình còn lại + thanh cuộn DỌC riêng. -->
               <div class="table-responsive" style="max-height:calc(100vh - 320px);overflow-y:auto;">
                 <table>
                   <thead>
                     <tr>
+                      <!-- [THÊM MỚI 08/09/2026 — V4 đợt 113] Ô tick CHỌN TẤT CẢ. -->
+                      <th style="width:34px;text-align:center"><input type="checkbox" title="Chọn / bỏ chọn tất cả việc đang hiện" onclick="event.stopPropagation();AppModules.tasks.chonHet113(this.checked)"></th>
                       <th class="col-stt" style="width:40px">STT</th>
                       <th class="col-ma" style="width:75px">Mã Việc</th>
                       <th>Tên Công Việc & Tiêu Chuẩn Nghiệm Thu</th>
@@ -18517,10 +18746,14 @@ function writeSheet(ss, sheetName, headers, rowsData){
                     </tr>
                   </thead>
                   <tbody>
-                    ${taskList.length === 0 ? `<tr><td colspan="14" class="col-action o-rong">Không có công việc nào</td></tr>` : taskList.map((item, idx) => {
+                    ${taskList.length === 0 ? `<tr><td colspan="15" class="col-action o-rong">Không có công việc nào</td></tr>` : taskList.map((item, idx) => {
                       const isOverdue = new Date(item.deadline) < new Date(new Date().toISOString().split("T")[0]) && item.trangThai !== "hoan_thanh";
                       return `
                         <tr style="${isOverdue ? "background:#fff1f2;" : ""};cursor:pointer" onclick="AppModules.tasks.openTaskDrawer('${item.id}')">
+                          <!-- [THÊM đợt 113] Ô tick. stopPropagation để bấm ô tick KHÔNG mở hộp chi tiết việc. -->
+                          <td style="text-align:center" onclick="event.stopPropagation()">
+                            <input type="checkbox" class="tickViec113" data-id="${item.id}" onclick="event.stopPropagation();AppModules.tasks.chonViec113('${item.id}', this.checked)">
+                          </td>
                           <td class="col-stt">${idx + 1}</td>
                           <td class="col-ma">${item.id}</td>
                           <td>
@@ -20990,18 +21223,26 @@ function writeSheet(ss, sheetName, headers, rowsData){
                         <th style="text-align:center">Hình Thức</th>
                         <th style="text-align:center">Xác Thực Vị Trí</th>
                         <th style="text-align:center">Ảnh</th>
+                        <!-- [THÊM MỚI 08/09/2026 — V4 đợt 113] Cột SỬA GIỜ CÔNG. Chỉ hành chính,
+                             giám đốc và trưởng phòng (người phòng mình) mới thấy nút. -->
+                        <th style="text-align:center" title="Sửa / bổ sung giờ vào - giờ ra (chỉ HCNS, Giám đốc, Trưởng phòng)">Sửa</th>
                       </tr>
                     </thead>
                     <tbody>
-                      ${dsApp.length === 0 ? `<tr><td colspan="11" class="col-action o-rong">Chưa có nhân viên nào tự chấm công bằng app trong tháng ${CoreService.nhanThang(thangCC)}</td></tr>` : dsApp.map((item, idx) => `
-                        ${(idx === 0 || dsApp[idx - 1].ngay !== item.ngay) ? `<tr><td colspan="11" style="background:var(--bg-hover);font-weight:700;font-size:12px;padding:5px 10px;color:var(--primary-dark);">📅 Ngày ${formatDateDisplay(item.ngay)} — ${dsApp.filter(x => x.ngay === item.ngay).length} người chấm công</td></tr>` : ""}
+                      ${dsApp.length === 0 ? `<tr><td colspan="12" class="col-action o-rong">Chưa có nhân viên nào tự chấm công bằng app trong tháng ${CoreService.nhanThang(thangCC)}</td></tr>` : dsApp.map((item, idx) => `
+                        ${(idx === 0 || dsApp[idx - 1].ngay !== item.ngay) ? `<tr><td colspan="12" style="background:var(--bg-hover);font-weight:700;font-size:12px;padding:5px 10px;color:var(--primary-dark);">📅 Ngày ${formatDateDisplay(item.ngay)} — ${dsApp.filter(x => x.ngay === item.ngay).length} người chấm công</td></tr>` : ""}
                         <tr>
                           <td class="col-stt">${idx + 1}</td>
                           <td class="col-ma">${item.maNV}</td>
                           <td><strong>${_tenNV90[item.maNV] || "—"}</strong></td>
                           <td class="col-ngay">${formatDateDisplay(item.ngay)}</td>
                           <td>${item.caLam || "—"}</td>
-                          <td style="text-align:center; font-weight:bold; color:var(--primary-dark)">${ChamCongCore.hienGio(item.gioVao)}${(item.cacLan && item.cacLan.length) ? `<br><small class="badge badge-info" style="font-size:10px">↔ ${item.cacLan.length + 1} lượt vào/ra</small>` : ""}</td>
+                          <td style="text-align:center; font-weight:bold; color:var(--primary-dark)">${ChamCongCore.hienGio(item.gioVao)}${(item.cacLan && item.cacLan.length) ? `<br><small class="badge badge-info" style="font-size:10px">↔ ${item.cacLan.length + 1} lượt vào/ra</small>` : ""}
+                            <!-- [THÊM MỚI 08/09/2026 — V4 đợt 113] Hai cờ cảnh báo để hành chính nhìn là
+                                 biết dòng nào phải soát: THIẾU GIỜ VÀO (chỉ có giờ ra) và QUÊN CHẤM RA. -->
+                            ${item.thieuGioVao ? `<br><small class="badge badge-warning" style="font-size:10px" title="${(item.ghiChuThieuVao || "").replace(/"/g, "&quot;")}">⚠ thiếu giờ vào</small>` : ""}
+                            ${item.coQuenRa ? `<br><small class="badge badge-warning" style="font-size:10px" title="${(item.ghiChuQuenRa || "").replace(/"/g, "&quot;")}">⚠ quên chấm ra</small>` : ""}
+                            ${(item.suaCong && item.suaCong.length) ? `<br><small class="badge badge-secondary" style="font-size:10px" title="Đã sửa ${item.suaCong.length} lần — lần cuối do ${item.suaCong[item.suaCong.length - 1].nguoi}">✎ đã sửa tay</small>` : ""}</td>
                           <!-- [SỬA 07/09/2026 — V4 đợt 108] Cột Giờ Ra nói RÕ NGHĨA.
                                TRƯỚC: chưa chấm ra thì ghi trống trơn "Đang làm" — chủ app nhìn vào không
                                phân biệt được "người ta đang thật sự làm" với "người ta ra rồi mà máy này
@@ -21025,6 +21266,13 @@ function writeSheet(ss, sheetName, headers, rowsData){
                           <td style="text-align:center;font-size:11px">${item.viTri || (item.hinhThuc === "online" ? "Online (WFH)" : item.hinhThuc === "thi_truong" ? "Thị trường" : "Nhà máy")}</td>
                           <td style="text-align:center">${moTaXacThucChamCong(item)}</td>
                           <td style="text-align:center">${item.anhCheckIn ? `<img src="${item.anhCheckIn}" onclick="AppModules.self_attendance.viewImageModal('${item.anhCheckIn}','Ảnh chấm công ${item.maNV} - ${formatDateDisplay(item.ngay)}')" style="width:30px;height:30px;border-radius:6px;object-fit:cover;cursor:pointer;" title="Bấm xem ảnh to">` : '<span class="text-muted">—</span>'}</td>
+                          <!-- [THÊM MỚI 08/09/2026 — V4 đợt 113] Nút SỬA GIỜ CÔNG.
+                               Chỉ hiện với người ĐƯỢC PHÉP sửa dòng đó (hành chính · giám đốc · trưởng
+                               phòng với người phòng mình) — nhân viên không thấy nút. Bản thân hàm sửa
+                               còn kiểm quyền lần nữa, nên giấu nút không phải là lớp bảo vệ duy nhất. -->
+                          <td style="text-align:center">${PhanQuyenService.duocSuaCong(item.maNV).duoc
+                            ? `<button class="btn btn-sm btn-secondary" style="padding:3px 8px;" onclick="AppModules.attendance.moSuaGioCong113('${item.maNV}','${item.ngay}')" title="Sửa / bổ sung giờ vào - giờ ra của dòng này"><i class="fa-solid fa-pen" style="color:#b45309"></i></button>`
+                            : '<span class="text-muted">—</span>'}</td>
                         </tr>
                         ${this._dongLuotQuanLy108(item)}
                       `).join("")}
@@ -21428,6 +21676,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
                     ${PhanQuyenService.capBacCua((CoreService.currentUser || {}).role || "employee") === "director"
                       ? `<button class="btn btn-sm btn-secondary" onclick="AppModules.attendance.moKhoaCongThang()" title="Chỉ Giám đốc — mở khoá để sửa lại số liệu công tháng này"><i class="fa-solid fa-lock-open"></i> Mở Khoá Công Tháng</button>`
                       : ""}
+                    <!-- [THÊM MỚI 08/09/2026 — V4 đợt 114] Nút BỔ SUNG NGÀY CÔNG cho người quên chấm cả ngày. -->
+                    <button class="btn btn-sm btn-secondary" onclick="AppModules.attendance.moBoSungNgayCong114()" title="Thêm ngày công cho người quên chấm cả ngày (đi công tác, máy hỏng...) — chỉ HCNS, Giám đốc, Trưởng phòng"><i class="fa-solid fa-calendar-plus"></i> Bổ Sung Ngày Công</button>
                     <button class="btn btn-sm btn-primary" onclick="AppModules.attendance.chotCongThang()" title="Khóa toàn bộ công của tháng — sau khi chốt các nguồn đến muộn không đổi được nữa"><i class="fa-solid fa-lock"></i> Chốt Công Tháng (HCNS)</button>
                   </div>` : ``}
                 </div>
@@ -22821,6 +23071,112 @@ function writeSheet(ss, sheetName, headers, rowsData){
           XLSX.utils.book_append_sheet(wb, ws, "BangCong_" + thang);
           XLSX.writeFile(wb, "BangCong_Luoi_" + thang + ".xlsx");
           CoreService.showToast("Đã xuất Excel bảng công lưới tháng " + thang + " (ô số là SỐ THẬT, =SUM() được).", "success");
+        },
+
+         
+        moBoSungNgayCong114() {
+          const d = DataService.getData();
+          const ds = (d.nhanVien || []).filter(n => n.trangThai !== "dinh_chi"
+            && PhanQuyenService.duocSuaCong(n.id).duoc);
+          if (!ds.length) { CoreService.showToast("Bạn không có quyền bổ sung công cho ai.", "danger"); return; }
+          CoreService.openModal("➕ Bổ sung ngày công", '<div style="font-size:12.5px;line-height:1.6">'
+            + '<div style="margin-bottom:10px;color:var(--text-secondary)">Dùng khi nhân viên <strong>quên chấm cả ngày</strong> (đi công tác, máy hỏng, mất điện). Chọn người và ngày, app sẽ mở bảng điền giờ.</div>'
+            + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">'
+            + '<div><div style="font-size:11.5px;color:var(--text-secondary)">Nhân viên</div>'
+            + '<select id="bsNguoi114" class="form-control">' + ds.map(n => '<option value="' + n.id + '">' + n.hoTen + " — " + (n.phongBan || "") + '</option>').join("") + '</select></div>'
+            + '<div><div style="font-size:11.5px;color:var(--text-secondary)">Ngày cần bổ sung</div>'
+            + '<input type="date" id="bsNgay114" class="form-control" max="' + new Date().toISOString().slice(0, 10) + '" value="' + new Date().toISOString().slice(0, 10) + '"></div>'
+            + '</div></div>', [
+              { text: "Hủy", class: "btn-secondary" },
+              { text: "➕ Mở bảng điền giờ", class: "btn-primary", close: false, onClick: () => {
+                const ma = (document.getElementById("bsNguoi114") || {}).value || "";
+                const ng = (document.getElementById("bsNgay114") || {}).value || "";
+                if (!ma || !ng) { CoreService.showToast("Chọn đủ người và ngày.", "warning"); return; }
+                CoreService.closeModal();
+                AppModules.attendance.moSuaGioCong113(ma, ng);
+              } }
+            ]);
+        },
+
+        moSuaGioCong113(maNV, ngay) {
+          const kt = PhanQuyenService.duocSuaCong(maNV);
+          if (!kt.duoc) { CoreService.showToast("🔒 " + kt.lyDo, "danger"); return; }
+          const d = DataService.getData();
+           
+          const bgCu = (d.bangCong || []).find(b => b.maNV === maNV && b.ngay === ngay);
+          const laBoSung = !bgCu;
+          const stBS = getCompanySettings();
+          const caBS = (stBS.caLamViec || [])[0] || {};
+          const bg = bgCu || { maNV, ngay, caLam: caBS.ten || "Ca Hành Chính",
+                               gioVao: caBS.vao || stBS.gioVaoChuan || "08:00",
+                               gioRa: caBS.ra || stBS.gioRaChuan || "17:00", gioOT: 0, cacLan: [] };
+          const nv = (d.nhanVien || []).find(n => n.id === maNV) || {};
+          const daChot = ((d.bangCongChot || {})[String(ngay).slice(0, 7)]) ? true : false;
+          const luot = (bg.cacLan || []).map((x, i) => "· Lượt " + (i + 1) + ": " + x.vao + " → " + x.ra + (x.quenRa ? " (quên chấm ra)" : "")).join("<br>");
+          CoreService.openModal((laBoSung ? "➕ Bổ sung ngày công — " : "✏️ Sửa giờ công — ") + (nv.hoTen || maNV) + " · " + formatDateDisplay(ngay),
+            '<div style="font-size:12.5px;line-height:1.6">'
+            + (laBoSung ? '<div style="background:rgba(37,99,235,.06);border:1px solid var(--border-light);border-radius:8px;padding:8px;margin-bottom:8px">➕ <strong>Ngày này chưa có dữ liệu chấm công.</strong> App đã điền sẵn giờ theo ca — anh sửa lại cho đúng rồi bấm Lưu, dòng công mới sẽ được tạo.</div>' : "")
+            + (daChot ? '<div style="background:rgba(220,38,38,.08);border:1px solid #fecaca;border-radius:8px;padding:8px;margin-bottom:8px;color:#b91c1c">⚠️ Tháng này ĐÃ CHỐT CÔNG. Sửa xong phải mở khoá rồi chốt lại thì lương mới đổi theo.</div>' : "")
+            + (bg.thieuGioVao ? '<div style="background:rgba(234,88,12,.08);border:1px solid var(--border-light);border-radius:8px;padding:8px;margin-bottom:8px">⚠️ <strong>Dòng này thiếu giờ vào</strong> — ' + (bg.ghiChuThieuVao || "") + '</div>' : "")
+            + (bg.coQuenRa ? '<div style="background:rgba(234,88,12,.08);border:1px solid var(--border-light);border-radius:8px;padding:8px;margin-bottom:8px">⚠️ ' + (bg.ghiChuQuenRa || "Lượt trước quên chấm ra") + '</div>' : "")
+            + (luot ? '<div style="background:var(--bg-hover);border-radius:8px;padding:8px;margin-bottom:8px;font-size:12px">Các lượt đã đóng trong ngày:<br>' + luot + '</div>' : "")
+            + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:10px">'
+            + '<div><div style="font-size:11.5px;color:var(--text-secondary)">Giờ vào</div><input type="time" id="scGioVao" class="form-control" value="' + (bg.gioVao || "") + '"></div>'
+            + '<div><div style="font-size:11.5px;color:var(--text-secondary)">Giờ ra</div><input type="time" id="scGioRa" class="form-control" value="' + (bg.gioRa || "") + '"></div>'
+            + '<div><div style="font-size:11.5px;color:var(--text-secondary)">Giờ tăng ca</div><input type="number" id="scOT" class="form-control" step="0.5" min="0" max="16" value="' + (Number(bg.gioOT) || 0) + '"></div>'
+            + '</div>'
+            + '<div style="margin-bottom:10px"><div style="font-size:11.5px;color:var(--text-secondary)">Lý do sửa (bắt buộc — để sau này tra được)</div>'
+            + '<input type="text" id="scLyDo" class="form-control" placeholder="Vd: máy chấm công lỗi, nhân viên quên bấm ra..."></div>'
+            + '<div style="font-size:11.5px;color:var(--text-muted)">Người sửa: <strong>' + ((CoreService.currentUser || {}).hoTen || "") + '</strong> — app sẽ ghi lại lần sửa này.</div>'
+            + '</div>', [
+              { text: "Hủy", class: "btn-secondary" },
+              { text: "💾 Lưu giờ công", class: "btn-primary", close: false, onClick: () => AppModules.attendance.luuSuaGioCong113(maNV, ngay) }
+            ]);
+        },
+
+        luuSuaGioCong113(maNV, ngay) {
+          const kt = PhanQuyenService.duocSuaCong(maNV);
+          if (!kt.duoc) { CoreService.showToast("🔒 " + kt.lyDo, "danger"); return; }
+          const vao = (document.getElementById("scGioVao") || {}).value || "";
+          const ra = (document.getElementById("scGioRa") || {}).value || "";
+          const ot = Number((document.getElementById("scOT") || {}).value || 0);
+          const lyDo = ((document.getElementById("scLyDo") || {}).value || "").trim();
+          if (!vao || !ra) { CoreService.showToast("Phải điền cả giờ vào và giờ ra.", "warning"); return; }
+          if (!lyDo) { CoreService.showToast("Phải ghi lý do sửa — đây là chứng từ tính lương.", "warning"); return; }
+          if (ot < 0 || ot > 16) { CoreService.showToast("Giờ tăng ca phải trong khoảng 0–16.", "warning"); return; }
+          const d = DataService.getData();
+           
+          d.bangCong = d.bangCong || [];
+          let bg = d.bangCong.find(b => b.maNV === maNV && b.ngay === ngay);
+          const laTaoMoi114 = !bg;
+          if (!bg) {
+            const stM = getCompanySettings();
+            bg = { id: "BS" + Date.now(), maNV, ngay, caLam: ((stM.caLamViec || [])[0] || {}).ten || "Ca Hành Chính",
+                   gioVao: "", gioRa: "", gioOT: 0, cacLan: [], trangThai: "du_cong",
+                   hinhThuc: "nha_may", viTri: "Bổ sung tay", nguon: "tay", boSungTay: true };
+            d.bangCong.push(bg);
+          }
+          const u = CoreService.currentUser || {};
+          const cu = { gioVao: bg.gioVao, gioRa: bg.gioRa, gioOT: Number(bg.gioOT) || 0 };
+          bg.gioVao = vao; bg.gioRa = ra; bg.gioOT = ot;
+          bg.hasCheckedOut = true;
+          bg.thieuGioVao = false;                       
+          bg.nguon = bg.nguon === "may" ? "may" : "tay";   
+          bg.suaCong = Array.isArray(bg.suaCong) ? bg.suaCong : [];
+          bg.suaCong.push({ luc: new Date().toISOString(), nguoi: u.hoTen || u.id, nguoiId: u.id,
+                            cu: cu.gioVao + "→" + cu.gioRa + " OT " + cu.gioOT, moi: vao + "→" + ra + " OT " + ot, lyDo });
+          
+          d.nhatKyTaiKhoan = Array.isArray(d.nhatKyTaiKhoan) ? d.nhatKyTaiKhoan : [];
+          d.nhatKyTaiKhoan.unshift({ id: "SC" + Date.now(), luc: new Date().toISOString(),
+            nguoi: u.hoTen || u.id, nguoiId: u.id,
+            viec: "Sửa giờ công " + maNV + " ngày " + ngay + ": " + cu.gioVao + "→" + cu.gioRa + " thành " + vao + "→" + ra + " · lý do: " + lyDo });
+          DataService.saveData(d);
+          try { DataService.guiChamCong(bg); } catch (e) {}
+          try { DataService.ghiNhatKyDongBo("Sửa giờ công", "xong", maNV + " " + ngay); } catch (e) {}
+          CoreService.closeModal();
+          CoreService.showToast((laTaoMoi114 ? "➕ Đã BỔ SUNG ngày công " : "✅ Đã sửa giờ công ") + maNV
+            + " ngày " + formatDateDisplay(ngay) + " — có ghi vết người thực hiện.", "success");
+          this.render();
         },
 
         checkInToday() {
@@ -26698,6 +27054,30 @@ function writeSheet(ss, sheetName, headers, rowsData){
         // [THÊM MỚI 28/08/2026] Khu Biên Bản Họp nay có 2 SUB-TAB + ô TÌM KIẾM.
         currentSub: "bien_ban",   // 'bien_ban' | 'quy_trinh'
         keyword: "",
+        /* [THÊM MỚI 08/09/2026 — V4 đợt 113] AI ĐƯỢC XEM MỘT BIÊN BẢN.
+           Nhận : m = bản ghi biên bản · u = người xem (trống = đang đăng nhập). Trả : true/false.
+           Luật (chủ app chốt 08/09/2026):
+             · Không khai giới hạn nào  → cả công ty xem được (như trước nay)
+             · Có khai                   → phải thuộc PHÒNG được chọn, HOẶC có tên trong danh sách người
+             · Giám đốc · người chủ trì · thư ký → luôn xem được
+           Lỗi đọc dữ liệu thì cho XEM (fail-open) — thà lộ một biên bản còn hơn khoá cả màn
+           làm hành chính không mở được việc của mình. */
+        _duocXemBB113(m, u) {
+          try {
+            const ng = u || CoreService.currentUser || {};
+            const phong = (m && m.xemPhong) || [];
+            const nguoi = (m && m.xemNguoi) || [];
+            if (!phong.length && !nguoi.length) return true;                 // không giới hạn
+            const cap = PhanQuyenService.capBacCua(ng.role || "employee");
+            if (cap === "director") return true;                            // giám đốc xem hết
+            const ten = String(ng.hoTen || "");
+            if (m.chuTri === ten || m.thuKy === ten) return true;           // người lập biên bản
+            if (nguoi.indexOf(ng.id) >= 0) return true;                     // được chỉ đích danh
+            if (phong.indexOf(ng.phongBan) >= 0) return true;               // thuộc phòng được chọn
+            return false;
+          } catch (e) { return true; }
+        },
+
         switchSub(s) { this.keyword = ""; this.currentSub = s; this.render(); },
         timKiem(v) { this.keyword = v; this.render(); },
 
@@ -26718,8 +27098,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const u = CoreService.currentUser;
           const isHR = u.role === "hr" || u.role === "director" || u.role === "manager" || u.role === "it_admin";
           const kw = (this.keyword || "").toLowerCase();
-          
-          let list = (data.bienBanHop || []);
+           
+          let list = (data.bienBanHop || []).filter(m => AppModules.meetings._duocXemBB113(m));
           if (kw) list = list.filter(m => [m.tieuDe, m.noiDung, m.ketLuan, m.chuTri, m.thanhPhan, m.id].join(" ").toLowerCase().indexOf(kw) >= 0);
           return `
             <!-- [SỬA 28/08/2026] Bố cục kiểu Auto RD V12: dải KPI + tiêu đề khu có thanh màu + thẻ mềm. -->
@@ -26949,6 +27329,28 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 <label class="form-label">Kết Luận & Phân Công Nhiệm Vụ *</label>
                 <textarea id="meetResultInp" class="form-control" rows="3" placeholder="Các quyết định và deadline giao việc..." required></textarea>
               </div>
+              <!-- [THÊM MỚI 08/09/2026 — V4 đợt 113] GIỚI HẠN NGƯỜI XEM BIÊN BẢN.
+                   Để TRỐNG cả hai ô = cả công ty đọc được (đúng như app vẫn chạy trước nay).
+                   Chọn rồi thì chỉ người thuộc phòng đó, hoặc người được chỉ đích danh, mới thấy.
+                   Giữ phím Ctrl (hoặc Cmd) để chọn nhiều dòng. -->
+              <div class="form-group">
+                <label class="form-label">🔒 Giới hạn người xem (để trống = cả công ty xem được)</label>
+                <div class="form-row">
+                  <div class="form-group">
+                    <div style="font-size:11.5px;color:var(--text-secondary);margin-bottom:3px;">Phòng ban được xem</div>
+                    <select id="bbXemPhong" class="form-control" multiple size="4" style="height:auto;">
+                      ${[...new Set((DataService.getData().nhanVien || []).map(n => n.phongBan).filter(Boolean))].sort().map(p => `<option value="${String(p).replace(/"/g, "&quot;")}">${p}</option>`).join("")}
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <div style="font-size:11.5px;color:var(--text-secondary);margin-bottom:3px;">Thêm người cụ thể</div>
+                    <select id="bbXemNguoi" class="form-control" multiple size="4" style="height:auto;">
+                      ${(DataService.getData().nhanVien || []).filter(n => n.trangThai !== "dinh_chi").map(n => `<option value="${n.id}">${n.hoTen} — ${n.phongBan || ""}</option>`).join("")}
+                    </select>
+                  </div>
+                </div>
+                <div style="font-size:11px;color:var(--text-muted);">Giám đốc, người chủ trì và thư ký luôn xem được, không cần chọn.</div>
+              </div>
             </form>
           `;
 
@@ -26973,8 +27375,12 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 const data = DataService.getData();
                 data.bienBanHop = data.bienBanHop || [];
                 const newId = "BB" + String(1000 + data.bienBanHop.length + 1);
+                
+                const _layChon113 = id => { const o = document.getElementById(id); return o ? [].map.call(o.selectedOptions || [], x => x.value) : []; };
                 data.bienBanHop.unshift({
-                  id: newId, tieuDe, ngayHop, diaDiem, chuTri, thuKy, thanhPhan, noiDung, ketLuan, trangThai: "da_ky"
+                  id: newId, tieuDe, ngayHop, diaDiem, chuTri, thuKy, thanhPhan, noiDung, ketLuan, trangThai: "da_ky",
+                  xemPhong: _layChon113("bbXemPhong"),      
+                  xemNguoi: _layChon113("bbXemNguoi")       
                 });
 
                 DataService.saveData(data);
@@ -29145,7 +29551,6 @@ function writeSheet(ss, sheetName, headers, rowsData){
             hwNgan = (lic && lic.hwid) ? (lic.hwid.slice(0, 16).toUpperCase().match(/.{1,4}/g) || []).join("-") : "—";
           }
 
-          setTimeout(() => { try { this._sauKhiVe111(); } catch (e) {} }, 0);
           container.innerHTML = `
             <!-- THANH ĐIỀU HƯỚNG SUBTABS CÀI ĐẶT (tab nhạy cảm chỉ hiện với Giám đốc/IT). -->
             <div class="cfg-subnav">
@@ -29178,10 +29583,21 @@ function writeSheet(ss, sheetName, headers, rowsData){
               ${this.renderSubTabContent(lic, hwNgan, companySettings, currentUser)}
             </div>
           `;
+           
+          try { this._sauKhiVe111(); } catch (e) {}
         },
 
         _sauKhiVe111() {
           try { _wq01x._dienThuMucSL(); } catch (e) {}
+           
+          try {
+            const khu = document.getElementById("khuTienIch113");
+            const dich = document.getElementById("khoiThongKe113");
+            if (khu && dich && dich.parentNode && khu.nextElementSibling !== dich) {
+              khu.style.marginTop = "0";                    
+              dich.parentNode.insertBefore(khu, dich);
+            }
+          } catch (e) {}
         },
 
         luuChuHangMuc111() {
@@ -32660,6 +33076,11 @@ function writeSheet(ss, sheetName, headers, rowsData){
                     <span>Rải việc gửi trong</span>
                     <input type="number" id="gianGuiPhutInp" class="form-control" style="width:80px;text-align:center;" min="0" max="120" value="${gian}">
                     <span>phút</span>
+                    <!-- [THÊM MỚI 08/09/2026 — V4 đợt 114] Nói rõ con số đang chạy là do app tự chọn
+                         theo quy mô công ty hay do người dùng tự khai — trước đây nhìn ô số không biết. -->
+                    ${(getCompanySettings().gianGuiPhut === undefined || getCompanySettings().gianGuiPhut === null)
+                      ? `<span style="font-size:11px;color:var(--text-muted);">(app tự chọn theo ${(DataService.getData().nhanVien || []).filter(n => n && n.trangThai !== "dinh_chi").length} người đang làm — sửa số là dùng số của anh)</span>`
+                      : `<span style="font-size:11px;color:var(--text-muted);">(anh đã tự đặt số này)</span>`}
                     <span style="margin-left:auto;${cho ? 'color:#b45309;font-weight:700;' : 'color:var(--text-muted);'}">
                       ${cho ? "⏳ " + cho + " bản ghi đang chờ" : "✅ Không có gì đang chờ"}
                     </span>
@@ -32776,7 +33197,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
                         + '</div>';
                     } catch (e) { return ""; }
                   })()}
-                  <div style="background:var(--bg-hover);border:1px solid var(--border-light);border-radius:10px;padding:12px;margin-bottom:14px;">
+                  <!-- [SỬA 08/09/2026 — V4 đợt 113] Gắn id để hàm _sauKhiVe111 dời khu TIỆN ÍCH lên
+                       đứng NGAY TRƯỚC khối thống kê này (xem chú thích ở khu tiện ích). -->
+                  <div id="khoiThongKe113" style="background:var(--bg-hover);border:1px solid var(--border-light);border-radius:10px;padding:12px;margin-bottom:14px;">
                     <div style="font-size:11.5px;font-weight:700;color:var(--text-primary);margin-bottom:6px;">
                       📊 THỐNG KÊ DỮ LIỆU ĐANG LƯU TRÊN MÁY:
                     </div>
@@ -32836,8 +33259,13 @@ function writeSheet(ss, sheetName, headers, rowsData){
                   <!-- [SỬA 06/09/2026 — V4] GỘP thẻ "Tiện Ích Ứng Dụng & Cài Đặt Màn Hình" vào đây
                        (chủ app yêu cầu): sau khi bỏ thẻ hướng dẫn điện thoại, thẻ tiện ích chỉ còn
                        vài nút lẻ → dồn về một thẻ cho màn 6.5 còn 2 thẻ CAO ĐỀU NHAU, thu hẹp
-                       màn hình thì tự xuống 1 cột, không còn cột ngắn cột dài. -->
-                  <div style="margin-top:14px;border-top:1px dashed var(--border-light);padding-top:12px;">
+                       màn hình thì tự xuống 1 cột, không còn cột ngắn cột dài.
+                       [SỬA 08/09/2026 — V4 đợt 113] ĐẨY KHU NÀY LÊN GIỮA THẺ, không để nằm tận đáy.
+                       Chủ app hỏi "sao nó nằm tận dưới, nó có tác dụng không" — có tác dụng thật:
+                       nút 1 cài app ra màn hình điện thoại/PC, nút 2 xem cấu trúc các tab Google
+                       Sheet, nút 3 xoá bộ nhớ tạm về dữ liệu mẫu. Nằm cuối trang nên phải cuộn
+                       rất xa mới thấy → nay dời lên ngay dưới khối đo chỗ chứa. -->
+                  <div id="khuTienIch113" style="margin-top:14px;border-top:1px dashed var(--border-light);padding-top:12px;">
                     <div style="font-size:11.5px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">🧰 TIỆN ÍCH ỨNG DỤNG &amp; CÀI ĐẶT MÀN HÌNH:</div>
                     <div style="display:flex;flex-direction:column;gap:10px;">
                       <button class="btn btn-success" style="padding:11px 14px;text-align:left;justify-content:flex-start;font-size:12.5px;" onclick="AppModules.settings.showInstallAppModal()">
