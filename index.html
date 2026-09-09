@@ -2728,7 +2728,8 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
         white-space: nowrap;              
         overflow: hidden; text-overflow: ellipsis;   
         text-align: center;
-        font-size: 12px; padding: 7px 10px !important; line-height: 1.2;
+
+        font-size: 11px !important; padding: 7px 5px !important; line-height: 1.2;
       }
       
       .card-header > div:not(.cfg-subnav):has(> .btn) > .btn { flex-direction: row; gap: 4px; }
@@ -6262,7 +6263,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.125" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.126" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -6491,7 +6492,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.125"
+                version: "4.0.126"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -36178,6 +36179,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
           (data.congViecSanLuong || []).filter(r => {
               if (r.duyet !== "cho_duyet" && r.duyet !== "cho_hcns") return false;
+               
+              if (cap === "it_admin") return _xemTheoThang("cong_san_luong", deptCua(r.maNV));
               try {
                 const _r142 = AppModules.quytrinhduyet.nhieuBuoc.aiKyDuoc("cong_san_luong", r, u);
                 if (_r142 === true) return true;
