@@ -2823,6 +2823,10 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       }
       .kb116-thanh > .kb116-sap { grid-column: 3; white-space: normal; line-height: 1.2; }
       .kb116-thanh > .kb116-xoaloc { white-space: normal; line-height: 1.2; }
+      
+      button[onclick*="doiKeyNhaSanXuat"], button[onclick*="refreshStatus"] {
+        white-space: normal !important; line-height: 1.2; font-size: 11px !important;
+      }
       .qtd-ds { max-height: 30vh !important; }
     }
     
@@ -6263,7 +6267,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.126" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.128" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -6492,7 +6496,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.126"
+                version: "4.0.128"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -21944,13 +21948,24 @@ function writeSheet(ss, sheetName, headers, rowsData){
             const dsTay = rawAttendanceList.filter(b => String(b.ngay || "").slice(0, 7) === thangCC
               && (b.nguon === "tay" || b.nguon === "phong" || !b.nguon));
             const tenNguon = ng => ng === "phong" ? "🏢 Bảng phòng ban" : ng === "tay" ? "✍️ HCNS nhập tay" : "❔ Chưa rõ nguồn (dữ liệu cũ)";
+
+            const _tenNV155 = {};
+            (data.nhanVien || []).forEach(n => { _tenNV155[n.id] = n.hoTen; });
             return `
               <div class="card">
                 <div class="card-header">
                   <div class="card-title"><i class="fa-solid fa-pen-to-square"></i> 3. Chấm Công Nhập Tay / Bảng Phòng — Tháng ${CoreService.nhanThang(thangCC)}</div>
-                  <button class="btn btn-sm btn-success" onclick="AppModules.attendance.checkInToday()">
-                    <i class="fa-solid fa-location-dot"></i> Điểm Danh Hôm Nay
-                  </button>
+                  <!-- [SỬA 10/09/2026 — V4 đợt 155] Thêm nút "➕ Thêm Dòng": trước đây mục này CHỈ XEM,
+                       muốn nhập phải đi vòng qua Dán từ Excel — chủ app: "gõ thế nào được, có thêm
+                       dòng, có chọn mã NV đâu". Hai nút bọc trong div để màn hẹp tự dàn hàng đẹp. -->
+                  <div style="display:flex; gap:8px;">
+                    <button class="btn btn-sm btn-primary" onclick="AppModules.attendance.moThemTay155()" title="Thêm một dòng chấm công gõ tay ngay trên bảng — gõ mã hoặc tên đều có gợi ý">
+                      <i class="fa-solid fa-plus"></i> Thêm Dòng
+                    </button>
+                    <button class="btn btn-sm btn-success" onclick="AppModules.attendance.checkInToday()">
+                      <i class="fa-solid fa-location-dot"></i> Điểm Danh Hôm Nay
+                    </button>
+                  </div>
                 </div>
                 <div style="background:var(--bg-hover);border:1px solid var(--border-light);border-radius:8px;padding:8px 12px;font-size:11.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:10px;">
                   ✍️ Bản ghi <strong>không đến từ máy chấm công và không do nhân viên tự chấm</strong>: HCNS gõ tay,
@@ -21963,25 +21978,33 @@ function writeSheet(ss, sheetName, headers, rowsData){
                       <tr>
                         <th class="col-stt" style="width:44px">STT</th>
                         <th class="col-ma">Mã NV</th>
+                        <th style="min-width:150px">Tên Nhân Viên</th>
                         <th class="col-ngay">Ngày Báo Công</th>
                         <th>Ca Làm Việc</th>
                         <th style="text-align:center">Giờ Vào</th>
                         <th style="text-align:center">Giờ Ra</th>
                         <th class="col-so">Giờ OT</th>
                         <th style="text-align:center">Nguồn Ghi</th>
+                        <th class="col-action">Thao Tác</th>
                       </tr>
                     </thead>
                     <tbody>
-                      ${dsTay.length === 0 ? `<tr><td colspan="8" class="col-action o-rong">Chưa có bản ghi nhập tay trong tháng ${CoreService.nhanThang(thangCC)}</td></tr>` : dsTay.map((item, idx) => `
+                      ${this._dongNhapTay155()}
+                      ${dsTay.length === 0 && !this.suaTay155 ? `<tr><td colspan="10" class="col-action o-rong">Chưa có bản ghi nhập tay trong tháng ${CoreService.nhanThang(thangCC)} — bấm "➕ Thêm Dòng" để gõ trực tiếp</td></tr>` : dsTay.map((item, idx) => `
                         <tr>
                           <td class="col-stt">${idx + 1}</td>
                           <td class="col-ma">${item.maNV}</td>
+                          <td>${_tenNV155[item.maNV] || `<span style="color:var(--text-muted)">— không có trong hồ sơ —</span>`}</td>
                           <td class="col-ngay">${formatDateDisplay(item.ngay)}</td>
                           <td>${item.caLam || "—"}</td>
                           <td style="text-align:center;font-weight:bold;color:var(--primary-dark)">${ChamCongCore.hienGio(item.gioVao)}</td>
                           <td style="text-align:center;font-weight:bold;color:var(--primary-dark)">${ChamCongCore.hienGio(item.gioRa)}</td>
                           <td class="col-so">${formatNumber(item.gioOT || 0, 1)}h</td>
                           <td style="text-align:center"><span class="badge badge-warning">${tenNguon(item.nguon)}</span></td>
+                          <td class="col-action" style="white-space:nowrap">
+                            <button class="btn btn-sm btn-secondary" style="padding:4px 8px;" title="Sửa dòng này (nạp lên dòng nhập ở đầu bảng)" onclick="AppModules.attendance.moSuaTay155('${item.maNV}','${item.ngay}')">✏️</button>
+                            <button class="btn btn-sm btn-secondary" style="padding:4px 8px;" title="Xoá dòng này (có hỏi lại)" onclick="AppModules.attendance.xoaTay155('${item.maNV}','${item.ngay}')">🗑️</button>
+                          </td>
                         </tr>
                       `).join("")}
                     </tbody>
@@ -24228,6 +24251,119 @@ function writeSheet(ss, sheetName, headers, rowsData){
         
 
         
+         
+        suaTay155: null,
+        moThemTay155() {
+          const homNay = new Date();
+          const ng = homNay.getFullYear() + "-" + String(homNay.getMonth() + 1).padStart(2, "0") + "-" + String(homNay.getDate()).padStart(2, "0");
+          this.suaTay155 = { goc: null, maNV: "", hoTen: "", ngay: ng, caLam: "", gioVao: "", gioRa: "", gioOT: 0 };
+          this.render();
+          setTimeout(() => { const o = document.getElementById("tayMa155"); if (o) o.focus(); }, 0);
+        },
+        moSuaTay155(maNV, ngay) {
+          const d = DataService.getData();
+          const r = (d.bangCong || []).find(b => b.maNV === maNV && b.ngay === ngay);
+          if (!r) { CoreService.showToast("Không tìm thấy dòng cần sửa!", "warning"); return; }
+          const nv = (d.nhanVien || []).find(n => n.id === maNV);
+          this.suaTay155 = { goc: { maNV: maNV, ngay: ngay }, maNV: maNV, hoTen: nv ? nv.hoTen : "",
+            ngay: ngay, caLam: r.caLam || "", gioVao: ChamCongCore.doiGio(r.gioVao) || "",
+            gioRa: ChamCongCore.doiGio(r.gioRa) || "", gioOT: Number(r.gioOT) || 0 };
+          this.render();
+          setTimeout(() => { const o = document.getElementById("tayNgay155"); if (o) o.focus(); }, 0);
+        },
+        huyTay155() { this.suaTay155 = null; this.render(); },
+
+        doiMaTay155(v) {
+          const nv = (DataService.getData().nhanVien || []).find(n => n.id === String(v).trim());
+          const o = document.getElementById("tayTen155");
+          if (o) o.value = nv ? nv.hoTen : "";
+        },
+        doiTenTay155(v) {
+          const t = String(v).trim().toLowerCase();
+          const nv = (DataService.getData().nhanVien || []).find(n => String(n.hoTen || "").toLowerCase() === t);
+          const o = document.getElementById("tayMa155");
+          if (nv && o) o.value = nv.id;
+        },
+        luuTay155() {
+          const d = DataService.getData();
+          const layO = id => { const o = document.getElementById(id); return o ? String(o.value).trim() : ""; };
+          let ma = layO("tayMa155");
+          const ten = layO("tayTen155");
+
+          if (!ma && ten) {
+            const ds = (d.nhanVien || []).filter(n => String(n.hoTen || "").toLowerCase() === ten.toLowerCase());
+            if (ds.length === 1) ma = ds[0].id;
+            else if (ds.length > 1) { CoreService.showToast("Có " + ds.length + " người trùng tên \"" + ten + "\" — hãy chọn bằng MÃ nhân viên.", "danger"); return; }
+          }
+          const nv = (d.nhanVien || []).find(n => n.id === ma);
+          if (!nv) { CoreService.showToast("Mã/tên nhân viên không có trong hồ sơ — gõ vài chữ rồi CHỌN từ danh sách gợi ý.", "danger"); return; }
+          const ngay = layO("tayNgay155");
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(ngay)) { CoreService.showToast("Chưa chọn ngày báo công!", "danger"); return; }
+          const gioVao = layO("tayVao155"), gioRa = layO("tayRa155");
+          const gioOT = parseFloat(String(layO("tayOT155")).replace(",", ".")) || 0;
+          if (gioOT < 0 || gioOT > 24) { CoreService.showToast("Giờ OT phải từ 0 đến 24!", "danger"); return; }
+          
+          if (gioVao && gioRa && gioRa < gioVao) { CoreService.showToast("Giờ ra đang NHỎ HƠN giờ vào — kiểm lại giúp (ca qua đêm thì khai ở Ca làm việc).", "danger"); return; }
+
+          const goc = (this.suaTay155 || {}).goc;
+          if (goc && (goc.maNV !== ma || goc.ngay !== ngay)) {
+            const i = (d.bangCong || []).findIndex(b => b.maNV === goc.maNV && b.ngay === goc.ngay);
+            if (i >= 0) d.bangCong.splice(i, 1);
+          }
+          const kq = ChamCongCore.ghiNhanCong(d, {
+            maNV: ma, ngay: ngay, caLam: layO("tayCa155"),
+            gioVao: gioVao, gioRa: gioRa, gioOT: gioOT,
+            trangThai: "du_cong", nguon: "tay", ghiChu: "HCNS nhập tay trực tiếp trên bảng"
+          });
+          DataService.saveData(d);
+          this.suaTay155 = null;
+          CoreService.showToast(kq === "moi" ? "Đã thêm dòng công cho " + nv.hoTen + " (" + ma + ")."
+            : kq === "lech" ? "Đã ghi, nhưng LỆCH giờ với nguồn khác — xem tab 6. Đối Chiếu Công."
+            : "Đã cập nhật dòng công của " + nv.hoTen + ".", kq === "lech" ? "warning" : "success");
+          this.render();
+        },
+        xoaTay155(maNV, ngay) {
+          const self = this;
+          CoreService.openModal("🗑️ Xoá dòng chấm công",
+            "<div style=\"font-size:13px;line-height:1.7;\">Xoá bản ghi công của <strong>" + maNV + "</strong> ngày <strong>" + formatDateDisplay(ngay) + "</strong>?<br><small style=\"color:var(--text-secondary)\">Chỉ xoá dòng nhập tay / bảng phòng; bản ghi nguồn máy, app không bị đụng.</small></div>", [
+            { text: "Hủy", class: "btn-secondary" },
+            { text: "Xoá", class: "btn-danger", onClick: () => {
+                const d = DataService.getData();
+                const i = (d.bangCong || []).findIndex(b => b.maNV === maNV && b.ngay === ngay
+                  && (b.nguon === "tay" || b.nguon === "phong" || !b.nguon));
+                if (i >= 0) { d.bangCong.splice(i, 1); DataService.saveData(d); CoreService.showToast("Đã xoá.", "success"); }
+                else CoreService.showToast("Không thấy dòng (có thể đã gộp vào nguồn máy/app — xoá ở tab Đối Chiếu).", "warning");
+                self.render();
+            } }
+          ]);
+        },
+        
+        _dongNhapTay155() {
+          const s = this.suaTay155;
+          if (!s) return "";
+          const d = DataService.getData();
+          const st = getCompanySettings();
+          const antoan = t => String(t == null ? "" : t).replace(/</g, "&lt;").replace(/"/g, "&quot;");
+          const dsNV = (d.nhanVien || []).filter(n => n && n.trangThai !== "dinh_chi");
+          const dlMa = dsNV.map(n => "<option value=\"" + antoan(n.id) + "\" label=\"" + antoan(n.hoTen) + " — " + antoan(n.phongBan || "") + "\"></option>").join("");
+          const dlTen = dsNV.map(n => "<option value=\"" + antoan(n.hoTen) + "\" label=\"" + antoan(n.id) + " — " + antoan(n.phongBan || "") + "\"></option>").join("");
+          const dsCa = (st.caLamViec || []).map(c => "<option value=\"" + antoan(c.ma) + "\"" + (String(s.caLam || "").indexOf(c.ma) === 0 ? " selected" : "") + ">" + antoan(c.ma) + " — " + antoan(c.ten) + "</option>").join("");
+          return "<tr style=\"background:var(--primary-lighter);\">"
+            + "<td class=\"col-stt\">" + (s.goc ? "✏️" : "➕") + "</td>"
+            + "<td><input list=\"dlTayMa155\" id=\"tayMa155\" class=\"form-control\" style=\"min-width:96px;font-size:12.5px;\" placeholder=\"Mã NV…\" value=\"" + antoan(s.maNV) + "\" autocomplete=\"off\" oninput=\"AppModules.attendance.doiMaTay155(this.value)\">"
+            + "<datalist id=\"dlTayMa155\">" + dlMa + "</datalist><datalist id=\"dlTayTen155\">" + dlTen + "</datalist></td>"
+            + "<td><input list=\"dlTayTen155\" id=\"tayTen155\" class=\"form-control\" style=\"min-width:150px;font-size:12.5px;\" placeholder=\"…hoặc gõ tên\" value=\"" + antoan(s.hoTen) + "\" autocomplete=\"off\" oninput=\"AppModules.attendance.doiTenTay155(this.value)\"></td>"
+            + "<td><input type=\"date\" id=\"tayNgay155\" class=\"form-control\" style=\"min-width:135px;\" value=\"" + antoan(s.ngay) + "\"></td>"
+            + "<td><select id=\"tayCa155\" class=\"form-control\" style=\"min-width:110px;\"><option value=\"\">— Ca —</option>" + dsCa + "</select></td>"
+            + "<td style=\"text-align:center\"><input type=\"time\" id=\"tayVao155\" class=\"form-control\" style=\"min-width:88px;\" value=\"" + antoan(s.gioVao) + "\"></td>"
+            + "<td style=\"text-align:center\"><input type=\"time\" id=\"tayRa155\" class=\"form-control\" style=\"min-width:88px;\" value=\"" + antoan(s.gioRa) + "\"></td>"
+            + "<td><input type=\"number\" id=\"tayOT155\" class=\"form-control\" style=\"min-width:64px;\" min=\"0\" max=\"24\" step=\"0.5\" value=\"" + antoan(s.gioOT) + "\"></td>"
+            + "<td style=\"text-align:center\"><span class=\"badge badge-warning\">✍️ HCNS nhập tay</span></td>"
+            + "<td class=\"col-action\" style=\"white-space:nowrap\">"
+            + "<button class=\"btn btn-sm btn-primary\" style=\"padding:5px 10px;\" onclick=\"AppModules.attendance.luuTay155()\"><i class=\"fa-solid fa-check\"></i> Lưu</button> "
+            + "<button class=\"btn btn-sm btn-secondary\" style=\"padding:5px 8px;\" onclick=\"AppModules.attendance.huyTay155()\">Hủy</button>"
+            + "</td></tr>";
+        },
         taiMauChamCongMay() {
           const mau = [
             { "Mã NV": "NV004", "Tên nhân viên": "Nguyễn Văn A", "Phòng ban": "Kỹ Thuật", "Ngày": "01/08/2026", "Vào": "07:55", "Ra": "17:30", "Tên ca": "Ca HC", "TC1": 0, "TC2": 0, "TC3": 0, "Vào Trễ": 0, "Ra sớm": 0, "Công": 1, "Tổng giờ": 8, "Kí hiệu": "X" },
