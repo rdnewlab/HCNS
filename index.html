@@ -639,6 +639,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       text-decoration: underline;
     }
 
+    
+    input, select, textarea { font-family: inherit; }   
+
     .cfg-subnav {
       display: flex;
       gap: 6px;
@@ -1322,6 +1325,8 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     [data-theme="dark"] tbody tr:hover td { background-color: #1f2937; }
 
     .col-so, .col-ma, .col-ngay, .col-stt { font-variant-numeric: tabular-nums; }
+    
+    .col-ngay { white-space: nowrap; }
     .col-so, .col-ngay, .col-stt { text-align: right; }
     .col-ma { font-weight: 600; color: var(--primary-main); white-space: nowrap; }
     .col-action { text-align: center; white-space: nowrap; }
@@ -2685,28 +2690,138 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
       
       .bcc-wrap { grid-template-columns: 1fr !important; }
       .bcc-wrap > div:first-child { position: static !important; }
-      
+
       .bcc-wrap > div:first-child {
-        display: flex !important; flex-wrap: nowrap !important;
-        overflow-x: auto; -webkit-overflow-scrolling: touch;
-        gap: 6px; padding: 8px !important; align-items: center;
+        display: flex !important; flex-wrap: wrap !important;
+        overflow-x: visible;
+        gap: 5px; padding: 8px !important; align-items: stretch;
       }
-      
+
       .bcc-wrap > div:first-child > .cfg62-mi {
-        flex: 0 0 auto !important; width: auto !important;
-        margin-bottom: 0 !important; white-space: nowrap;
+        flex: 0 0 calc(50% - 3px) !important; width: auto !important;
+        
+        margin-bottom: 0 !important; white-space: normal;
+        overflow: hidden; line-height: 1.2; text-align: left;
         border: 1px solid var(--border-light, #e2e8f0);
-        min-height: 44px;                 
+        
+        min-height: 40px; font-size: 11px; padding: 6px 6px !important; gap: 5px;
       }
       
       .bcc-wrap > div:first-child .mi-mota { display: none !important; }
       .bcc-wrap > div:first-child > .cfg62-mi.active::after { content: "" !important; }
       
-      .bcc-wrap > div:first-child > div {
-        flex: 0 0 auto !important; padding: 0 4px !important;
-        font-size: 10px !important; opacity: .7; white-space: nowrap;
+      .bcc-wrap > div:first-child > div { display: none !important; }
+      
+      .hang-chot-cong { flex-direction: column !important; align-items: stretch !important; }
+      
+      .hang-chot-cong > * { width: 100% !important; min-height: 40px; flex: 0 0 auto !important; }
+
+      .card-header { flex-wrap: wrap !important; gap: 6px; align-items: stretch !important; }
+      
+      .card-header > div:not(.cfg-subnav):has(> .btn) {
+        flex-wrap: wrap !important; gap: 6px !important; align-items: stretch !important;
+      }
+      .card-header > div:not(.cfg-subnav):has(> .btn) > .btn {
+        
+        flex: 1 1 auto !important;        
+        min-width: 0 !important;
+        white-space: nowrap;              
+        overflow: hidden; text-overflow: ellipsis;   
+        text-align: center;
+        font-size: 12px; padding: 7px 10px !important; line-height: 1.2;
       }
       
+      .card-header > div:not(.cfg-subnav):has(> .btn) > .btn { flex-direction: row; gap: 4px; }
+      .card-header > div:not(.cfg-subnav):has(> .btn) > .btn i {
+        flex: 0 0 auto; font-size: 11px;   
+      }
+      
+      .card-header > div:not(.cfg-subnav):has(> .btn) > input,
+      .card-header > div:not(.cfg-subnav):has(> .btn) > select {
+        flex: 1 1 100% !important; width: 100% !important; min-width: 0;
+      }
+
+      .filter-bar {
+        display: flex !important; flex-wrap: wrap !important; gap: 6px !important;
+      }
+      .filter-bar > .filter-btn {
+        flex: 0 1 auto !important; width: auto !important;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        max-width: 100%;                 
+        font-size: 12px; padding: 6px 10px !important; line-height: 1.2;
+        
+        min-height: 36px; height: auto !important;
+      }
+      
+      .card-header > div.hang-chot-cong:has(> .btn) > .btn {
+        flex: 0 0 auto !important; height: auto !important; min-height: 40px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        font-size: 12px; padding: 7px 10px !important; line-height: 1.2;
+      }
+      
+      .kb116-thanh > input, .kb116-thanh > select, .kb116-thanh > button,
+      .kb116-thanh > .kb116-nut,
+      input.form-control:not([type="checkbox"]):not([type="radio"]),
+      select.form-control {
+        height: 36px !important; min-height: 36px !important;
+        padding-top: 0 !important; padding-bottom: 0 !important;
+      }
+      .btn.btn-sm { min-height: 36px; }
+      
+      textarea.form-control { height: auto !important; min-height: 60px !important;
+        padding-top: 8px !important; padding-bottom: 8px !important; }
+
+      
+      .card-header > div:not(.cfg-subnav):not(.hang-chot-cong):has(> .btn) > .btn.btn-secondary {
+        min-height: 30px; font-size: 11px; padding: 5px 8px !important;
+      }
+      .card-header > div:not(.cfg-subnav):not(.hang-chot-cong):has(> .btn) > .btn.btn-primary {
+        flex: 1 1 100% !important; min-height: 34px; font-size: 12.5px;
+        order: 2;              
+      }
+      
+      .card-header > div:not(.cfg-subnav):not(.hang-chot-cong) > .kb116-xuat-nho {
+        order: 1; flex: 0 0 auto !important; min-height: 30px;
+        padding: 5px 9px !important; font-size: 12px; line-height: 1;
+      }
+
+      .filter-bar {
+        display: grid !important; grid-template-columns: auto minmax(0, 1fr) !important;
+        gap: 6px !important; align-items: stretch !important;
+      }
+      .filter-bar > .filter-btn { width: 100% !important; justify-content: center; }
+      
+      .filter-bar > input, .filter-bar > select {
+        grid-column: 1 / -1 !important; max-width: none !important; margin-left: 0 !important;
+      }
+
+      .kb116-thanh {
+        display: grid !important;
+
+        grid-template-columns: auto minmax(140px, 1fr) minmax(0, auto) !important;
+        gap: 6px !important; align-items: center !important;
+      }
+      .kb116-thanh > .kb116-dem { grid-column: 1 / -1; }          
+      .kb116-thanh > .kb116-nhan-tu,
+      .kb116-thanh > .kb116-nhan-den { grid-column: 1; white-space: nowrap; }
+      .kb116-thanh > .kb116-ngay { grid-column: 2; width: 100% !important; }
+      .kb116-thanh > .kb116-xoaloc { grid-column: 3; }
+      
+      .kb116-thanh > .kb116-tim,
+      .kb116-thanh > input[type="search"],
+      .kb116-thanh > input[type="text"] {
+        grid-column: 1 / 3; max-width: none !important; margin-left: 0 !important; width: 100%;
+      }
+
+      .kb116-thanh > .kb116-nhomnut {
+        display: flex !important; grid-column: 1 / -1; gap: 6px; align-items: stretch;
+      }
+      .kb116-thanh > .kb116-nhomnut > .kb116-nut {
+        flex: 1 1 0; min-width: 0; white-space: normal; line-height: 1.2;
+        overflow: hidden; text-overflow: ellipsis; font-size: 11.5px;
+      }
+      .kb116-thanh > .kb116-sap { grid-column: 3; white-space: normal; line-height: 1.2; }
+      .kb116-thanh > .kb116-xoaloc { white-space: normal; line-height: 1.2; }
       .qtd-ds { max-height: 30vh !important; }
     }
     
@@ -6147,7 +6262,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.118" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.125" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -6376,7 +6491,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.118"
+                version: "4.0.125"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -12511,8 +12626,14 @@ function writeSheet(ss, sheetName, headers, rowsData){
               <div class="filter-bar">
                 <button class="filter-btn ${this.currentFilter === "all" ? "active" : ""}" onclick="AppModules.employees.setFilter('all')">Tất Cả (${list.length})</button>
                 <button class="filter-btn ${this.currentFilter === "dang_lam" ? "active" : ""}" onclick="AppModules.employees.setFilter('dang_lam')">🟢 Đang Làm Việc (${list.filter(n => n.trangThai !== "dinh_chi").length})</button>
-                <button class="filter-btn ${this.currentFilter === "dinh_chi" ? "active" : ""}" onclick="AppModules.employees.setFilter('dinh_chi')">🔴 Đã Nghỉ / Đình Chỉ (${list.filter(n => n.trangThai === "dinh_chi").length})</button>
+                <!-- [SỬA 09/09/2026 — V4 đợt 151] ĐỔI CHỖ: "Sinh Nhật" lên TRƯỚC "Đã Nghỉ".
+                     VÌ SAO: trên điện thoại dải này xếp lưới 2 cột. Theo thứ tự cũ thì cột trái
+                     rơi vào "Tất Cả" (ngắn) và "Đã Nghỉ / Đình Chỉ" (dài) — hai ô so le nhau.
+                     Đổi chỗ thì hai chip NGẮN (Tất Cả · Sinh Nhật) về cùng cột trái, hai chip DÀI
+                     về cùng cột phải ⇒ thẳng cột, đúng hình chủ app vẽ.
+                     Thứ tự mới đọc cũng thuận hơn: đang làm → sinh nhật → đã nghỉ. -->
                 <button class="filter-btn ${this.currentFilter === "sinh_nhat" ? "active" : ""}" onclick="AppModules.employees.setFilter('sinh_nhat')">🎂 Sinh Nhật</button>
+                <button class="filter-btn ${this.currentFilter === "dinh_chi" ? "active" : ""}" onclick="AppModules.employees.setFilter('dinh_chi')">🔴 Đã Nghỉ / Đình Chỉ (${list.filter(n => n.trangThai === "dinh_chi").length})</button>
                 <!-- [THÊM MỚI 08/09/2026 — V4 đợt 109] Ô tìm nhanh — đặt trong hàng nút lọc sẵn có
                      để không đổi bố cục màn hình. Gõ tới đâu lọc tới đó, không cần bấm nút. -->
                 <input type="text" id="empTimNhanh" class="form-control" placeholder="🔍 Tìm mã NV, tên, phòng ban, chức vụ, SĐT…"
@@ -21525,6 +21646,11 @@ function writeSheet(ss, sheetName, headers, rowsData){
                     ${muc("cham_cong_sl", "🏭", "4. Chấm công sản lượng", "Khoán công đoạn CV SL (" + (data.congViecSanLuong || []).length + ")")}
                     ${muc("don_xin_phep", "📝", "5. Đơn đã duyệt", "Phép, OT, ra ngoài (" + approvedLeaves.length + ")")}
                     ${nhom("③ XỬ LÝ")}
+                    <!-- [SỬA 09/09/2026 — V4 đợt 147] ĐÁNH SỐ MENU VÀ TIÊU ĐỀ THẺ PHẢI KHỚP NHAU.
+                         TRƯỚC: menu ghi "6. Đối chiếu công" mà thẻ mở ra ghi "5. Đối Chiếu Công 3
+                         Nguồn" — lệch ở 7 thẻ, người dùng tưởng bấm nhầm mục. Nay tiêu đề thẻ đã
+                         đánh lại theo đúng số của menu (0 → 10). Sau này thêm/bớt mục thì phải
+                         sửa CẢ HAI chỗ, đừng sửa một bên. -->
                     ${muc("doi_chieu", "🔀", "6. Đối chiếu công" + badge(nLech, "#dc2626"), "Gộp nguồn → ra công")}
                     ${nhom("④ KẾT QUẢ")}
                     ${muc("theo_phong_ban", "🏢", "7. Bảng công phòng ban", "Chi tiết theo bộ phận")}
@@ -21692,7 +21818,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
             return `
               <div class="card">
                 <div class="card-header">
-                  <div class="card-title"><i class="fa-solid fa-users"></i> 1. Danh Sách Nhân Sự Tham Gia Chấm Công</div>
+                  <div class="card-title"><i class="fa-solid fa-users"></i> 0. Danh Sách Nhân Sự Tham Gia Chấm Công</div>
                   <div style="display:flex; gap:8px;">
                     <button class="btn btn-sm btn-success" onclick="AppModules.attendance.checkInToday()">
                       <i class="fa-solid fa-location-dot"></i> Điểm Danh Nhanh Hôm Nay
@@ -21999,7 +22125,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
             return `
               <div class="card">
                 <div class="card-header">
-                  <div class="card-title"><i class="fa-solid fa-file-circle-check"></i> 4. Tổng Hợp Các Đơn Đã Phê Duyệt Để Đối Chiếu Bù Trừ Công</div>
+                  <div class="card-title"><i class="fa-solid fa-file-circle-check"></i> 5. Tổng Hợp Các Đơn Đã Phê Duyệt Để Đối Chiếu Bù Trừ Công</div>
                   <button class="btn btn-sm btn-primary" onclick="CoreService.switchTab('requests')">
                     <i class="fa-solid fa-file-pen"></i> Mở Quản Lý Đơn Từ
                   </button>
@@ -22080,7 +22206,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
             return `
               <div class="card">
                 <div class="card-header">
-                  <div class="card-title"><i class="fa-solid fa-building-user"></i> 6. Bảng Chấm Công Theo Phòng Ban — Tháng ${CoreService.nhanThang(thangCC)}: <span style="color:var(--primary-main)">${currentDept}</span></div>
+                  <div class="card-title"><i class="fa-solid fa-building-user"></i> 7. Bảng Chấm Công Theo Phòng Ban — Tháng ${CoreService.nhanThang(thangCC)}: <span style="color:var(--primary-main)">${currentDept}</span></div>
                   <!-- [SỬA 31/08/2026] Dropdown chọn phòng (+ "Tất cả phòng ban") + nút Xuất Excel + In A4. -->
                   <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
                     <select class="form-control" style="width:auto;font-size:12.5px;padding:5px 10px;font-weight:600;" onchange="AppModules.attendance.setDeptFilter(this.value)">
@@ -22204,7 +22330,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
             return `
               <div class="card">
                 <div class="card-header">
-                  <div class="card-title"><i class="fa-regular fa-calendar-days"></i> 7. Bảng Công Tháng ${CoreService.nhanThang(thangCC)} — Ma Trận Ngày × Người</div>
+                  <div class="card-title"><i class="fa-regular fa-calendar-days"></i> 8. Bảng Công Tháng ${CoreService.nhanThang(thangCC)} — Ma Trận Ngày × Người</div>
                   <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <button class="btn btn-sm btn-secondary" onclick="AppModules.attendance.xuatBangCongThang()"><i class="fa-solid fa-file-excel"></i> Xuất Excel</button>
                     <button class="btn btn-sm btn-primary" onclick="AppModules.attendance.inBangCongThang()"><i class="fa-solid fa-print"></i> In A4 (ngang)</button>
@@ -22238,7 +22364,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
             return `
               <div class="card">
                 <div class="card-header">
-                  <div class="card-title"><i class="fa-solid fa-calculator"></i> 8. Bảng Tổng Hợp Công Toàn Thể Nhân Viên — Tháng ${CoreService.nhanThang(thangCC)}</div>
+                  <div class="card-title"><i class="fa-solid fa-calculator"></i> 9. Bảng Tổng Hợp Công Toàn Thể Nhân Viên — Tháng ${CoreService.nhanThang(thangCC)}</div>
                   <!-- [SỬA 31/08/2026] Trước: chỉ toast GIẢ (không lưu gì). Nay gọi THẬT chotCongThang(tháng đang xem)
                        → khóa bản ghi + lưu snapshot bangCongChot (giống nút ở mục Đối chiếu). -->
                   <button class="btn btn-sm btn-primary" onclick="AppModules.attendance.chotCongThang('${thangCC}')">
@@ -22315,7 +22441,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
             return `
               <div class="card">
                 <div class="card-header">
-                  <div class="card-title"><i class="fa-solid fa-print"></i> 9. Báo Cáo Bảng Chấm Công & Xuất Bản Biểu Mẫu A4 Khổ Ngang</div>
+                  <div class="card-title"><i class="fa-solid fa-print"></i> 10. Báo Cáo Bảng Chấm Công & Xuất Bản Biểu Mẫu A4 Khổ Ngang</div>
                   <div style="display:flex; gap:8px;">
                     <button class="btn btn-sm btn-secondary" onclick="AppModules.attendance.exportAttendanceExcel()">
                       <i class="fa-solid fa-file-export"></i> 📤 Xuất Bảng Công Ra Excel
@@ -22376,7 +22502,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
             return `
               <div class="card">
                 <div class="card-header">
-                  <div class="card-title"><i class="fa-solid fa-code-compare"></i> 5. Đối Chiếu Công 3 Nguồn (Máy ↔ App ↔ Phòng)</div>
+                  <div class="card-title"><i class="fa-solid fa-code-compare"></i> 6. Đối Chiếu Công 3 Nguồn (Máy ↔ App ↔ Phòng)</div>
                   ${laHCNS ? `<div class="hang-chot-cong" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                     <input type="month" id="inpThangChot" class="form-control" value="${thangCC}" style="width:160px;font-size:12px;">
                     <!-- [THÊM MỚI 08/09/2026 — V4 đợt 110] Nút MỞ KHOÁ đặt ngay cạnh nút Chốt.
@@ -22658,7 +22784,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
             return `
               <div class="card">
                 <div class="card-header">
-                  <div class="card-title"><i class="fa-solid fa-industry"></i> 3. Chấm Công Theo Sản Lượng (CV SL)</div>
+                  <div class="card-title"><i class="fa-solid fa-industry"></i> 4. Chấm Công Theo Sản Lượng (CV SL)</div>
                   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                     <input type="month" id="slThangLoc" class="form-control" value="${this.slThang}" style="width:150px;font-size:12px;" onchange="CoreService.datThangLamViec(this.value); AppModules.attendance.render();">
                     ${laQuanLySL ? `
@@ -29214,8 +29340,11 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const _oSo = (v, mau) => v ? `<td class="col-so" style="color:${mau};font-weight:600">${v}</td>` : '<td class="col-so" style="color:var(--text-muted)">0</td>';
           return `<div style="margin-bottom:12px;">
             <div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;"><i class="fa-solid fa-calendar-day"></i> Tổng hợp theo ngày <span style="font-weight:400;color:var(--text-muted);">(10 ngày gần nhất)</span></div>
-            <div class="table-responsive" style="max-width:560px;"><table><thead><tr>
-              <th class="col-ngay">Ngày</th><th class="col-so">Số YC</th>
+            <!-- [SỬA 09/09/2026 — V4 đợt 150e] BỎ "max-width:560px". Chủ app: "bảng ngắn tủn lại,
+     không cân đối app". Bảng bị khoá cứng 560px trong khi màn máy tính rộng ~1.400px nên nằm
+     thu lu một góc trái. Bỏ khoá thì bảng trải hết bề ngang thẻ, cân với bảng danh sách ngay dưới. -->
+            <div class="table-responsive"><table><thead><tr>
+              <th class="col-ngay" style="text-align:right">Ngày</th><th class="col-so">Số YC</th>
               <th class="col-so">Chờ</th><th class="col-so">Đã duyệt</th><th class="col-so">Từ chối</th>
             </tr></thead><tbody>
               ${_dau10.map(r => `<tr><td class="col-ngay">${formatDateDisplay(r.ngay)}</td><td class="col-so" style="font-weight:600">${r.tong}</td>
@@ -30982,8 +31111,12 @@ function writeSheet(ss, sheetName, headers, rowsData){
                         <span style="font-weight:400;color:var(--text-muted);">— để trống là theo mức chung ở trên</span></div>
                       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;">
                         ${(PhanQuyenService.goiY("phongBan") || []).map(pb => `<div style="display:flex;align-items:center;gap:6px;">
-                          <span style="font-size:11.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${pb}">${pb}</span>
-                          <select class="selCanCuBHPhong118 form-control" data-phong="${pb}" style="font-size:11px;padding:3px 5px;width:190px;">
+                          <!-- [SỬA 09/09/2026 — V4 đợt 146] Trước: cắt tên bằng "…" trong ô rộng 67px —
+                               "Nghiên Cứu & Phát Triển" (cần 135px) mất hơn nửa tên. Đây là chỗ đặt CĂN CỨ
+                               ĐÓNG BHXH cho cả phòng, nhìn nhầm phòng là sai vào tiền bảo hiểm.
+                               NAY cho xuống dòng (không cắt) + thu ô chọn 190→168px nhường chỗ cho tên. -->
+                          <span style="font-size:11.5px;flex:1;min-width:0;overflow-wrap:anywhere;line-height:1.25;" title="${pb}">${pb}</span>
+                          <select class="selCanCuBHPhong118 form-control" data-phong="${pb}" style="font-size:11px;padding:3px 5px;width:168px;flex:0 0 auto;">
                             <option value="">— theo mức chung —</option>
                             <option value="luongCoBan" ${(((companySettings.canCuBHXHPhong || {})[pb] || []).join(",") === "luongCoBan") ? "selected" : ""}>Chỉ lương cơ bản</option>
                             <option value="luongCoBan,phuCap" ${(((companySettings.canCuBHXHPhong || {})[pb] || []).join(",") === "luongCoBan,phuCap") ? "selected" : ""}>LCB + Phụ cấp chung</option>
@@ -31185,8 +31318,10 @@ function writeSheet(ss, sheetName, headers, rowsData){
                       <div style="font-weight:700;font-size:11.5px;color:#0f766e;margin-bottom:5px;">🏢 Ca mặc định theo phòng ban <span style="font-weight:400;color:var(--text-muted);">— khỏi phải tự chọn ca mỗi lần chấm</span></div>
                       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px;">
                         ${(PhanQuyenService.goiY("phongBan") || []).map(pb => `<div style="display:flex;align-items:center;gap:6px;">
-                          <span style="font-size:11.5px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${pb}">${pb}</span>
-                          <select class="selCaPhong form-control" data-phong="${pb}" style="font-size:11.5px;padding:3px 5px;width:150px;">
+                          <!-- [SỬA 09/09/2026 — V4 đợt 146] Cùng lý do với khung căn cứ BHXH ở mục 2:
+                               tên phòng bị cắt trong ô rộng 107px. Nay xuống dòng, ô chọn 150→140px. -->
+                          <span style="font-size:11.5px;flex:1;min-width:0;overflow-wrap:anywhere;line-height:1.25;" title="${pb}">${pb}</span>
+                          <select class="selCaPhong form-control" data-phong="${pb}" style="font-size:11.5px;padding:3px 5px;width:140px;flex:0 0 auto;">
                             <option value="">— tự đoán theo giờ —</option>
                             ${((companySettings.caLamViec) || []).map(c => `<option value="${c.ma}" ${(((companySettings.caPhongBan || {})[pb]) === c.ma) ? "selected" : ""}>${c.ma} — ${c.ten}</option>`).join("")}
                           </select></div>`).join("")}
@@ -31485,7 +31620,11 @@ function writeSheet(ss, sheetName, headers, rowsData){
                       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:6px;">
                         ${[...new Set((DataService.getData().nhanVien || []).map(n => n.phongBan).filter(Boolean))].map(pb => `
                           <div style="display:grid;grid-template-columns:1fr 1.3fr;gap:6px;align-items:center;">
-                            <span style="font-size:11.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;">${pb}</span>
+                            <!-- [SỬA 09/09/2026 — V4 đợt 146] Trước: cắt cụt bằng "…" trong ô rộng 67px,
+                                 "Nghiên Cứu & Phát Triển" (cần 135px) mất hơn một nửa tên. Đây là chỗ khai
+                                 định mức RIÊNG cho từng phòng — đọc nhầm tên là khai nhầm phòng, sai vào lương.
+                                 NAY cho xuống tối đa 2 dòng (không cắt chữ) + rê chuột hiện đủ tên. -->
+                            <span title="${String(pb).replace(/"/g, "&quot;")}" style="font-size:11.5px;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;line-height:1.25;">${pb}</span>
                             <select class="otPBSel form-control" data-pb="${String(pb).replace(/"/g, "&quot;")}" style="font-size:11.5px;padding:4px 6px;">
                               <option value="">— theo công ty —</option>
                               <option value="phat_sinh" ${((companySettings.otPhongBan || {})[pb]) === "phat_sinh" ? "selected" : ""}>① Phát sinh là tính</option>
@@ -32309,7 +32448,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 <div style="font-weight:700;font-size:12px;margin-bottom:2px;">🏢 Gán công thức riêng theo phòng ban <span style="font-weight:400;color:var(--text-muted);font-size:10.5px;">— để trống = phòng đó dùng công thức chung ở trên</span></div>
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:6px;margin-top:6px;">
                   ${dsPB.map(pb => `<div style="display:grid;grid-template-columns:1fr 1.2fr;gap:6px;align-items:center;">
-                    <span style="font-size:11.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;">${esc(pb)}</span>
+                    <!-- [SỬA 09/09/2026 — V4 đợt 146] Cùng lý do với khung ở mục 2: tên phòng bị cắt
+                         trong ô rộng 107px. Nay xuống tối đa 2 dòng + rê chuột hiện đủ tên. -->
+                    <span title="${esc(pb)}" style="font-size:11.5px;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;line-height:1.25;">${esc(pb)}</span>
                     <select class="form-control" style="font-size:12px;padding:4px 6px;" onchange="AppModules.settings.datCTPhongBan('${esc(pb).replace(/'/g, "\\'")}', this.value)">
                       <option value="">— theo công thức chung —</option>
                       ${ds.map(c => `<option value="${c.id}" ${mapPB[pb] === c.id ? "selected" : ""}>${esc(c.ten)}</option>`).join("")}
@@ -32637,10 +32778,10 @@ function writeSheet(ss, sheetName, headers, rowsData){
             const _k = document.createElement("style"); _k.id = "kh131-css";
             _k.textContent =
               ".kh131-o{padding:3px 6px;border-bottom:1px solid rgba(148,163,184,.28);}" +
-              ".kh131-stt{width:30px;text-align:right;color:var(--text-muted);}" +
+              ".kh131-stt{width:28px;text-align:right;color:var(--text-muted);}" +
               ".kh131-gt{color:var(--text-secondary);}" +
-              ".kh131-ngay{width:78px;text-align:center;color:var(--text-muted);font-size:10.5px;white-space:nowrap;}" +
-              ".kh131-cn{width:66px;text-align:center;white-space:nowrap;}" +
+              ".kh131-ngay{width:66px;text-align:center;color:var(--text-muted);font-size:10.5px;white-space:nowrap;}" +
+              ".kh131-cn{width:58px;text-align:center;white-space:nowrap;}" +
               ".kh131-nut{border:0;background:transparent;cursor:pointer;font-size:12px;padding:0 2px;line-height:1;}" +
               ".kh131-nut:hover{transform:scale(1.18);}" +
               ".kh131-xoa:hover{filter:drop-shadow(0 0 2px #dc2626);}" +
@@ -32649,11 +32790,12 @@ function writeSheet(ss, sheetName, headers, rowsData){
               ".kh131-ngan{border-left:2px solid var(--border-color);}";
             document.head.appendChild(_k);
           }
-          return `<div style="overflow-x:auto;margin-top:6px;"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:900px;">
+           
+          return `<div style="overflow-x:auto;margin-top:6px;"><table style="width:100%;border-collapse:collapse;font-size:11px;min-width:720px;">
             <thead><tr style="background:var(--bg-hover);">
               <!-- [SỬA đợt 131] 10 cột: mỗi cụm STT · Ký hiệu · Giải thích · Cập nhật · Chức năng -->
-              <th style="padding:4px 6px;width:30px;">STT</th><th style="padding:4px 6px;text-align:left;width:122px;">Ký hiệu</th><th style="padding:4px 6px;text-align:left;">Giải thích</th><th style="padding:4px 6px;width:78px;">Cập nhật</th><th style="padding:4px 6px;width:66px;">Chức năng</th>
-              <th style="padding:4px 6px;width:30px;border-left:2px solid var(--border-color);">STT</th><th style="padding:4px 6px;text-align:left;width:122px;">Ký hiệu</th><th style="padding:4px 6px;text-align:left;">Giải thích</th><th style="padding:4px 6px;width:78px;">Cập nhật</th><th style="padding:4px 6px;width:66px;">Chức năng</th>
+              <th style="padding:4px 6px;width:28px;">STT</th><th style="padding:4px 6px;text-align:left;width:104px;">Ký hiệu</th><th style="padding:4px 6px;text-align:left;">Giải thích</th><th style="padding:4px 6px;width:66px;">Cập nhật</th><th style="padding:4px 6px;width:58px;">Chức năng</th>
+              <th style="padding:4px 6px;width:28px;border-left:2px solid var(--border-color);">STT</th><th style="padding:4px 6px;text-align:left;width:104px;">Ký hiệu</th><th style="padding:4px 6px;text-align:left;">Giải thích</th><th style="padding:4px 6px;width:66px;">Cập nhật</th><th style="padding:4px 6px;width:58px;">Chức năng</th>
             </tr></thead>
             <tbody>${_trai.map((c, i) => `<tr style="border-bottom:1px solid var(--border-light);">${_o(c, i + 1)}${_o(_phai[i], _nua + i + 1)}</tr>`).join("")}</tbody>
           </table>
@@ -35927,7 +36069,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
         const _xemTheoThang = (ma, pb) => {
           const thang = _thangCT(ma);
           if (!thang.length) return trongPhong(pb);                  
-          if (cap === "it_admin") return true;
+           
+          if (cap === "it_admin") return !_thangCoNguoi(thang, pb);
            
           const toiLuot = _capToiLuot(thang, pb);
           if (toiLuot && cap === toiLuot) return cap === "manager" ? PhanQuyenService.phuTrachPhong(u, pb) : true;
@@ -35938,12 +36081,23 @@ function writeSheet(ss, sheetName, headers, rowsData){
         };
          
         const _thayViec139 = (ma, don, pb) => {
+           
+          if (cap === "it_admin") return _xemTheoThang(ma, pb);
           try {
             const r = AppModules.quytrinhduyet.nhieuBuoc.aiKyDuoc(ma, don, u);
             if (r === true) return true;
             if (r === false) return false;
           } catch (e) {}
           return _xemTheoThang(ma, pb);
+        };
+
+        const _locIT145 = (phieu, hoi) => {
+          if (cap !== "it_admin") return hoi(u, phieu);
+          try {
+            const conNguoiKhac = (data.nhanVien || []).some(n2 => n2 && n2.trangThai !== "dinh_chi"
+              && PhanQuyenService.capBacCua(n2.role || "employee") !== "it_admin" && hoi(n2, phieu));
+            return !conNguoiKhac;
+          } catch (e) { return hoi(u, phieu); }
         };
 
         const src = [];
@@ -35965,7 +36119,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
           "try{AppModules.yeucau.locTT='cho_duyet'}catch(e){};CoreService.switchTab('yeucau')");
 
         them("denxuat", "🧑‍💼", "#7c3aed", "Đề xuất nhân sự (cần bạn duyệt bước này)",
-          (data.deXuatNhanSu || []).filter(d => { try { return AppModules.denxuat.canApprove(u, d); } catch (e) { return false; } })
+          
+          (data.deXuatNhanSu || []).filter(d => { try { return _locIT145(d, (x, p) => AppModules.denxuat.canApprove(x, p)); } catch (e) { return false; } })
             .map(d => ({ mo: `${d.viTri || d.tenViTri || d.chucDanh || "Tuyển / bổ sung nhân sự"} — ${d.phongBanNguoiTao || ""}`, phu: d.soLuong ? ("SL " + d.soLuong) : "" })),
           "CoreService.switchTab('denxuat');try{AppModules.denxuat.setFilter('can_duyet')}catch(e){}");
 
@@ -36038,7 +36193,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
         
         
         them("kiemTra", "🕵️", "#0891b2", "Phiếu kiểm tra công / bảng lương chờ duyệt",
-          (data.phieuKiemTra || []).filter(p => { try { return AppModules.kiemtra.canApprove(u, p); } catch (e) { return false; } })
+          
+          (data.phieuKiemTra || []).filter(p => { try { return _locIT145(p, (x, q) => AppModules.kiemtra.canApprove(x, q)); } catch (e) { return false; } })
             .map(p => ({ mo: `${(nvMap[p.nguoiGuiId] || {}).hoTen || p.tenNV || p.nguoiGuiId} — ${p.loai === "luong" ? "bảng lương" : "công"}`,
               phu: (p.trangThai === "cho_hcns" ? "chờ HCNS (bước 2)" : "chờ Quản lý (bước 1)") + (p.thang ? " · kỳ " + p.thang : ""),
               duyetJs: `AppModules.kiemtra.xemPhieu('${p.id}')` })),
@@ -37063,7 +37219,12 @@ function writeSheet(ss, sheetName, headers, rowsData){
         dsNguoiKyDuoc(maCT, don) {
           try {
             return (DataService.getData().nhanVien || [])
-              .filter(n => n.trangThai !== "dinh_chi" && this.aiKyDuoc(maCT, don, n) === true)
+              .filter(n => {
+                if (!n || n.trangThai === "dinh_chi") return false;
+                 
+                if (PhanQuyenService.capBacCua(n.role || "employee") === "it_admin") return false;
+                return this.aiKyDuoc(maCT, don, n) === true;
+              })
               .map(n => n.id);
           } catch (e) { return []; }
         },
@@ -38617,6 +38778,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
           ".kb116-nut{padding:4px 9px;border:1px solid var(--border-color);border-radius:6px;cursor:pointer;" +
             "background:var(--bg-surface);color:var(--text-secondary);font-size:11.5px;}" +
           ".kb116-nut:hover{background:var(--bg-hover);}" +
+           
+          ".kb116-nhomnut{display:contents;}" +
           ".kb116-nut.dang{background:var(--primary-lighter,#dbeafe);color:var(--primary-dark,#1e3a8a);border-color:var(--primary-main,#2563eb);}" +
            
           "@media (max-width:768px){.kb116-tim{max-width:none;width:100%;font-size:16px;}" +
@@ -38771,17 +38934,24 @@ function writeSheet(ss, sheetName, headers, rowsData){
         const thanh = document.createElement("div");
         thanh.className = "kb116-thanh";
 
-        const _daCoOTim125 = (function () {
+         
+        const _oTimSan = (function () {
           try {
-            const man = KhungBang116._manHien(); if (!man) return false;
-            return [].some.call(man.querySelectorAll("input"), i => {
-              if (i.closest(".kb116-thanh")) return false;             
-              if (i.type === "search") return true;
+            const man = KhungBang116._manHien(); if (!man) return null;
+            const daChuyen = man.querySelector(".kb116-tim-muon");
+            if (daChuyen) return daChuyen;
+            let thay = null;
+            [].forEach.call(man.querySelectorAll("input"), i => {
+              if (thay) return;
+              if (i.closest(".kb116-thanh")) return;                   
+              if (i.type === "search") { thay = i; return; }
               const g = KhungBang116._boDau(i.placeholder || "");      
-              return g.indexOf("tim ") >= 0 || g.indexOf("tim,") >= 0 || /(^|[^a-z])tim([^a-z]|$)/.test(g);
+              if (g.indexOf("tim ") >= 0 || g.indexOf("tim,") >= 0 || /(^|[^a-z])tim([^a-z]|$)/.test(g)) thay = i;
             });
-          } catch (e) { return false; }
+            return thay;
+          } catch (e) { return null; }
         })();
+        const _daCoOTim125 = !!_oTimSan;
         const o = document.createElement("input");
         o.type = "search"; o.className = "kb116-tim";
         o.placeholder = "🔍 Tìm trong bảng — gõ tên, phòng ban, ngày, mã…";
@@ -38793,33 +38963,64 @@ function writeSheet(ss, sheetName, headers, rowsData){
         thanh.appendChild(dem);
 
         const _cotNgay129 = this._cotNgay(bang);
+         
+        const xoaLoc152Ref = { el: null };
         let _tuNgay129 = null, _denNgay129 = null;
         if (_cotNgay129 >= 0) {
           const nhan = document.createElement("span");
-          nhan.className = "kb116-dem"; nhan.textContent = "📅 Từ";
+           
+          nhan.className = "kb116-dem kb116-nhan-tu"; nhan.textContent = "📅 Từ";
           _tuNgay129 = document.createElement("input");
           _tuNgay129.type = "date"; _tuNgay129.className = "kb116-ngay";
           _tuNgay129.title = "Chỉ hiện các dòng có ngày TỪ mốc này trở đi. Để trống = không giới hạn.";
           const nhan2 = document.createElement("span");
-          nhan2.className = "kb116-dem"; nhan2.textContent = "đến";
+          nhan2.className = "kb116-dem kb116-nhan-den"; nhan2.textContent = "đến";
           _denNgay129 = document.createElement("input");
           _denNgay129.type = "date"; _denNgay129.className = "kb116-ngay";
           _denNgay129.title = "Chỉ hiện các dòng có ngày ĐẾN mốc này. Để trống = không giới hạn.";
           const xoaLoc = document.createElement("button");
-          xoaLoc.type = "button"; xoaLoc.className = "kb116-nut"; xoaLoc.textContent = "✕ Bỏ lọc ngày";
+          xoaLoc.type = "button"; xoaLoc.className = "kb116-nut kb116-xoaloc"; xoaLoc.textContent = "✕ Bỏ lọc ngày";
           xoaLoc.title = "Xoá khoảng ngày, hiện lại toàn bộ";
           xoaLoc.onclick = function () { _tuNgay129.value = ""; _denNgay129.value = ""; _tuNgay129.dispatchEvent(new Event("change", { bubbles: true })); };
           thanh.appendChild(nhan); thanh.appendChild(_tuNgay129);
           thanh.appendChild(nhan2); thanh.appendChild(_denNgay129);
           thanh.appendChild(xoaLoc);
+          xoaLoc152Ref.el = xoaLoc;   
         }
 
         const nutXuat = document.createElement("button");
-        nutXuat.type = "button"; nutXuat.className = "kb116-nut";
+        nutXuat.type = "button"; nutXuat.className = "kb116-nut kb116-xuat";
         nutXuat.textContent = "⬇️ Xuất Excel";
         nutXuat.title = "Xuất đúng những dòng ĐANG HIỆN (đã lọc) ra tệp Excel";
         nutXuat.onclick = function () { KhungBang116._xuatExcel129(bang); };
-        thanh.appendChild(nutXuat);
+
+        const nhomNut = document.createElement("div");
+        nhomNut.className = "kb116-nhomnut";
+        thanh.appendChild(nhomNut);
+        if (_tuNgay129 && xoaLoc152Ref.el) nhomNut.appendChild(xoaLoc152Ref.el);
+
+        let _daDuaLenDau = false;
+        try {
+          if (window.innerWidth <= 768) {
+            const man = KhungBang116._manHien();
+            if (man && man.querySelectorAll("table").length === 1) {
+              let hang = null;
+              [].forEach.call(man.querySelectorAll(".card-header > div"), d => {
+                if (!hang && d.querySelector(".btn")) hang = d;
+              });
+              if (hang) {
+                const cu = hang.querySelector(".kb116-xuat");
+                if (cu) cu.parentNode.removeChild(cu);          
+                nutXuat.textContent = "⬇️";
+                nutXuat.className = "kb116-nut kb116-xuat kb116-xuat-nho";
+                nutXuat.setAttribute("aria-label", "Xuất Excel phần đang hiện");
+                hang.appendChild(nutXuat);
+                _daDuaLenDau = true;
+              }
+            }
+          }
+        } catch (e) {}
+        if (!_daDuaLenDau) nhomNut.appendChild(nutXuat);   
 
         const cot = this._cotNgay(bang);
         if (cot >= 0) {
@@ -38831,17 +39032,21 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const tenCot = th0 && th0.cells[cot] ? th0.cells[cot].textContent.trim() : "ngày";
           const nut = document.createElement("button");
           nut.type = "button";
-          nut.className = "kb116-nut" + (tuSap ? " dang" : "");
-          nut.textContent = tuSap ? "⇅ Mới nhất trước" : "⇅ Sắp theo " + tenCot;
+          nut.className = "kb116-nut kb116-sap" + (tuSap ? " dang" : "");
+           
+          const _hep151 = (window.innerWidth <= 768);
+           
+          const _tenNgan152 = (_hep151 && tenCot.length > 14) ? tenCot.slice(0, 14).trim() + "…" : tenCot;
+          nut.textContent = tuSap ? "⇅ Mới nhất trước" : (_hep151 ? "⇅ " + _tenNgan152 : "⇅ Sắp theo " + tenCot);
           nut.title = "Sắp xếp theo cột \"" + tenCot + "\" — bấm để đảo chiều";
           const self = this;
           nut.onclick = function () {
             giam = !giam;
             self._sapNgay(bang, cot, giam);
             nut.textContent = giam ? "⇅ Mới nhất trước" : "⇅ Cũ nhất trước";
-            nut.className = "kb116-nut" + (giam ? " dang" : "");
+            nut.className = "kb116-nut kb116-sap" + (giam ? " dang" : "");
           };
-          thanh.appendChild(nut);
+          nhomNut.appendChild(nut);   
         }
 
         const self2 = this;
@@ -38860,6 +39065,20 @@ function writeSheet(ss, sheetName, headers, rowsData){
         capNhatDem();
 
         wrap.parentNode.insertBefore(thanh, wrap);
+
+        try {
+          if (_oTimSan && window.innerWidth <= 768 && !_oTimSan.closest(".kb116-thanh")) {
+            const dangGo = (document.activeElement === _oTimSan);
+            let viTri = 0;
+            try { viTri = dangGo ? _oTimSan.selectionStart : 0; } catch (e) {}
+            _oTimSan.classList.add("kb116-tim-muon");
+            thanh.insertBefore(_oTimSan, thanh.querySelector(".kb116-sap"));
+            if (dangGo) {
+              _oTimSan.focus();
+              try { _oTimSan.setSelectionRange(viTri, viTri); } catch (e) {}
+            }
+          }
+        } catch (e) {}
       },
 
       _khoacKhungThe(el) {
