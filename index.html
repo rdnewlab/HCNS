@@ -6267,7 +6267,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.128" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.129" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -6496,7 +6496,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.128"
+                version: "4.0.129"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -30601,6 +30601,19 @@ function writeSheet(ss, sheetName, headers, rowsData){
               <button class="btn btn-sm btn-secondary" onclick="window.print()"><i class="fa-solid fa-print"></i> In hướng dẫn</button>
               <button class="btn btn-sm btn-secondary" onclick="AppModules.guide.lenDau()"><i class="fa-solid fa-arrow-up"></i> Lên đầu</button>
             </div>
+            <!-- [THÊM MỚI 10/09/2026 — V4 đợt 156] TIỆN ÍCH CHO MỌI NGƯỜI (kể cả nhân viên).
+                 Chủ app: "tiện ích ứng dụng & cài đặt màn hình chưa có ở app nhân viên, chỉ
+                 giám đốc thấy". Màn Cài Đặt bị khoá theo vai trò, còn màn Hướng Dẫn này thì
+                 AI CŨNG vào được → đặt 2 nút ở đây: cài app ra màn hình + làm mới ứng dụng
+                 (xoá cache, GIỮ dữ liệu — để điện thoại hết ôm vỏ app cũ). -->
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px;">
+              <button class="btn btn-sm btn-success" style="flex:1 1 230px;padding:10px 12px;font-size:12.5px;" onclick="AppModules.settings.showInstallAppModal()">
+                <i class="fa-solid fa-mobile-screen-button"></i> 📲 Cài App Ra Màn Hình Điện Thoại
+              </button>
+              <button class="btn btn-sm btn-secondary" style="flex:1 1 230px;padding:10px 12px;font-size:12.5px;" onclick="AppModules.settings.lamMoiUngDung()">
+                <i class="fa-solid fa-rotate"></i> 🔄 Làm Mới Ứng Dụng (xoá cache, giữ dữ liệu)
+              </button>
+            </div>
             <div class="hd-layout">
               <aside class="hd-toc">
                 <div class="hd-toc-title">📚 Mục lục</div>
@@ -34793,8 +34806,15 @@ function writeSheet(ss, sheetName, headers, rowsData){
                       <button class="btn btn-secondary" style="padding:11px 14px;text-align:left;justify-content:flex-start;font-size:12.5px;" onclick="AppModules.settings.showSheetStructureModal()">
                         <i class="fa-solid fa-table" style="font-size:16px;margin-right:8px;color:var(--primary-main);"></i> 📋 Xem Cấu Trúc Các Tab Google Sheet Tự Động
                       </button>
+                      <!-- [THÊM MỚI 10/09/2026 — V4 đợt 156] Nút LÀM MỚI an toàn (chỉ xoá cache,
+                           GIỮ dữ liệu) — tách khỏi nút khôi phục mẫu bên dưới vốn XOÁ SẠCH dữ liệu. -->
+                      <button class="btn btn-secondary" style="padding:11px 14px;text-align:left;justify-content:flex-start;font-size:12.5px;" onclick="AppModules.settings.lamMoiUngDung()">
+                        <i class="fa-solid fa-rotate" style="font-size:16px;margin-right:8px;color:var(--primary-main);"></i> 🔄 Làm Mới Ứng Dụng (xoá cache — GIỮ nguyên dữ liệu)
+                      </button>
+                      <!-- [SỬA 10/09/2026 — V4 đợt 156] Nhãn cũ ghi "(Xóa Cache)" là ĐÁNH LỪA —
+                           nút này xoá sạch dữ liệu về mẫu. Nay nhãn nói thật để không ai bấm nhầm. -->
                       <button class="btn btn-danger" style="padding:11px 14px;text-align:left;justify-content:flex-start;font-size:12.5px;background:rgba(239,68,68,0.1);color:#dc2626;border-color:rgba(239,68,68,0.3);" onclick="AppModules.settings.resetDataModal()">
-                        <i class="fa-solid fa-rotate-left" style="font-size:16px;margin-right:8px;"></i> 🔄 Khôi Phục Dữ Liệu Mẫu Ban Đầu (Xóa Cache)
+                        <i class="fa-solid fa-rotate-left" style="font-size:16px;margin-right:8px;"></i> 🗑️ Khôi Phục Dữ Liệu Mẫu Ban Đầu (xoá sạch dữ liệu trên máy này)
                       </button>
                     </div>
                     <!-- [THÊM MỚI 06/09/2026 — V4] Chỉ đường tới hướng dẫn điện thoại (thẻ cũ ở đây đã bỏ). -->
@@ -35513,6 +35533,25 @@ function writeSheet(ss, sheetName, headers, rowsData){
             </ol>
           `;
           CoreService.openModal("Cấu Trúc Các Tab Google Sheet Tự Động", bodyHtml, [{ text: "Đã hiểu", class: "btn-primary" }]);
+        },
+
+        async lamMoiUngDung() {
+          if (!confirm("Làm mới ứng dụng?" + String.fromCharCode(10) + String.fromCharCode(10)
+            + "- XOÁ bộ nhớ đệm giao diện (cache) để chắc chắn chạy bản mới nhất" + String.fromCharCode(10)
+            + "- GIỮ NGUYÊN toàn bộ dữ liệu và đăng nhập" + String.fromCharCode(10) + String.fromCharCode(10)
+            + "App sẽ tự tải lại sau vài giây.")) return;
+          try {
+            if (window.caches && caches.keys) {
+              const ds = await caches.keys();
+              await Promise.all(ds.map(k => caches.delete(k)));   
+            }
+            if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+              const rs = await navigator.serviceWorker.getRegistrations();
+              await Promise.all(rs.map(r => r.update().catch(() => {})));
+            }
+          } catch (e) {}
+          CoreService.showToast("Đã xoá bộ nhớ đệm — đang tải lại bản mới nhất…", "success");
+          setTimeout(() => location.reload(), 900);
         },
 
         resetDataModal() {
@@ -38687,6 +38726,10 @@ function writeSheet(ss, sheetName, headers, rowsData){
     if ('serviceWorker' in navigator && !/[?&]xemtruoc_dt=1/.test(location.search)) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW error:', err));
+         
+        try {
+          navigator.serviceWorker.getRegistration().then(r => { if (r) r.update().catch(() => {}); }).catch(() => {});
+        } catch (e) {}
       });
     }
 
