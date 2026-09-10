@@ -3115,7 +3115,7 @@ var CHUNK         = 45000;               // 1 ô Sheet tối đa ~50.000 ký t�
    mã CŨ và không có dấu hiệu nào để biết — đã dính lỗi này nhiều lần. Nay mọi phản hồi đều
    kèm số bản; nút "Kiểm tra kết nối" ở mục 6.4 hiện số đó ra để đối chiếu.
    ⚠️ MỖI LẦN SỬA MÃ NÀY PHẢI TĂNG SỐ (r1 → r2 …). */
-var CODE_VERSION  = "HCNS-BE-2026-09-10-r24";   // [SỬA đợt 122] r21 → r22: CHẶN máy chưa từng kéo dữ liệu về đẩy đè lên kho — đo thật: máy mới cài bấm "Đẩy dữ liệu lên" làm kho công ty từ 60 nhân viên còn 1, mất 200 dòng chấm công   // [SỬA đợt 111] r20 → r21: thêm tab LƯU TRỮ riêng (cắt dữ liệu năm cũ khỏi máy mà KHÔNG mất trên Sheet — trước đây mỗi lần đẩy là xoá sạch tab kho rồi ghi lại, nên cắt khỏi máy là mất luôn) + cửa đo sức khoẻ kho (số ô đã cấp / trần 10 triệu ô)   // [SỬA đợt 110] r19 → r20: mở kho "quy trình duyệt dùng chung" — sửa thang duyệt trên MỘT máy là mọi máy chạy theo (trước đây mỗi máy một thang, phiếu chạy sai người)   // [SỬA đợt 108] r18 → r19: hễ có người chấm công / gửi đơn / giao việc là XOÁ NGAY bộ nhớ tạm của cửa hỏi — máy quản lý biết tin sau một nhịp thay vì chờ tới 45 giây ("ghi nhận chậm, không nhạy")   // [SỬA đợt 107] r17 → r18: hiểu thêm kho kiểu "từ điển" (bảng lương đã chốt, khấu trừ, doanh số, ma trận quyền) — thiếu phần này thì mấy kho đó kéo về bị sai kiểu, màn hình trắng   // r16 → r17: MỞ 22 KHO còn thiếu (nhân sự/kế toán/giám đốc làm trên điện thoại hoặc bản web không còn bị mất dữ liệu im lặng) + cửa hỏi "có gì mới" có bộ nhớ đệm 15 giây (nhẹ tải cho công ty đông người) + sửa 2 chỗ màn hình cho làm mà máy chủ từ chối   // [SỬA đợt 106] r15 → r16: thêm cửa api=layMoi — máy chỉ tải NHỮNG DÒNG vừa đổi (vài KB) thay vì tải lại cả kho (vài MB) mỗi khi có người chấm công   // [SỬA đợt 103] r14 → r15: thêm cửa hỏi nhẹ api=kiemMoc để máy KHÔNG phải kéo cả kho mỗi 30 giây (200-500 người dùng cùng lúc)   // [SỬA đợt 99] r13 → r14: gộp bảng công theo THỨ TỰ ƯU TIÊN NGUỒN (sản lượng > máy > app > phòng > tay) thay vì "dòng sau đè dòng trước"; ô HCNS sửa tay trên tab vẫn luôn thắng   // [SỬA đợt 89] r12 → r13: chấm công giữ đủ trường phụ khi gộp (ảnh, cờ ra ca, nguồn, IP, GPS) — hết "dữ liệu chấm công bị mất bị nhảy"   // [SỬA đợt 80c] r7 → r10: THÊM lệnh ghiDong dùng chung (trước đây gần như MỌI chức năng — đơn từ, góp ý, sáng kiến, dự trù, KPI… — đều không lưu được lên kho khi làm từ điện thoại) · CHẶN nhân viên tự duyệt đơn của chính mình · và sửa lỗi DUYỆT TRÊN MÁY QUẢN TRỊ KHÔNG ĂN (dòng cũ trong tab đè ngược bản vừa duyệt)
+var CODE_VERSION  = "HCNS-BE-2026-09-10-r26";   // [SỬA đợt 122] r21 → r22: CHẶN máy chưa từng kéo dữ liệu về đẩy đè lên kho — đo thật: máy mới cài bấm "Đẩy dữ liệu lên" làm kho công ty từ 60 nhân viên còn 1, mất 200 dòng chấm công   // [SỬA đợt 111] r20 → r21: thêm tab LƯU TRỮ riêng (cắt dữ liệu năm cũ khỏi máy mà KHÔNG mất trên Sheet — trước đây mỗi lần đẩy là xoá sạch tab kho rồi ghi lại, nên cắt khỏi máy là mất luôn) + cửa đo sức khoẻ kho (số ô đã cấp / trần 10 triệu ô)   // [SỬA đợt 110] r19 → r20: mở kho "quy trình duyệt dùng chung" — sửa thang duyệt trên MỘT máy là mọi máy chạy theo (trước đây mỗi máy một thang, phiếu chạy sai người)   // [SỬA đợt 108] r18 → r19: hễ có người chấm công / gửi đơn / giao việc là XOÁ NGAY bộ nhớ tạm của cửa hỏi — máy quản lý biết tin sau một nhịp thay vì chờ tới 45 giây ("ghi nhận chậm, không nhạy")   // [SỬA đợt 107] r17 → r18: hiểu thêm kho kiểu "từ điển" (bảng lương đã chốt, khấu trừ, doanh số, ma trận quyền) — thiếu phần này thì mấy kho đó kéo về bị sai kiểu, màn hình trắng   // r16 → r17: MỞ 22 KHO còn thiếu (nhân sự/kế toán/giám đốc làm trên điện thoại hoặc bản web không còn bị mất dữ liệu im lặng) + cửa hỏi "có gì mới" có bộ nhớ đệm 15 giây (nhẹ tải cho công ty đông người) + sửa 2 chỗ màn hình cho làm mà máy chủ từ chối   // [SỬA đợt 106] r15 → r16: thêm cửa api=layMoi — máy chỉ tải NHỮNG DÒNG vừa đổi (vài KB) thay vì tải lại cả kho (vài MB) mỗi khi có người chấm công   // [SỬA đợt 103] r14 → r15: thêm cửa hỏi nhẹ api=kiemMoc để máy KHÔNG phải kéo cả kho mỗi 30 giây (200-500 người dùng cùng lúc)   // [SỬA đợt 99] r13 → r14: gộp bảng công theo THỨ TỰ ƯU TIÊN NGUỒN (sản lượng > máy > app > phòng > tay) thay vì "dòng sau đè dòng trước"; ô HCNS sửa tay trên tab vẫn luôn thắng   // [SỬA đợt 89] r12 → r13: chấm công giữ đủ trường phụ khi gộp (ảnh, cờ ra ca, nguồn, IP, GPS) — hết "dữ liệu chấm công bị mất bị nhảy"   // [SỬA đợt 80c] r7 → r10: THÊM lệnh ghiDong dùng chung (trước đây gần như MỌI chức năng — đơn từ, góp ý, sáng kiến, dự trù, KPI… — đều không lưu được lên kho khi làm từ điện thoại) · CHẶN nhân viên tự duyệt đơn của chính mình · và sửa lỗi DUYỆT TRÊN MÁY QUẢN TRỊ KHÔNG ĂN (dòng cũ trong tab đè ngược bản vừa duyệt)
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    [THÊM MỚI 05/09/2026 — V4 đợt 51] BẤM ▶ CHẠY THÌ CHẠY HÀM NÀY (KIEM_TRA_NHANH).
@@ -3579,6 +3579,21 @@ function _duocGhi(bang, banGhi, cap, maNV){
     var dyDuyet = String(banGhi.duyet || "");
     if (dyDuyet && dyDuyet !== "cho_duyet")
       return "Bạn không được tự đặt trạng thái duyệt cho bản ghi của mình.";
+    /* [THÊM MỚI 10/09/2026 — V4 đợt 163 · r25] CHẶN TỰ KHOÁ DÒNG CÔNG CỦA MÌNH.
+       [SỬA 10/09/2026 — V4 đợt 165 · r26] 🔴 BẢN r25 CHẶN NHẦM NGƯỜI NGAY THẲNG.
+       ĐO THẬT trên máy chủ app đang dùng: bản r25 chặn luôn cả trường nguonChon — nhưng
+       BƯỚC 1 của quy trình đối chiếu công là CHÍNH NHÂN VIÊN bấm "xác nhận nguồn đúng"
+       (hàm chonNguonDung ghi nguonChon + trangThaiDoiChieu "nv_xac_nhan" vào dòng công
+       của họ, rồi quản lý duyệt bước 2, HCNS chốt bước 3). r25 làm máy chủ TỪ CHỐI bước 1
+       → app khôi phục theo bản kho → chủ app thấy "ghi nhận xong, tải lại là mất".
+       NAY chỉ chặn đúng hai bước KHÔNG PHẢI của nhân viên:
+         · trangThaiDoiChieu = "chot"     → chốt sổ (quyền HCNS — bước 3)
+         · trangThaiDoiChieu = "ql_duyet" → duyệt đối chiếu (quyền quản lý — bước 2)
+       Còn "nv_xac_nhan" (bước 1) là quyền chính đáng của nhân viên — có quản lý duyệt
+       lại phía sau nên không phải lỗ gian lận. */
+    var ttdc165 = String(banGhi.trangThaiDoiChieu || "");
+    if (bang === "bangCong" && (ttdc165 === "chot" || ttdc165 === "ql_duyet"))
+      return "Chốt sổ / duyệt đối chiếu công là việc của quản lý và Hành chính nhân sự — bạn không tự đặt được.";
   }
   return "";
 }
@@ -3619,8 +3634,9 @@ function _gopTabChung(ss, data, mocKeo){
        duyệt bao nhiêu lần cũng không ăn. Dòng ghi SAU mốc thì vẫn thắng (người khác vừa gửi lên
        trong lúc mình đang làm — không được để mất). mocKeo = 0 (lúc LẤY dữ liệu) ⇒ giữ hết. */
     if (mocKeo) {
-      var lucGhi = v[i][0];
-      var tLuc = (lucGhi instanceof Date) ? lucGhi.getTime() : Number(new Date(lucGhi));
+      // [SỬA đợt 163 · r25] Đọc mốc qua _mocO — ô bị thành chữ kiểu Việt không còn lọt luật
+      // "chỉ gộp dòng sau mốc" (lọt là dòng cũ đè ngược thao tác DUYỆT của máy quản trị).
+      var tLuc = _mocO(v[i][0]);
       if (tLuc && tLuc <= Number(mocKeo)) continue;
     }
     if (!theoKho[bang]) theoKho[bang] = [];
@@ -3652,14 +3668,30 @@ function _gopTabChung(ss, data, mocKeo){
 
 /* [THÊM MỚI 06/09/2026 — V4 đợt 77d] DỌN tab sau khi đã gộp vào khối gốc (giống _donBangCong).
    Chỉ xoá dòng ghi TRƯỚC mốc chốt — dòng người khác vừa gửi trong lúc đang lưu được giữ lại. */
+/* [THÊM MỚI 10/09/2026 — V4 đợt 163 · r25] ĐỌC MỐC THỜI GIAN CỦA MỘT Ô — DÙNG CHUNG.
+   Nhận: giá trị ô (Ngày thật hoặc chữ). Trả: mili-giây, hoặc 0 nếu không đọc được.
+   VÌ SAO: bình thường cột giờ là Ô NGÀY thật. Nhưng nếu ai lỡ định dạng ô thành CHỮ kiểu
+   Việt "25/09/2026 17:05" thì các hàm dọn tab DỪNG dọn giữa chừng (tab phình, dòng cũ gộp
+   đè ngược thao tác duyệt — đúng lỗi đợt 80c đã chữa lại tái phát), còn hàm gộp thì bỏ luật
+   "chỉ gộp dòng sau mốc". Cùng một lớp lỗi với sauMoc ở cửa layMoi — nay gom về một chỗ. */
+function _mocO(v){
+  if (v instanceof Date) return v.getTime();
+  var t = Number(new Date(v));
+  if (t && !isNaN(t)) return t;
+  var mV = String(v || "").match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})[ T]?(\\d{1,2})?:?(\\d{1,2})?:?(\\d{1,2})?/);
+  if (mV) return new Date(+mV[3], +mV[2] - 1, +mV[1], +(mV[4] || 0), +(mV[5] || 0), +(mV[6] || 0)).getTime();
+  return 0;
+}
+
 function _donTabGiao(ss, ten, moc){
   var sh = ss.getSheetByName(ten);
   if (!sh || sh.getLastRow() < 2) return 0;
   var v = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
   var xoa = 0;
   for (var i = 0; i < v.length; i++){
-    var t = v[i][0];
-    if (t instanceof Date && t.getTime() <= moc) xoa++; else break;   // tab xếp theo thời gian
+    // [SỬA đợt 163 · r25] Đọc mốc qua _mocO — ô bị thành chữ vẫn dọn được (trước: gặp là dừng).
+    var t = _mocO(v[i][0]);
+    if (t && t <= moc) xoa++; else break;   // tab xếp theo thời gian
   }
   if (xoa > 0) sh.deleteRows(2, xoa);
   return xoa;
@@ -3671,8 +3703,9 @@ function _donBangCong(ss, moc){
   var v = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues();
   var xoa = 0;
   for (var i = 0; i < v.length; i++){
-    var t = v[i][0];
-    if (t instanceof Date && t.getTime() <= moc) xoa++; else break;   // tab xếp theo thời gian
+    // [SỬA đợt 163 · r25] Cùng lý do với _donTabGiao — xem _mocO.
+    var t = _mocO(v[i][0]);
+    if (t && t <= moc) xoa++; else break;   // tab xếp theo thời gian
   }
   if (xoa > 0) sh.deleteRows(2, xoa);
   return xoa;
@@ -6329,7 +6362,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.131" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.133" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -6558,7 +6591,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.131"
+                version: "4.0.133"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -8821,6 +8854,13 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const st = getCompanySettings();
           const ve = this.layVePhien();
           if (!st.gasUrl || (!st.sheetToken && !ve)) return;       
+           
+          try {
+            if (this._guiDiDangCho163 && this._guiDiDangCho163.length) {
+              this._guiDiDangCho163.forEach(x => this.xepVaoHangDoi("ghiDong", x.banGhi, x.bang));
+              this._guiDiDangCho163 = null;
+            }
+          } catch (e163) {}
           let ban = 0;
           this._docHangDoi().forEach(m => {
             if (!m || ban >= 20) return;                           
@@ -8851,6 +8891,11 @@ function writeSheet(ss, sheetName, headers, rowsData){
             const rLo = await fetch(st.gasUrl, { method: "POST", body: JSON.stringify({ action: "ghiDong", payload: plLo }) });
             j = await rLo.json();
             okLo = !!(j && j.status === "success");
+             
+            if (!okLo && j && /phiên|đăng nhập/i.test(String(j.error || "")) && !this._daBaoHetPhien162) {
+              this._daBaoHetPhien162 = true;
+              try { CoreService.showToast("🔑 Phiên đăng nhập đã HẾT HẠN nên dữ liệu CHƯA gửi lên được. Hãy đăng xuất rồi đăng nhập lại — app sẽ tự gửi nốt phần đang chờ.", "danger"); } catch (eHP2) {}
+            }
           } catch (e) { okLo = false; }
           let ds2 = this._docHangDoi();
           if (okLo) {
@@ -9142,6 +9187,23 @@ function writeSheet(ss, sheetName, headers, rowsData){
               nay[x.id] = x._td ? (function () { try { return JSON.stringify(x.v); } catch (e) { return js; } })() : js;
                
               if (js.length > 45000) {
+                 
+                const xGon163 = Object.assign({}, x);
+                let goAnh163 = 0;
+                Object.keys(xGon163).forEach(k163 => {
+                  const g163 = xGon163[k163];
+                  if (typeof g163 === "string" && g163.length > 2000 && g163.slice(0, 5) === "data:") { xGon163[k163] = ""; goAnh163++; }
+                });
+                let jsGon163 = js;
+                try { jsGon163 = JSON.stringify(xGon163); } catch (e163) {}
+                if (goAnh163 && jsGon163.length <= 45000) {
+                  if (cu[x.id] !== nay[x.id]) guiDi.push({ bang: kho, banGhi: xGon163 });
+                  if (!this._daBaoGoAnh163) {
+                    this._daBaoGoAnh163 = true;
+                    try { CoreService.showToast("ℹ️ Bản ghi có ảnh nặng: phần CHỮ đã gửi lên kho chung, ảnh giữ trên máy này (kho chung không chứa ảnh).", "info"); } catch (e) {}
+                  }
+                  return;
+                }
                 if (!this._daBaoToBanGhi) {
                   this._daBaoToBanGhi = true;
                   try { CoreService.showToast("⚠️ Một bản ghi quá nặng (thường do đính kèm tệp lớn) nên không gửi lên kho chung được. Hãy bỏ bớt tệp đính kèm, thay bằng link Drive.", "danger"); } catch (e) {}
@@ -9173,6 +9235,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const S = this;
            
           const _chayGui96 = function () {
+            S._guiDiDangCho163 = null;                    
             fetch(s.gasUrl, { method: "POST", body: JSON.stringify({
               action: "ghiDong", payload: { session: ve, dsGhi: guiDi.slice(0, 200) } }) })
               .then(r => r.json())
@@ -9193,6 +9256,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
               });
           };
           S._guiNgayCb = _chayGui96;
+           
+          this._guiDiDangCho163 = guiDi.slice(0, 200);
           this._guiTimer = setTimeout(_chayGui96, 800);   
         } catch (e) {}
       },
@@ -23477,6 +23542,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
           if (!confirm("Xác nhận giờ ĐÚNG của ngày " + formatDateDisplay(ngay) + " là: " + (ng.gioVao || "—") + " → " + (ng.gioRa || "—") + " (theo nguồn đã chọn)?")) return;
           data.bangCong[i] = { ...b, gioVao: ng.gioVao, gioRa: ng.gioRa, gioOT: ng.gioOT || b.gioOT, caLam: ng.caLam || b.caLam, nguon: nguon, nguonChon: nguon, trangThaiDoiChieu: "nv_xac_nhan", nguoiXacNhan: (CoreService.currentUser || {}).id };
           DataService.saveData(data);
+           
+          try { if (DataService.syncBat()) DataService.guiChamCong(data.bangCong[i]); } catch (e165) {}
           CoreService.showToast("Đã xác nhận giờ đúng — chuyển quản lý duyệt.", "success");
           this.render();
         },
@@ -23487,6 +23554,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
           if (i < 0) return;
           data.bangCong[i] = { ...data.bangCong[i], trangThaiDoiChieu: "ql_duyet", nguoiQLDuyet: (CoreService.currentUser || {}).id };
           DataService.saveData(data);
+          
+          try { if (DataService.syncBat()) DataService.guiChamCong(data.bangCong[i]); } catch (e165b) {}
           CoreService.showToast("Quản lý đã duyệt — chờ HCNS chốt.", "success");
           this.render();
         },
@@ -23497,6 +23566,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
           if (i < 0) return;
           data.bangCong[i] = { ...data.bangCong[i], trangThaiDoiChieu: "chot", nguoiChot: (CoreService.currentUser || {}).id };
           DataService.saveData(data);
+          
+          try { if (DataService.syncBat()) DataService.guiChamCong(data.bangCong[i]); } catch (e165c) {}
           CoreService.showToast("HCNS đã chốt ngày công này.", "success");
           this.render();
         },
@@ -24509,6 +24580,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
             trangThai: "du_cong", nguon: "tay", ghiChu: "HCNS nhập tay trực tiếp trên bảng"
           });
           DataService.saveData(d);
+
+          try { const bMoi165 = (d.bangCong || []).find(b => b.maNV === ma && b.ngay === ngay);
+            if (bMoi165 && DataService.syncBat()) DataService.guiChamCong(bMoi165); } catch (e165d) {}
           this.suaTay155 = null;
           CoreService.showToast(kq === "moi" ? "Đã thêm dòng công cho " + nv.hoTen + " (" + ma + ")."
             : kq === "lech" ? "Đã ghi, nhưng LỆCH giờ với nguồn khác — xem tab 6. Đối Chiếu Công."
