@@ -6383,7 +6383,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.138" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.139" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -6612,7 +6612,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.138"
+                version: "4.0.139"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -9338,8 +9338,15 @@ function writeSheet(ss, sheetName, headers, rowsData){
                   
                   if (j.tuChoi && j.tuChoi.length) S._baoTuChoi(j.tuChoi);   
                 } else {
-                  CoreService.showToast("⚠️ Chưa gửi được lên kho chung ("
-                    + ((j && j.error) || "máy chủ từ chối") + "). Dữ liệu vẫn nằm trong máy này.", "danger");
+                   
+                  try { guiDi.slice(0, 200).forEach(function (x) { S.xepVaoHangDoi("ghiDong", x.banGhi, x.bang); }); } catch (eQ173) {}
+                  if (/phiên|đăng nhập/i.test(String((j && j.error) || "")) && !S._daBaoHetPhien162) {
+                    S._daBaoHetPhien162 = true;
+                    try { CoreService.moHopDangNhapLai171(); } catch (eM173) {}
+                  } else {
+                    CoreService.showToast("⚠️ Chưa gửi được lên kho chung ("
+                      + ((j && j.error) || "máy chủ từ chối") + "). Dữ liệu đã XẾP HÀNG trong máy — app tự gửi lại.", "danger");
+                  }
                 }
               })
               .catch(() => {
@@ -9750,6 +9757,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
               try { S.closeModal(); } catch (e) {}
               try { await DataService.guiNgayHangDoi(); } catch (e) {}   
               try { DataService.epGuiNgay(); } catch (e) {}              
+
+              try { DataService.guiThayDoi(DataService.getData()); DataService.epGuiNgay(); } catch (e) {}
             } }
         ]);
       },
