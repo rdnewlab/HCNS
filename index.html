@@ -3115,7 +3115,7 @@ var CHUNK         = 45000;               // 1 ô Sheet tối đa ~50.000 ký t�
    mã CŨ và không có dấu hiệu nào để biết — đã dính lỗi này nhiều lần. Nay mọi phản hồi đều
    kèm số bản; nút "Kiểm tra kết nối" ở mục 6.4 hiện số đó ra để đối chiếu.
    ⚠️ MỖI LẦN SỬA MÃ NÀY PHẢI TĂNG SỐ (r1 → r2 …). */
-var CODE_VERSION  = "HCNS-BE-2026-09-10-r28";   // [SỬA đợt 122] r21 → r22: CHẶN máy chưa từng kéo dữ liệu về đẩy đè lên kho — đo thật: máy mới cài bấm "Đẩy dữ liệu lên" làm kho công ty từ 60 nhân viên còn 1, mất 200 dòng chấm công   // [SỬA đợt 111] r20 → r21: thêm tab LƯU TRỮ riêng (cắt dữ liệu năm cũ khỏi máy mà KHÔNG mất trên Sheet — trước đây mỗi lần đẩy là xoá sạch tab kho rồi ghi lại, nên cắt khỏi máy là mất luôn) + cửa đo sức khoẻ kho (số ô đã cấp / trần 10 triệu ô)   // [SỬA đợt 110] r19 → r20: mở kho "quy trình duyệt dùng chung" — sửa thang duyệt trên MỘT máy là mọi máy chạy theo (trước đây mỗi máy một thang, phiếu chạy sai người)   // [SỬA đợt 108] r18 → r19: hễ có người chấm công / gửi đơn / giao việc là XOÁ NGAY bộ nhớ tạm của cửa hỏi — máy quản lý biết tin sau một nhịp thay vì chờ tới 45 giây ("ghi nhận chậm, không nhạy")   // [SỬA đợt 107] r17 → r18: hiểu thêm kho kiểu "từ điển" (bảng lương đã chốt, khấu trừ, doanh số, ma trận quyền) — thiếu phần này thì mấy kho đó kéo về bị sai kiểu, màn hình trắng   // r16 → r17: MỞ 22 KHO còn thiếu (nhân sự/kế toán/giám đốc làm trên điện thoại hoặc bản web không còn bị mất dữ liệu im lặng) + cửa hỏi "có gì mới" có bộ nhớ đệm 15 giây (nhẹ tải cho công ty đông người) + sửa 2 chỗ màn hình cho làm mà máy chủ từ chối   // [SỬA đợt 106] r15 → r16: thêm cửa api=layMoi — máy chỉ tải NHỮNG DÒNG vừa đổi (vài KB) thay vì tải lại cả kho (vài MB) mỗi khi có người chấm công   // [SỬA đợt 103] r14 → r15: thêm cửa hỏi nhẹ api=kiemMoc để máy KHÔNG phải kéo cả kho mỗi 30 giây (200-500 người dùng cùng lúc)   // [SỬA đợt 99] r13 → r14: gộp bảng công theo THỨ TỰ ƯU TIÊN NGUỒN (sản lượng > máy > app > phòng > tay) thay vì "dòng sau đè dòng trước"; ô HCNS sửa tay trên tab vẫn luôn thắng   // [SỬA đợt 89] r12 → r13: chấm công giữ đủ trường phụ khi gộp (ảnh, cờ ra ca, nguồn, IP, GPS) — hết "dữ liệu chấm công bị mất bị nhảy"   // [SỬA đợt 80c] r7 → r10: THÊM lệnh ghiDong dùng chung (trước đây gần như MỌI chức năng — đơn từ, góp ý, sáng kiến, dự trù, KPI… — đều không lưu được lên kho khi làm từ điện thoại) · CHẶN nhân viên tự duyệt đơn của chính mình · và sửa lỗi DUYỆT TRÊN MÁY QUẢN TRỊ KHÔNG ĂN (dòng cũ trong tab đè ngược bản vừa duyệt)
+var CODE_VERSION  = "HCNS-BE-2026-09-11-r29";   // [SỬA đợt 174] r28 → r29: chuỗi ngày KIỂU VIỆT tách tay TRƯỚC khi nhờ new Date (_mocO · sauMoc · _ngayChuoi) — trước đây "10/09/2026" bị đọc kiểu Mỹ thành 09/10, mọi ngày ≤ 12 đều dính: dọn tab dừng giữa chừng, dòng chấm công có thể bị bỏ sót trên đường kéo-nhẹ, dòng công lạc ngày   // [SỬA đợt 122] r21 → r22: CHẶN máy chưa từng kéo dữ liệu về đẩy đè lên kho — đo thật: máy mới cài bấm "Đẩy dữ liệu lên" làm kho công ty từ 60 nhân viên còn 1, mất 200 dòng chấm công   // [SỬA đợt 111] r20 → r21: thêm tab LƯU TRỮ riêng (cắt dữ liệu năm cũ khỏi máy mà KHÔNG mất trên Sheet — trước đây mỗi lần đẩy là xoá sạch tab kho rồi ghi lại, nên cắt khỏi máy là mất luôn) + cửa đo sức khoẻ kho (số ô đã cấp / trần 10 triệu ô)   // [SỬA đợt 110] r19 → r20: mở kho "quy trình duyệt dùng chung" — sửa thang duyệt trên MỘT máy là mọi máy chạy theo (trước đây mỗi máy một thang, phiếu chạy sai người)   // [SỬA đợt 108] r18 → r19: hễ có người chấm công / gửi đơn / giao việc là XOÁ NGAY bộ nhớ tạm của cửa hỏi — máy quản lý biết tin sau một nhịp thay vì chờ tới 45 giây ("ghi nhận chậm, không nhạy")   // [SỬA đợt 107] r17 → r18: hiểu thêm kho kiểu "từ điển" (bảng lương đã chốt, khấu trừ, doanh số, ma trận quyền) — thiếu phần này thì mấy kho đó kéo về bị sai kiểu, màn hình trắng   // r16 → r17: MỞ 22 KHO còn thiếu (nhân sự/kế toán/giám đốc làm trên điện thoại hoặc bản web không còn bị mất dữ liệu im lặng) + cửa hỏi "có gì mới" có bộ nhớ đệm 15 giây (nhẹ tải cho công ty đông người) + sửa 2 chỗ màn hình cho làm mà máy chủ từ chối   // [SỬA đợt 106] r15 → r16: thêm cửa api=layMoi — máy chỉ tải NHỮNG DÒNG vừa đổi (vài KB) thay vì tải lại cả kho (vài MB) mỗi khi có người chấm công   // [SỬA đợt 103] r14 → r15: thêm cửa hỏi nhẹ api=kiemMoc để máy KHÔNG phải kéo cả kho mỗi 30 giây (200-500 người dùng cùng lúc)   // [SỬA đợt 99] r13 → r14: gộp bảng công theo THỨ TỰ ƯU TIÊN NGUỒN (sản lượng > máy > app > phòng > tay) thay vì "dòng sau đè dòng trước"; ô HCNS sửa tay trên tab vẫn luôn thắng   // [SỬA đợt 89] r12 → r13: chấm công giữ đủ trường phụ khi gộp (ảnh, cờ ra ca, nguồn, IP, GPS) — hết "dữ liệu chấm công bị mất bị nhảy"   // [SỬA đợt 80c] r7 → r10: THÊM lệnh ghiDong dùng chung (trước đây gần như MỌI chức năng — đơn từ, góp ý, sáng kiến, dự trù, KPI… — đều không lưu được lên kho khi làm từ điện thoại) · CHẶN nhân viên tự duyệt đơn của chính mình · và sửa lỗi DUYỆT TRÊN MÁY QUẢN TRỊ KHÔNG ĂN (dòng cũ trong tab đè ngược bản vừa duyệt)
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    [THÊM MỚI 05/09/2026 — V4 đợt 51] BẤM ▶ CHẠY THÌ CHẠY HÀM NÀY (KIEM_TRA_NHANH).
@@ -3370,6 +3370,12 @@ function _ngayChuoi(v){
     var p = function(n){ return ("0" + n).slice(-2); };
     return v.getFullYear() + "-" + p(v.getMonth() + 1) + "-" + p(v.getDate());
   }
+  /* [SỬA 11/09/2026 · r29] Ô ngày bị đổi thành CHỮ kiểu Việt "10/09/2026" → tự đổi về "2026-09-10".
+     Trước trả nguyên chuỗi: app so ngày dạng "yyyy-mm-dd" không khớp → dòng công LẠC NGÀY,
+     một người một ngày mọc hai dòng. Cùng gốc lỗi ngày-kiểu-Mỹ với _mocO. */
+  var mNC = String(v).match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})/);
+  if (mNC){ var pNC = function(n){ return ("0" + n).slice(-2); };
+    return mNC[3] + "-" + pNC(+mNC[2]) + "-" + pNC(+mNC[1]); }
   return String(v);
 }
 /* [THÊM MỚI 04/09/2026 — V3] DỌN tab BangCong sau khi quản trị chốt sổ (đẩy cả khối lên).
@@ -3676,11 +3682,14 @@ function _gopTabChung(ss, data, mocKeo){
    "chỉ gộp dòng sau mốc". Cùng một lớp lỗi với sauMoc ở cửa layMoi — nay gom về một chỗ. */
 function _mocO(v){
   if (v instanceof Date) return v.getTime();
-  var t = Number(new Date(v));
-  if (t && !isNaN(t)) return t;
+  /* [SỬA 11/09/2026 · r29] Chuỗi ngày KIỂU VIỆT phải TÁCH TAY TRƯỚC. Trước đây new Date chạy
+     trước, chỉ khi nó bó tay (NaN) mới tách tay — nhưng "10/09/2026" new Date KHÔNG bó tay:
+     nó đọc kiểu MỸ ra ngày 09 THÁNG 10 (mọi ngày ≤ 12 đều dính — 12 ngày mỗi tháng!).
+     Hậu quả thật: mốc tương lai giả → dọn tab DỪNG giữa chừng, gộp "bản sau thắng" chọn SAI bản. */
   var mV = String(v || "").match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})[ T]?(\\d{1,2})?:?(\\d{1,2})?:?(\\d{1,2})?/);
   if (mV) return new Date(+mV[3], +mV[2] - 1, +mV[1], +(mV[4] || 0), +(mV[5] || 0), +(mV[6] || 0)).getTime();
-  return 0;
+  var t = Number(new Date(v));
+  return (t && !isNaN(t)) ? t : 0;
 }
 
 function _donTabGiao(ss, ten, moc){
@@ -3833,10 +3842,16 @@ function doGet(e){
          Nhưng nếu ai lỡ định dạng ô thành chữ "25/09/2026 17:05" thì new Date đọc kiểu MỸ
          (tháng trước ngày) → sai tháng hoặc NaN → dòng coi như "cũ", KHÔNG bao giờ được trả
          về máy khác. Nay gặp chuỗi đọc hỏng thì tự tách tay ngày/tháng/năm kiểu Việt. */
-      var sauMoc = function (o){ var t = (o instanceof Date) ? o.getTime() : Number(new Date(o));
-        if (!t || isNaN(t)) { var mV = String(o || "").match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})[ T]?(\\d{1,2})?:?(\\d{1,2})?:?(\\d{1,2})?/);
-          if (mV) t = new Date(+mV[3], +mV[2] - 1, +mV[1], +(mV[4] || 0), +(mV[5] || 0), +(mV[6] || 0)).getTime(); }
-        return t && t > tuMoc; };
+      /* [SỬA 11/09/2026 · r29] Cùng gốc lỗi với _mocO: chuỗi Việt phải tách tay TRƯỚC — trước đây
+         "10/09/2026 08:00" bị new Date đọc kiểu Mỹ thành 09/10 (không NaN nên nhánh tách tay không
+         chạy). Ngày bị đọc LÙI về quá khứ là dòng chấm công bị coi "cũ" → BỎ SÓT VĨNH VIỄN trên
+         đường kéo-nhẹ — đúng lớp lỗi "chấm công lúc được lúc không". */
+      var sauMoc = function (o){ var t = 0;
+        if (o instanceof Date) t = o.getTime();
+        else { var mV = String(o || "").match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})[ T]?(\\d{1,2})?:?(\\d{1,2})?:?(\\d{1,2})?/);
+          if (mV) t = new Date(+mV[3], +mV[2] - 1, +mV[1], +(mV[4] || 0), +(mV[5] || 0), +(mV[6] || 0)).getTime();
+          else t = Number(new Date(o)); }
+        return t && !isNaN(t) && t > tuMoc; };
       var dsGhi = [], viecMoi = [], tbMoi = [], congMoi = [];
       try {
         var shG = ssLM.getSheetByName("GhiMoi");
@@ -6383,7 +6398,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.139" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.140" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -6612,7 +6627,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.139"
+                version: "4.0.140"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -8389,6 +8404,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const j = await r.json();
           try { this._kiemSoBanMayChu167(j); } catch (e167) {}          
           if (!j || j.status !== "success" || !j.dauVet) return true;   
+           
+          try { localStorage.setItem("hcns4_lan_lien_lac174", String(Date.now())); } catch (e174) {}
           const cu = localStorage.getItem("hcns4_dau_vet_kho") || "";
           if (cu && cu === j.dauVet) return false;                      
           localStorage.setItem("hcns4_dau_vet_kho", j.dauVet);
@@ -8459,6 +8476,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         });
         if (doi) { this.saveData(data, { khongDayLen: true }); }        
         if (j.mocMoi) { try { localStorage.setItem("hcns4_ban_kho_luc", String(j.mocMoi)); } catch (e) {} }
+        try { localStorage.setItem("hcns4_lan_lien_lac174", String(Date.now())); } catch (e174) {}   
         return true;
       },
 
@@ -8557,6 +8575,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
             this._khoDem = null;   
              
             try { localStorage.setItem("hcns4_ban_kho_luc", String(Number(j.luuLuc) || Date.now())); } catch (eML) {}
+            try { localStorage.setItem("hcns4_lan_lien_lac174", String(Date.now())); } catch (e174) {}   
              
             try { if (j.mocDoc) localStorage.setItem("hcns4_moc_doc", String(Number(j.mocDoc))); } catch (eMD) {}
              
@@ -9992,6 +10011,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
           localStorage.removeItem(CONFIG.STORAGE_KEY_SESSION);
 
           try { localStorage.removeItem("hcns4_ban_kho_luc"); } catch (e) {}
+          try { localStorage.removeItem("hcns4_lan_lien_lac174"); } catch (e174) {}   
           DataService.initDefaultData();
           this.showToast("✅ Đã khôi phục dữ liệu mẫu thành công!", "success");
           setTimeout(() => location.reload(), 300);
@@ -22107,9 +22127,13 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const coKho = !!(st.gasUrl || "");
           let moc = 0;
           try { moc = Number(localStorage.getItem("hcns4_ban_kho_luc") || 0); } catch (e) {}
-          const gioVe = moc ? new Date(moc).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }) : "";
+           
+          let lienLac = 0;
+          try { lienLac = Number(localStorage.getItem("hcns4_lan_lien_lac174") || 0); } catch (e174) {}
+          if (!lienLac) lienLac = moc;                                   
+          const gioVe = lienLac ? new Date(lienLac).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }) : "";
           
-          const phutTruoc = moc ? Math.floor((Date.now() - moc) / 60000) : -1;
+          const phutTruoc = lienLac ? Math.floor((Date.now() - lienLac) / 60000) : -1;
           const cu = phutTruoc > 3;
           let mau, chu, loi;
           if (!coKho) {
