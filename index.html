@@ -6362,7 +6362,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.133" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.135" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -6591,7 +6591,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.133"
+                version: "4.0.135"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -8340,6 +8340,23 @@ function writeSheet(ss, sheetName, headers, rowsData){
         catch (e) { return 0; }
       },
 
+       
+      _kiemSoBanMayChu167(j) {
+        try {
+          if (!j || !j.codeVersion || this._daBaoLechBan167) return;
+          if (this._canSo167 == null) {
+            const ma = Function("return APPS_SCRIPT_SOURCE_CODE")();
+            this._canSo167 = Number((String(ma).match(/CODE_VERSION\s*=\s*"[^"]*r(\d+)"/) || [])[1] || 0);
+          }
+          const dangSo = Number((String(j.codeVersion).match(/r(\d+)\s*$/) || [])[1] || 0);
+          if (!this._canSo167 || !dangSo || dangSo >= this._canSo167) return;
+          this._daBaoLechBan167 = true;
+          try { CoreService.showToast("⛔ MÁY CHỦ đang chạy BẢN CŨ (r" + dangSo + " — app này cần r" + this._canSo167
+            + "). Đây thường chính là lý do chấm công \"tải lại là mất\". Người quản trị mở Cài đặt 6.4 → Sao chép mã → dán vào Apps Script → Triển khai → Quản lý → ✏️ → Phiên bản MỚI → bấm Kiểm tra kết nối phải thấy r"
+            + this._canSo167 + ".", "danger"); } catch (e) {}
+        } catch (e) {}
+      },
+
       async coGiMoiKhong() {
         const s = getCompanySettings();
         if (!s.gasUrl) return true;
@@ -8349,6 +8366,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const r = await fetch(s.gasUrl + "?api=kiemMoc" + this._authQS(), { signal: ctrl.signal });
           clearTimeout(hetGio);
           const j = await r.json();
+          try { this._kiemSoBanMayChu167(j); } catch (e167) {}          
           if (!j || j.status !== "success" || !j.dauVet) return true;   
           const cu = localStorage.getItem("hcns4_dau_vet_kho") || "";
           if (cu && cu === j.dauVet) return false;                      
@@ -8371,6 +8389,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
           clearTimeout(hetGio);
           j = await r.json();
         } catch (e) { return false; }
+        try { this._kiemSoBanMayChu167(j); } catch (e167b) {}          
         if (!j || j.status !== "success" || j.canTaiDu) return false; 
         const data = this.getData();
         let doi = 0;
@@ -8426,6 +8445,16 @@ function writeSheet(ss, sheetName, headers, rowsData){
          
         try { this.epGuiNgay(); } catch (e161) {}
          
+        try {
+          const s168 = getCompanySettings();
+          if (s168.sheetToken && localStorage.getItem("hcns4_khoi_dang_cho168")) {
+            clearTimeout(this._dayTimer); clearTimeout(this._hangLaiTimer);
+            const kqDay168 = await this.dayNgayLen();
+            if (!(kqDay168 && (kqDay168.ok || kqDay168.khoMoiHon)))
+              return { ok: false, err: "còn KHỐI dữ liệu vừa sửa chưa đẩy được lên kho — hoãn kéo để không ghi đè mất; app sẽ tự thử lại" };
+          }
+        } catch (e168b) {}
+         
         if (this._conNoGui()) {
            
           try {
@@ -8478,6 +8507,31 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 if (!b.anhCheckOut && cu.anhCheckOut) b.anhCheckOut = cu.anhCheckOut;
               });
             } catch (eAG) {}
+             
+            try {
+              const _u167 = (typeof CoreService !== "undefined" && CoreService.currentUser) || {};
+              if (_u167.id) {
+                const _homQua167 = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+                let _giu167 = 0;
+                (this.getData().bangCong || []).forEach(b => {
+                  if (!b || b.maNV !== _u167.id || b.nguon !== "app") return;
+                  if (String(b.ngay || "") < _homQua167) return;               
+                  const coTrenKho = (j.data.bangCong || []).some(x => x && x.maNV === b.maNV && x.ngay === b.ngay);
+                  if (coTrenKho) return;
+                  j.data.bangCong = j.data.bangCong || [];
+                  j.data.bangCong.unshift(b);                                   
+                  if (!b._guiLaiLuc167 || Date.now() - b._guiLaiLuc167 > 600000) {
+                    b._guiLaiLuc167 = Date.now();
+                    try { this.guiChamCong(b); } catch (eGL) {}                 
+                  }
+                  _giu167++;
+                });
+                if (_giu167 && !this._daBaoGiuCong167) {
+                  this._daBaoGiuCong167 = true;
+                  try { CoreService.showToast("🛟 " + _giu167 + " dòng chấm công của bạn CHƯA có trên kho chung — app đã GIỮ LẠI trên máy và đang tự gửi lại, không mất công. (Nếu câu này hiện mãi: máy chủ đang chạy bản cũ — báo quản trị.)", "warning"); } catch (eT) {}
+                }
+              }
+            } catch (e167c) {}
             localStorage.setItem(CONFIG.STORAGE_KEY_DATA, JSON.stringify(j.data));
             this._khoDem = null;   
              
@@ -8507,7 +8561,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const pl = Object.assign(this._authPayload(), { data: this._boAnhKhoiKhoi(this.getData()), duaTrenLuc: Number(localStorage.getItem("hcns4_ban_kho_luc")) || 0, mocDoc: Number(localStorage.getItem("hcns4_moc_doc")) || 0 });   
           const r = await fetch(s.gasUrl, { method: "POST", body: JSON.stringify({ action: "saveData", payload: pl }) });
           const j = await r.json();
-          if (j && j.status === "success") { try { localStorage.setItem("hcns4_ban_kho_luc", String(Date.now() + 1000)); } catch (e2) {} }
+          if (j && j.status === "success") { try { localStorage.setItem("hcns4_ban_kho_luc", String(Date.now() + 1000)); localStorage.removeItem("hcns4_khoi_dang_cho168"); } catch (e2) {} }   
           return { ok: j && j.status === "success", err: (j && j.error) || "", khoMoiHon: !!(j && j.maLoi === "kho_moi_hon") };
         } catch (e) { return { ok: false, err: e.message }; }
       },
@@ -9305,6 +9359,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
         
         
         const pl = Object.assign(this._authPayload(), { data: this._boAnhKhoiKhoi(data), duaTrenLuc: Number(localStorage.getItem("hcns4_ban_kho_luc")) || 0, mocDoc: Number(localStorage.getItem("hcns4_moc_doc")) || 0 });   
+         
+        try { localStorage.setItem("hcns4_khoi_dang_cho168", "1"); } catch (e168) {}
         clearTimeout(this._dayTimer);
         const S = this;
         this._dayTimer = setTimeout(function () {
@@ -9315,7 +9371,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
               localStorage.setItem("hcns4_day_len_lan_cuoi", JSON.stringify({ ok: !!ok, vi: ok ? "" : (vi || ""), luc: new Date().toISOString() }));
             } catch (e) {}
              
-            if (ok) { try { DataService._lanDayLai = 0; clearTimeout(DataService._hangLaiTimer); } catch (e) {} return; }
+            if (ok) { try { DataService._lanDayLai = 0; clearTimeout(DataService._hangLaiTimer); localStorage.removeItem("hcns4_khoi_dang_cho168"); } catch (e) {} return; }   
             try { DataService._hangLaiCaKhoi(DataService._lanDayLai || 0); } catch (e) {}
             
             try {
