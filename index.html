@@ -3118,7 +3118,7 @@ var CHUNK         = 45000;               // 1 ô Sheet tối đa ~50.000 ký t�
    mã CŨ và không có dấu hiệu nào để biết — đã dính lỗi này nhiều lần. Nay mọi phản hồi đều
    kèm số bản; nút "Kiểm tra kết nối" ở mục 6.4 hiện số đó ra để đối chiếu.
    ⚠️ MỖI LẦN SỬA MÃ NÀY PHẢI TĂNG SỐ (r1 → r2 …). */
-var CODE_VERSION  = "HCNS-BE-2026-09-11-r29";   // [SỬA đợt 174] r28 → r29: chuỗi ngày KIỂU VIỆT tách tay TRƯỚC khi nhờ new Date (_mocO · sauMoc · _ngayChuoi) — trước đây "10/09/2026" bị đọc kiểu Mỹ thành 09/10, mọi ngày ≤ 12 đều dính: dọn tab dừng giữa chừng, dòng chấm công có thể bị bỏ sót trên đường kéo-nhẹ, dòng công lạc ngày   // [SỬA đợt 122] r21 → r22: CHẶN máy chưa từng kéo dữ liệu về đẩy đè lên kho — đo thật: máy mới cài bấm "Đẩy dữ liệu lên" làm kho công ty từ 60 nhân viên còn 1, mất 200 dòng chấm công   // [SỬA đợt 111] r20 → r21: thêm tab LƯU TRỮ riêng (cắt dữ liệu năm cũ khỏi máy mà KHÔNG mất trên Sheet — trước đây mỗi lần đẩy là xoá sạch tab kho rồi ghi lại, nên cắt khỏi máy là mất luôn) + cửa đo sức khoẻ kho (số ô đã cấp / trần 10 triệu ô)   // [SỬA đợt 110] r19 → r20: mở kho "quy trình duyệt dùng chung" — sửa thang duyệt trên MỘT máy là mọi máy chạy theo (trước đây mỗi máy một thang, phiếu chạy sai người)   // [SỬA đợt 108] r18 → r19: hễ có người chấm công / gửi đơn / giao việc là XOÁ NGAY bộ nhớ tạm của cửa hỏi — máy quản lý biết tin sau một nhịp thay vì chờ tới 45 giây ("ghi nhận chậm, không nhạy")   // [SỬA đợt 107] r17 → r18: hiểu thêm kho kiểu "từ điển" (bảng lương đã chốt, khấu trừ, doanh số, ma trận quyền) — thiếu phần này thì mấy kho đó kéo về bị sai kiểu, màn hình trắng   // r16 → r17: MỞ 22 KHO còn thiếu (nhân sự/kế toán/giám đốc làm trên điện thoại hoặc bản web không còn bị mất dữ liệu im lặng) + cửa hỏi "có gì mới" có bộ nhớ đệm 15 giây (nhẹ tải cho công ty đông người) + sửa 2 chỗ màn hình cho làm mà máy chủ từ chối   // [SỬA đợt 106] r15 → r16: thêm cửa api=layMoi — máy chỉ tải NHỮNG DÒNG vừa đổi (vài KB) thay vì tải lại cả kho (vài MB) mỗi khi có người chấm công   // [SỬA đợt 103] r14 → r15: thêm cửa hỏi nhẹ api=kiemMoc để máy KHÔNG phải kéo cả kho mỗi 30 giây (200-500 người dùng cùng lúc)   // [SỬA đợt 99] r13 → r14: gộp bảng công theo THỨ TỰ ƯU TIÊN NGUỒN (sản lượng > máy > app > phòng > tay) thay vì "dòng sau đè dòng trước"; ô HCNS sửa tay trên tab vẫn luôn thắng   // [SỬA đợt 89] r12 → r13: chấm công giữ đủ trường phụ khi gộp (ảnh, cờ ra ca, nguồn, IP, GPS) — hết "dữ liệu chấm công bị mất bị nhảy"   // [SỬA đợt 80c] r7 → r10: THÊM lệnh ghiDong dùng chung (trước đây gần như MỌI chức năng — đơn từ, góp ý, sáng kiến, dự trù, KPI… — đều không lưu được lên kho khi làm từ điện thoại) · CHẶN nhân viên tự duyệt đơn của chính mình · và sửa lỗi DUYỆT TRÊN MÁY QUẢN TRỊ KHÔNG ĂN (dòng cũ trong tab đè ngược bản vừa duyệt)
+var CODE_VERSION  = "HCNS-BE-2026-09-11-r30";   // [SỬA đợt 179] r29 → r30: 🔴 tab HIỂN THỊ chấm công đổi tên "BangCong" → "BangCongXem" — trước đây ghi ĐÈ (clearContents) lên chính tab hộp thư "BangCong" mà điện thoại gửi dòng chấm công vào: (1) dòng chấm tới sau mốc chốt bị XOÁ vĩnh viễn, (2) tab thành hỗn hợp 10 cột/14 cột → gộp đọc dòng hiển thị thành dòng RÁC (đo thật tệp Sheet khách 11/09: 90/123 dòng công trong kho là rác). Kèm: ẩn PIN ở tab NhanVien hiển thị; gộp/dọn/kéo-nhẹ bỏ qua dòng rác; dọn tự lành tab đã bị trộn   // [SỬA đợt 174] r28 → r29: chuỗi ngày KIỂU VIỆT tách tay TRƯỚC khi nhờ new Date (_mocO · sauMoc · _ngayChuoi) — trước đây "10/09/2026" bị đọc kiểu Mỹ thành 09/10, mọi ngày ≤ 12 đều dính: dọn tab dừng giữa chừng, dòng chấm công có thể bị bỏ sót trên đường kéo-nhẹ, dòng công lạc ngày   // [SỬA đợt 122] r21 → r22: CHẶN máy chưa từng kéo dữ liệu về đẩy đè lên kho — đo thật: máy mới cài bấm "Đẩy dữ liệu lên" làm kho công ty từ 60 nhân viên còn 1, mất 200 dòng chấm công   // [SỬA đợt 111] r20 → r21: thêm tab LƯU TRỮ riêng (cắt dữ liệu năm cũ khỏi máy mà KHÔNG mất trên Sheet — trước đây mỗi lần đẩy là xoá sạch tab kho rồi ghi lại, nên cắt khỏi máy là mất luôn) + cửa đo sức khoẻ kho (số ô đã cấp / trần 10 triệu ô)   // [SỬA đợt 110] r19 → r20: mở kho "quy trình duyệt dùng chung" — sửa thang duyệt trên MỘT máy là mọi máy chạy theo (trước đây mỗi máy một thang, phiếu chạy sai người)   // [SỬA đợt 108] r18 → r19: hễ có người chấm công / gửi đơn / giao việc là XOÁ NGAY bộ nhớ tạm của cửa hỏi — máy quản lý biết tin sau một nhịp thay vì chờ tới 45 giây ("ghi nhận chậm, không nhạy")   // [SỬA đợt 107] r17 → r18: hiểu thêm kho kiểu "từ điển" (bảng lương đã chốt, khấu trừ, doanh số, ma trận quyền) — thiếu phần này thì mấy kho đó kéo về bị sai kiểu, màn hình trắng   // r16 → r17: MỞ 22 KHO còn thiếu (nhân sự/kế toán/giám đốc làm trên điện thoại hoặc bản web không còn bị mất dữ liệu im lặng) + cửa hỏi "có gì mới" có bộ nhớ đệm 15 giây (nhẹ tải cho công ty đông người) + sửa 2 chỗ màn hình cho làm mà máy chủ từ chối   // [SỬA đợt 106] r15 → r16: thêm cửa api=layMoi — máy chỉ tải NHỮNG DÒNG vừa đổi (vài KB) thay vì tải lại cả kho (vài MB) mỗi khi có người chấm công   // [SỬA đợt 103] r14 → r15: thêm cửa hỏi nhẹ api=kiemMoc để máy KHÔNG phải kéo cả kho mỗi 30 giây (200-500 người dùng cùng lúc)   // [SỬA đợt 99] r13 → r14: gộp bảng công theo THỨ TỰ ƯU TIÊN NGUỒN (sản lượng > máy > app > phòng > tay) thay vì "dòng sau đè dòng trước"; ô HCNS sửa tay trên tab vẫn luôn thắng   // [SỬA đợt 89] r12 → r13: chấm công giữ đủ trường phụ khi gộp (ảnh, cờ ra ca, nguồn, IP, GPS) — hết "dữ liệu chấm công bị mất bị nhảy"   // [SỬA đợt 80c] r7 → r10: THÊM lệnh ghiDong dùng chung (trước đây gần như MỌI chức năng — đơn từ, góp ý, sáng kiến, dự trù, KPI… — đều không lưu được lên kho khi làm từ điện thoại) · CHẶN nhân viên tự duyệt đơn của chính mình · và sửa lỗi DUYỆT TRÊN MÁY QUẢN TRỊ KHÔNG ĂN (dòng cũ trong tab đè ngược bản vừa duyệt)
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    [THÊM MỚI 05/09/2026 — V4 đợt 51] BẤM ▶ CHẠY THÌ CHẠY HÀM NÀY (KIEM_TRA_NHANH).
@@ -3264,7 +3264,28 @@ function _jsonGon(bg){
 /* [SỬA 07/09/2026 — V4 đợt 99 · r14] Nhận thêm uuTien = mảng thứ tự tin cậy nguồn công
    (vd ["sanluong","may","app","phong","tay"]) do app gửi lên trong kho. Không truyền thì
    dùng thứ tự mặc định. */
+/* [THÊM MỚI 11/09/2026 — V4 đợt 179 · r30] MỘT BẢN GHI CÔNG HỢP LỆ LÀ GÌ — lọc RÁC.
+   Rác sinh ra khi tab hiển thị 10 cột từng ghi đè lên hộp thư 14 cột: mã NV hoá thành ngày giờ
+   ("2026-08-23T17:00"), ngày hoá thành tên ca ("Ca HC…") hay ngày Excel gốc ("1899-12-30").
+   Hợp lệ = mã NV là CHỮ (không phải ngày/giờ), ngày dạng yyyy-MM-dd và năm ≥ 2000. */
+function _banGhiCongHopLe(b){
+  if (!b || typeof b.maNV !== "string") return false;
+  var ma = b.maNV.trim();
+  // ⚠️ Mã này nằm trong CHUỖI MẪU của app → regex phải viết \\d, \\s (hai gạch) — một gạch là nấu xong mất sạch
+  if (!ma || /^\\d{4}-\\d{2}/.test(ma) || /^\\d{1,2}:\\d{2}/.test(ma) || /^Ca\\s/i.test(ma)) return false;
+  var ng = _ngayChuoi(b.ngay);
+  return /^\\d{4}-\\d{2}-\\d{2}$/.test(ng) && Number(ng.slice(0, 4)) >= 2000;
+}
+/* Dòng trên TAB hộp thư "BangCong" hợp lệ: cột A là GIỜ GHI (ô ngày thật hoặc chuỗi đọc được),
+   cột B mã NV chữ, cột C ngày hợp lệ. Dòng hiển thị 10 cột lạc vào (cột A = mã NV) → loại. */
+function _dongTabCongHopLe(r){
+  if (!r || !_mocO(r[0])) return false;
+  return _banGhiCongHopLe({ maNV: (typeof r[1] === "string") ? r[1] : "", ngay: r[2] });
+}
+
 function _gopBangCong(ss, nen, uuTien){
+  // [SỬA đợt 179 · r30] Khối gốc có thể đã dính rác từ những lần gộp trước → lọc ngay từ nền
+  nen = (nen || []).filter(_banGhiCongHopLe);
   var sh = ss.getSheetByName("BangCong");
   if (!sh || sh.getLastRow() < 2) return nen;
   var v = sh.getRange(2, 1, sh.getLastRow() - 1, 14).getValues();   // [SỬA đợt 89] đọc thêm cột 14 "Chi tiết (JSON)"
@@ -3276,6 +3297,7 @@ function _gopBangCong(ss, nen, uuTien){
   for (var j = 0; j < v.length; j++){
     var r = v[j];
     if (!r[1] || !r[2]) continue;                  // thiếu mã NV hoặc ngày thì bỏ
+    if (!_dongTabCongHopLe(r)) continue;           // [đợt 179 · r30] dòng hiển thị lạc vào / dòng rác → bỏ
     var k = r[1] + "|" + _ngayChuoi(r[2]);
     var cu = m[k] || {};
     /* [SỬA 06/09/2026 — V4 đợt 89] GIỮ NGUYÊN mọi trường của bản gốc rồi mới đè ô tab CÓ giá trị.
@@ -3717,7 +3739,10 @@ function _donBangCong(ss, moc){
   for (var i = 0; i < v.length; i++){
     // [SỬA đợt 163 · r25] Cùng lý do với _donTabGiao — xem _mocO.
     var t = _mocO(v[i][0]);
-    if (t && t <= moc) xoa++; else break;   // tab xếp theo thời gian
+    /* [SỬA đợt 179 · r30] Dòng KHÔNG có giờ ghi (t = 0) là dòng hiển thị 10 cột lạc vào tab hộp thư
+       (rác) → cũng dọn, để tab bị trộn TỰ LÀNH sau lần đẩy đầu tiên; trước đây gặp là DỪNG nên
+       rác nằm mãi trên đầu tab, chặn luôn việc dọn các dòng thật phía sau. */
+    if (!t || t <= moc) xoa++; else break;   // tab xếp theo thời gian
   }
   if (xoa > 0) sh.deleteRows(2, xoa);
   return xoa;
@@ -3892,6 +3917,7 @@ function doGet(e){
           for (var k = 0; k < vC.length; k++){
             if (!sauMoc(vC[k][0])) continue;
             if (!vC[k][1] || !vC[k][2]) continue;
+            if (!_dongTabCongHopLe(vC[k])) continue;   // [đợt 179 · r30] không trả dòng rác về máy
             var moiC = { maNV: String(vC[k][1]), ngay: _ngayChuoi(vC[k][2]), caLam: vC[k][3] || "",
                          gioVao: vC[k][4] || "", gioRa: vC[k][5] || "", gioOT: vC[k][6],
                          hinhThuc: vC[k][7] || "", diaChi: vC[k][8] || "", ghiChu: vC[k][9] || "",
@@ -4323,7 +4349,7 @@ function doPost(e){
 function khoiTaoTrangTinh(ss){
   var dinh = {
     "NhanVien": ["Mã NV", "Họ và Tên", "Mã PIN", "Email", "Chức Vụ", "Phòng Ban", "Quyền", "Lương Cơ Bản", "Phụ Cấp", "Phép Năm Còn", "Ngày Vào Làm", "Loại Hợp Đồng", "Trạng Thái"],
-    "BangCong": ["Mã NV", "Ngày", "Ca Làm Việc", "Giờ Vào", "Giờ Ra", "Giờ OT", "Hình Thức", "Địa Chỉ/GPS", "Ghi Chú", "Trạng Thái"],
+    "BangCongXem": ["Mã NV", "Ngày", "Ca Làm Việc", "Giờ Vào", "Giờ Ra", "Giờ OT", "Hình Thức", "Địa Chỉ/GPS", "Ghi Chú", "Trạng Thái"],   // [SỬA đợt 179 · r30] tab hiển thị tách khỏi hộp thư "BangCong" (xem ganBangHienThi)
     "DonTu": ["Mã Đơn", "Mã NV", "Tên Nhân Viên", "Phòng Ban", "Chức Vụ", "Loại Đơn", "Hình Thức", "Từ Ngày", "Đến Ngày", "Từ Giờ", "Đến Giờ", "Số Ngày/Giờ", "Người Bàn Giao", "Nội Dung Bàn Giao", "SĐT", "Lý Do", "Trạng Thái", "Ngày Tạo"],
     "CongViec": ["Mã Việc", "Tên Công Việc", "Người Giao", "Người Nhận", "Ưu Tiên", "Trọng Số KPI", "Giờ Chuẩn", "Hạn Xong", "Tiến Độ %", "Trạng Thái", "Điểm", "Nhận Xét"],
     "DanhMucCongViec": ["Mã Mẫu", "Tên Việc Mẫu", "Nhóm Phòng Ban", "Giờ Chuẩn", "Trọng Số KPI", "Tiêu Chuẩn"],
@@ -4355,8 +4381,16 @@ function dinhDangTab(ss, ten, headers){
 }
 // Đổ dữ liệu ra các tab cho NGƯỜI XEM (ghi đè; nguồn chuẩn vẫn nằm ở tab ẩn DATA_SHEET).
 function ganBangHienThi(ss, data){
-  if (data.nhanVien) writeSheet(ss, "NhanVien", ["Mã NV", "Họ và Tên", "Mã PIN", "Email", "Chức Vụ", "Phòng Ban", "Quyền", "Lương Cơ Bản", "Phụ Cấp", "Phép Năm Còn", "Ngày Vào Làm", "Loại Hợp Đồng", "Trạng Thái"], data.nhanVien.map(function(n){ return [n.id, n.hoTen, n.pin, n.email, n.chucVu, n.phongBan, n.role, n.luongCoBan, n.phuCap, n.phepNamCon, n.ngayVaoLam, n.hopDong, n.trangThai]; }));
-  if (data.bangCong) writeSheet(ss, "BangCong", ["Mã NV", "Ngày", "Ca Làm Việc", "Giờ Vào", "Giờ Ra", "Giờ OT", "Hình Thức", "Địa Chỉ/GPS", "Ghi Chú", "Trạng Thái"], data.bangCong.map(function(b){ return [b.maNV, b.ngay, b.caLam || "", b.gioVao || "", b.gioRa || "", b.gioOT || 0, b.nguon || "", b.diaChi || "", b.ghiChu || "", b.trangThai || ""]; }));
+  /* [SỬA 11/09/2026 — V4 đợt 179 · r30] 🔴 HAI SỬA SỐNG CÒN Ở TAB HIỂN THỊ:
+     ① Cột "Mã PIN" KHÔNG ghi PIN thật nữa (ghi ••••). Tệp Sheet khách gửi 11/09: ai mở được Sheet là
+        thấy PIN cả công ty, 5/8 người còn PIN mặc định. PIN thật vẫn nằm trong khối JSON ẩn (app cần).
+     ② Bảng công hiển thị ghi vào tab "BangCongXem" — KHÔNG còn ghi vào "BangCong". "BangCong" là HỘP
+        THƯ mà điện thoại/máy khác gửi từng dòng chấm công vào (14 cột, cột A = giờ ghi). Trước đây
+        writeSheet xoá sạch (clearContents) rồi ghi lại 10 cột hiển thị lên chính tab đó → dòng chấm
+        công tới sau mốc chốt bị xoá vĩnh viễn, và những lần gộp sau đọc dòng hiển thị thành dòng
+        RÁC (mã NV = ngày, ngày = tên ca…). Đo thật: 90/123 dòng công trong kho khách là rác. */
+  if (data.nhanVien) writeSheet(ss, "NhanVien", ["Mã NV", "Họ và Tên", "Mã PIN (ẩn)", "Email", "Chức Vụ", "Phòng Ban", "Quyền", "Lương Cơ Bản", "Phụ Cấp", "Phép Năm Còn", "Ngày Vào Làm", "Loại Hợp Đồng", "Trạng Thái"], data.nhanVien.map(function(n){ return [n.id, n.hoTen, n.pin ? "••••" : "", n.email, n.chucVu, n.phongBan, n.role, n.luongCoBan, n.phuCap, n.phepNamCon, n.ngayVaoLam, n.hopDong, n.trangThai]; }));
+  if (data.bangCong) writeSheet(ss, "BangCongXem", ["Mã NV", "Ngày", "Ca Làm Việc", "Giờ Vào", "Giờ Ra", "Giờ OT", "Hình Thức", "Địa Chỉ/GPS", "Ghi Chú", "Trạng Thái"], data.bangCong.filter(_banGhiCongHopLe).map(function(b){ return [b.maNV, b.ngay, b.caLam || "", b.gioVao || "", b.gioRa || "", b.gioOT || 0, b.nguon || "", b.diaChi || "", b.ghiChu || "", b.trangThai || ""]; }));
   if (data.donTu) writeSheet(ss, "DonTu", ["Mã Đơn", "Mã NV", "Tên Nhân Viên", "Phòng Ban", "Chức Vụ", "Loại Đơn", "Hình Thức", "Từ Ngày", "Đến Ngày", "Từ Giờ", "Đến Giờ", "Số Ngày/Giờ", "Người Bàn Giao", "Nội Dung Bàn Giao", "SĐT", "Lý Do", "Trạng Thái", "Ngày Tạo"], data.donTu.map(function(d){ return [d.id, d.maNV, d.tenNV, d.phongBan || "", d.chucVu || "", d.tenLoaiDon, d.hinhThuc || "ngay", d.tuNgay, d.denNgay, d.tuGio || "", d.denGio || "", d.hinhThuc === "gio" ? (d.soGio + " giờ") : (d.soNgay + " ngày"), d.tenNguoiBanGiao || "", d.noiDungBanGiao || "", d.sdtLienHe || "", d.lyDo, d.trangThai, d.ngayTao]; }));
   if (data.ordersVPP) writeSheet(ss, "OrdersVPP", ["Mã Phiếu", "Mã NV", "Tên Nhân Viên", "Phòng Ban", "Danh Sách VPP", "Lý Do", "Trạng Thái", "Ngày Tạo"], data.ordersVPP.map(function(o){ return [o.id, o.maNV, o.tenNV, o.phongBan, JSON.stringify(o.items), o.lyDo, o.trangThai, o.ngayTao]; }));
   if (data.congViec) writeSheet(ss, "CongViec", ["Mã Việc", "Tên Công Việc", "Người Giao", "Người Nhận", "Ưu Tiên", "Trọng Số KPI", "Giờ Chuẩn", "Hạn Xong", "Tiến Độ %", "Trạng Thái", "Điểm", "Nhận Xét"], data.congViec.map(function(c){ return [c.id, c.tenCV, c.nguoiGiao, c.tenNguoiNhan || c.nguoiNhan, c.uuTien, c.trongSoKPI || 3, c.gioDuKien || 8, c.deadline, c.tienDo, c.trangThai, c.diemDanhGia || 0, c.danhGiaNote || ""]; }));
@@ -6401,7 +6435,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         if (!this.LICENSE_URL || !this.LICENSE_TOKEN) return null;
         try {
           const hwid = await this.getHWID();
-          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.142" }, extra || {}));
+          const q = new URLSearchParams(Object.assign({ action: "check", token: this.LICENSE_TOKEN, hwid, version: "4.0.143" }, extra || {}));
           const ctrl = new AbortController();
           const to = setTimeout(() => ctrl.abort(), 8000);
           const r = await fetch(this.LICENSE_URL + "?" + q.toString(), { method: "GET", signal: ctrl.signal });
@@ -6630,7 +6664,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 tenKhach: ten.trim(),      
                 lienHe: soSach,
                 congTy: cty2.trim(),
-                version: "4.0.142"
+                version: "4.0.143"
               });
               try {
                 const r = await fetch(this.LICENSE_URL + "?" + q.toString());
@@ -8416,6 +8450,19 @@ function writeSheet(ss, sheetName, headers, rowsData){
         } catch (e) { return true; }                                    
       },
 
+       
+      _dongCongHopLe178(b) {
+        try {
+          if (!b || typeof b.maNV !== "string") return false;
+          const ma = b.maNV.trim();
+          if (!ma || /^\d{4}-\d{2}/.test(ma) || /^\d{1,2}:\d{2}/.test(ma) || /^Ca\s/i.test(ma)) return false;
+          let ng = String(b.ngay || "");
+          const mV = ng.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+          if (mV) ng = mV[3] + "-" + ("0" + mV[2]).slice(-2) + "-" + ("0" + mV[1]).slice(-2);
+          return /^\d{4}-\d{2}-\d{2}$/.test(ng) && Number(ng.slice(0, 4)) >= 2000;
+        } catch (e) { return false; }
+      },
+
       async layPhanMoi106() {
         const s = getCompanySettings();
         if (!s.gasUrl) return false;
@@ -8461,6 +8508,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
          
         (j.bangCongMoi || []).forEach(b => {
           if (!b || !b.maNV || !b.ngay) return;
+          if (!this._dongCongHopLe178(b)) return;   
           data.bangCong = data.bangCong || [];
           const i = data.bangCong.findIndex(x => x.maNV === b.maNV && x.ngay === b.ngay);
           if (i < 0) { data.bangCong.unshift(b); doi++; return; }
@@ -8477,6 +8525,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
           data.bangCong[i] = gop162;
           doi++;
         });
+         
+        try { const _tr179 = (data.bangCong || []).length; data.bangCong = (data.bangCong || []).filter(b => this._dongCongHopLe178(b)); if (data.bangCong.length !== _tr179) doi++; } catch (e179) {}
         if (doi) { this.saveData(data, { khongDayLen: true }); }        
         if (j.mocMoi) { try { localStorage.setItem("hcns4_ban_kho_luc", String(j.mocMoi)); } catch (e) {} }
         try { localStorage.setItem("hcns4_lan_lien_lac174", String(Date.now())); } catch (e174) {}   
@@ -8574,6 +8624,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 }
               }
             } catch (e167c) {}
+            try { j.data.bangCong = (j.data.bangCong || []).filter(b => this._dongCongHopLe178(b)); } catch (e179b) {}   
             localStorage.setItem(CONFIG.STORAGE_KEY_DATA, JSON.stringify(j.data));
             this._khoDem = null;   
              
@@ -19173,7 +19224,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
         renderSubTabDanhSach() {
           const data = DataService.getData();
           const currentUser = CoreService.currentUser;
-          const isManager = currentUser.role === "admin" || currentUser.role === "manager" || currentUser.role === "director" || currentUser.role === "hr" || currentUser.role === "it_admin";
+          const isManager = (function () { const c = (typeof PhanQuyenService !== "undefined") ? PhanQuyenService.capBacCua(currentUser.role || "employee") : currentUser.role; return ["admin", "manager", "director", "hr", "it_admin"].indexOf(c) >= 0; })();   
 
           
 
@@ -19814,13 +19865,15 @@ function writeSheet(ss, sheetName, headers, rowsData){
             if (cv.trangThai === "hoan_thanh") { boQua++; return; }
             
             const laCuaMinh = String(cv.nguoiNhan || "") === String(u.id);
-            if (laCuaMinh && !(PhanQuyenService.laCapCaoNhat && PhanQuyenService.laCapCaoNhat(u))) { boQua++; return; }
+            
+            const rieng178 = (laCuaMinh && String(cv.nguoiGiaoId || "") === String(u.id)) || (!!cv.nguoiDuyetChiDinh && String(cv.nguoiDuyetChiDinh) === String(u.id));
+            if (laCuaMinh && !rieng178 && !(PhanQuyenService.laCapCaoNhat && PhanQuyenService.laCapCaoNhat(u))) { boQua++; return; }
              
             try {
-              if (AppModules.quytrinhduyet.nhieuBuoc.aiKyDuoc("nghiem_thu_viec", cv, u) === false) { boQua++; return; }
+              if (!rieng178 && AppModules.quytrinhduyet.nhieuBuoc.aiKyDuoc("nghiem_thu_viec", cv, u) === false) { boQua++; return; }   
             } catch (eG142) {}
             let _nb142 = { xong: true, tenBuocSau: "" };
-            try { _nb142 = AppModules.quytrinhduyet.nhieuBuoc.ghiKy("nghiem_thu_viec", cv, u, "") || _nb142; }
+            if (!rieng178) try { _nb142 = AppModules.quytrinhduyet.nhieuBuoc.ghiKy("nghiem_thu_viec", cv, u, "") || _nb142; }   
             catch (e142) { _nb142 = { xong: true, tenBuocSau: "" }; }
             if (!_nb142.xong) { cv.trangThai = "cho_nghiem_thu"; kyTiep142++; return; }
             cv.trangThai = "hoan_thanh";
@@ -19880,7 +19933,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
           }
           if (this.thangBang) taskList = taskList.filter(i => String(i.deadline || "").slice(0, 7) === this.thangBang);
           const currentUser = CoreService.currentUser;
-          const isManager = currentUser.role === "admin" || currentUser.role === "manager" || currentUser.role === "director" || currentUser.role === "hr" || currentUser.role === "it_admin";
+          const isManager = (function () { const c = (typeof PhanQuyenService !== "undefined") ? PhanQuyenService.capBacCua(currentUser.role || "employee") : currentUser.role; return ["admin", "manager", "director", "hr", "it_admin"].indexOf(c) >= 0; })();   
 
           return `
             <div class="card">
@@ -20062,8 +20115,9 @@ function writeSheet(ss, sheetName, headers, rowsData){
           if (!cv) return;
 
           const currentUser = CoreService.currentUser;
-          const isManager = currentUser.role === "admin" || currentUser.role === "manager" || currentUser.role === "director" || currentUser.role === "hr" || currentUser.role === "it_admin";
+          const isManager = (function () { const c = (typeof PhanQuyenService !== "undefined") ? PhanQuyenService.capBacCua(currentUser.role || "employee") : currentUser.role; return ["admin", "manager", "director", "hr", "it_admin"].indexOf(c) >= 0; })();   
           const isOverdue = new Date(cv.deadline) < new Date(new Date().toISOString().split("T")[0]) && cv.trangThai !== "hoan_thanh";
+          const laNT178 = this.duocNghiemThu(cv, currentUser).ok;   
 
           if (!cv.checklist || cv.checklist.length === 0) {
             cv.checklist = [
@@ -20103,6 +20157,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
                 <span class="badge ${cv.uuTien === "cao" ? "badge-danger" : "badge-info"}">${cv.uuTien === "cao" ? "🔥 Gấp / Ưu Tiên Cao" : "Thường"}</span>
                 <span class="badge badge-purple">${"⭐".repeat(cv.trongSoKPI || 3)} Trọng số KPI: ${cv.trongSoKPI || 3}</span>
                 <span class="badge badge-info"><i class="fa-solid fa-user"></i> ${cv.tenNguoiNhan}</span>
+                ${cv.tenNguoiDuyetChiDinh ? `<span class="badge" style="background:#ede9fe;color:#6d28d9" title="Người được chỉ định nghiệm thu việc này"><i class="fa-solid fa-clipboard-check"></i> NT: ${cv.tenNguoiDuyetChiDinh}</span>` : ""}
                 <span class="badge ${isOverdue ? "badge-danger" : "badge-secondary"}"><i class="fa-regular fa-clock"></i> Hạn: ${formatDateDisplay(cv.deadline)}</span>
               </div>
             </div>
@@ -20223,11 +20278,11 @@ function writeSheet(ss, sheetName, headers, rowsData){
             </div>
 
             <!-- 4. Khối Nghiệm Thu & Chấm Điểm KPI (Quản Lý) -->
-            ${isManager ? `
+            ${laNT178 ? `
               <div class="card" style="padding:14px;background:#f8fafc;border:1px solid #cbd5e1">
-                <div style="font-weight:bold;font-size:13px;margin-bottom:10px;color:var(--primary-dark)"><i class="fa-solid fa-award"></i> Nghiệm Thu & Đánh Giá Chất Lượng KPI (Trưởng Phòng)</div>
+                <div style="font-weight:bold;font-size:13px;margin-bottom:10px;color:var(--primary-dark)"><i class="fa-solid fa-award"></i> Nghiệm Thu & Đánh Giá Chất Lượng KPI (Người nghiệm thu)</div>
                 <!-- [THÊM MỚI 06/09/2026 — V4 đợt 87] Chỉ dẫn khu nghiệm thu (chỉ cấp quản lý thấy khối này). -->
-                <div style="font-size:11.5px;color:var(--text-secondary);margin-bottom:8px;line-height:1.5">Chỉ <strong>cấp quản lý</strong> thấy khối này. Khi việc xong (100% / chờ nghiệm thu): chấm Điểm chất lượng rồi bấm nghiệm thu — điểm chảy thẳng vào KPI tháng và lương thưởng của người làm.</div>
+                <div style="font-size:11.5px;color:var(--text-secondary);margin-bottom:8px;line-height:1.5">Khối này hiện cho <strong>người được chỉ định nghiệm thu</strong>, trưởng phòng trở lên, và người tự giao việc cho chính mình. Khi việc xong (100% / chờ nghiệm thu): chấm Điểm chất lượng rồi bấm nghiệm thu — điểm chảy thẳng vào KPI tháng và lương thưởng của người làm.</div>
                 <!-- [THÊM MỚI 31/08/2026] Nếu việc có TIÊU CHÍ chấm điểm → hiện checklist, tích ý ĐẠT tự cộng ra điểm. -->
                 ${(cv.tieuChi && cv.tieuChi.length) ? `
                   <div style="margin-bottom:10px;padding:8px 10px;background:#fff;border:1px solid var(--border-light);border-radius:8px;">
@@ -20365,19 +20420,45 @@ function writeSheet(ss, sheetName, headers, rowsData){
           this.openTaskDrawer(cvId); 
         },
 
-        saveDrawerReview(cvId) {
+         
+        duocNghiemThu(cv, u) {
           try {
-            const _cv109 = (DataService.getData().congViec || []).find(x => x.id === cvId);
-            if (_cv109 && PhanQuyenService.laDonCuaChinhToi(_cv109, ["nguoiNhan"]) && !PhanQuyenService.laCapCaoNhat()) {
-              CoreService.showToast("Bạn không được tự nghiệm thu và tự chấm điểm việc của chính mình.", "danger");
-              return;
+            if (!cv || !u || !u.id) return { ok: false, rieng: false, viSao: "chưa đăng nhập" };
+            const cap = (typeof PhanQuyenService !== "undefined") ? PhanQuyenService.capBacCua(u.role || "employee") : (u.role || "employee");
+            if (cap === "it_admin" || cap === "admin") return { ok: true, rieng: false, viSao: "" };
+            if (cv.nguoiDuyetChiDinh && String(cv.nguoiDuyetChiDinh) === String(u.id)) return { ok: true, rieng: true, viSao: "" };
+            if (String(cv.nguoiGiaoId || "") === String(u.id) && String(cv.nguoiNhan || "") === String(u.id)) return { ok: true, rieng: true, viSao: "" };
+            if (["manager", "hr", "director"].indexOf(cap) >= 0) {
+              
+              if (String(cv.nguoiNhan || "") === String(u.id) && !(PhanQuyenService.laCapCaoNhat && PhanQuyenService.laCapCaoNhat(u)))
+                return { ok: false, rieng: false, viSao: "Việc này do người khác giao cho bạn — người giao hoặc người được chỉ định mới nghiệm thu được." };
+              return { ok: true, rieng: false, viSao: "" };
             }
-          } catch (e) {}
+            return { ok: false, rieng: false, viSao: "Chỉ người được chỉ định nghiệm thu, trưởng phòng trở lên, hoặc người tự giao việc cho chính mình mới nghiệm thu được." };
+          } catch (e) { return { ok: false, rieng: false, viSao: "lỗi kiểm quyền" }; }
+        },
+         
+        nguoiDuyetMacDinh(u, data) {
+          try {
+            const ds = ((data || DataService.getData()).nhanVien || []).filter(x => x && x.trangThai !== "dinh_chi");
+            const capU = PhanQuyenService.capBacCua((u || {}).role || "employee");
+            if (["manager", "hr", "director"].indexOf(capU) >= 0) return u.id;
+            const tp = ds.find(x => x.id !== u.id && PhanQuyenService.capBacCua(x.role || "employee") === "manager" && PhanQuyenService.phuTrachPhong(x, u.phongBan));
+            if (tp) return tp.id;
+            const hr = ds.find(x => PhanQuyenService.capBacCua(x.role || "employee") === "hr");
+            if (hr) return hr.id;
+            const gd = ds.find(x => PhanQuyenService.capBacCua(x.role || "employee") === "director");
+            return gd ? gd.id : "";
+          } catch (e) { return ""; }
+        },
 
+        saveDrawerReview(cvId) {
+
+           
           const _cu = CoreService.currentUser || {};
-          const _cap = (typeof PhanQuyenService !== "undefined") ? PhanQuyenService.capBacCua(_cu.role) : _cu.role;
-          if (["manager", "hr", "director", "it_admin", "admin"].indexOf(_cap) < 0) {
-            CoreService.showToast("Bạn không có quyền nghiệm thu & chấm điểm công việc!", "danger");
+          const _q178 = this.duocNghiemThu((DataService.getData().congViec || []).find(x => x.id === cvId), _cu);
+          if (!_q178.ok) {
+            CoreService.showToast("🔒 " + (_q178.viSao || "Bạn không có quyền nghiệm thu việc này."), "danger");
             return;
           }
           const data = DataService.getData();
@@ -20390,7 +20471,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
 
           if (status === "hoan_thanh") {
             try {
-              if (AppModules.quytrinhduyet.nhieuBuoc.aiKyDuoc("nghiem_thu_viec", cv, CoreService.currentUser || {}) === false) {
+              if (!_q178.rieng && AppModules.quytrinhduyet.nhieuBuoc.aiKyDuoc("nghiem_thu_viec", cv, CoreService.currentUser || {}) === false) {   
                 CoreService.showToast("Chưa tới lượt bạn nghiệm thu việc này (theo Quy trình duyệt của công ty).", "warning");
                 return;
               }
@@ -20402,7 +20483,8 @@ function writeSheet(ss, sheetName, headers, rowsData){
            
           if (status === "hoan_thanh") {
             let _nb142 = { xong: true, tenBuocSau: "" };
-            try { _nb142 = AppModules.quytrinhduyet.nhieuBuoc.ghiKy("nghiem_thu_viec", cv, CoreService.currentUser || {}, note) || _nb142; }
+             
+            if (!_q178.rieng) try { _nb142 = AppModules.quytrinhduyet.nhieuBuoc.ghiKy("nghiem_thu_viec", cv, CoreService.currentUser || {}, note) || _nb142; }
             catch (e142) { _nb142 = { xong: true, tenBuocSau: "" }; }
             if (!_nb142.xong) {
               cv.trangThai = "cho_nghiem_thu";      
@@ -20703,7 +20785,14 @@ function writeSheet(ss, sheetName, headers, rowsData){
               DataService.guiThongBaoDen([cv.nguoiGiaoId], "✅ Việc chờ bạn nghiệm thu: " + cv.tenCV,
                 (_uNop.hoTen || "Nhân viên") + " đã nộp 100% và chờ bạn nghiệm thu, chấm điểm.", "task");
           } catch (e) {}
-          CoreService.showToast("Đã nộp nghiệm thu cho Quản lý / Trưởng phòng!", "success");
+           
+          try {
+            const _uNop2 = CoreService.currentUser || {};
+            if (cv.nguoiDuyetChiDinh && String(cv.nguoiDuyetChiDinh) !== String(_uNop2.id) && String(cv.nguoiDuyetChiDinh) !== String(cv.nguoiGiaoId || ""))
+              DataService.guiThongBaoDen([cv.nguoiDuyetChiDinh], "✅ Việc chờ bạn nghiệm thu: " + cv.tenCV,
+                (_uNop2.hoTen || "Nhân viên") + " đã nộp 100% — bạn là người được chỉ định nghiệm thu.", "task");
+          } catch (e178) {}
+          CoreService.showToast("Đã nộp nghiệm thu!", "success");
           this.openTaskDrawer(cvId);
         },
 
@@ -20711,7 +20800,7 @@ function writeSheet(ss, sheetName, headers, rowsData){
           const data = DataService.getData();
           const templates = data.danhMucCongViec || [];
           const currentUser = CoreService.currentUser;
-          const isManager = currentUser.role === "admin" || currentUser.role === "manager" || currentUser.role === "director" || currentUser.role === "hr" || currentUser.role === "it_admin";
+          const isManager = (function () { const c = (typeof PhanQuyenService !== "undefined") ? PhanQuyenService.capBacCua(currentUser.role || "employee") : currentUser.role; return ["admin", "manager", "director", "hr", "it_admin"].indexOf(c) >= 0; })();   
 
           return `
             <div class="card">
@@ -21121,6 +21210,14 @@ function writeSheet(ss, sheetName, headers, rowsData){
              
             + '<optgroup label="🏢 GIAO CHO CẢ PHÒNG (trưởng phòng đó sẽ chuyển tiếp)">' + _dsPhongGiao.map(p => '<option value="PB::' + p + '" data-pb="' + p + '">🏢 Cả phòng ' + p + '</option>').join("") + '</optgroup>';
 
+          const _macDinhNT178 = this.nguoiDuyetMacDinh(_uGiao, data);
+          const _ungVienNT178 = dsNguoiNhan
+            .filter(x => x.id === _uGiao.id || ["manager", "hr", "director"].indexOf(PhanQuyenService.capBacCua(x.role || "employee")) >= 0)
+            .sort((a, b) => (a.id === _macDinhNT178 ? -1 : b.id === _macDinhNT178 ? 1 : 0)
+              || (this._hangSo(a.role) - this._hangSo(b.role)) || String(a.hoTen || "").localeCompare(String(b.hoTen || ""), "vi"));
+          const optionsNguoiDuyet178 = _ungVienNT178.map(x => '<option value="' + x.id + '"' + (x.id === _macDinhNT178 ? " selected" : "") + '>'
+            + x.hoTen + (x.id === _uGiao.id ? " — chính bạn" : "") + ' (' + (x.chucVu || "") + (x.phongBan ? " · " + x.phongBan : "") + ')</option>').join("");
+
           
           
           const bodyHtml = `
@@ -21154,6 +21251,14 @@ function writeSheet(ss, sheetName, headers, rowsData){
                   </select>
                 </div>
 
+                <!-- [THÊM MỚI 11/09/2026 — V4 đợt 178] NGƯỜI NGHIỆM THU — chủ app: "người giao việc có thể yêu cầu
+                     người khác duyệt; mặc định trưởng phòng mình; giám đốc/quản lý thì chính họ duyệt". -->
+                <div class="form-group" style="margin-bottom:0">
+                  <label class="form-label">Người nghiệm thu <small class="text-muted">(mặc định: trưởng phòng)</small></label>
+                  <select id="inpNguoiDuyetCV" class="form-control">
+                    ${optionsNguoiDuyet178}
+                  </select>
+                </div>
                 <div class="form-group" style="margin-bottom:0">
                   <label class="form-label">Mức độ ưu tiên</label>
                   <select id="inpUuTien" class="form-control">
@@ -21241,6 +21346,10 @@ function writeSheet(ss, sheetName, headers, rowsData){
                   nguoiGiao: CoreService.currentUser.hoTen,
                    
                   nguoiGiaoId: CoreService.currentUser.id,
+                  
+                  nguoiDuyetChiDinh: ((document.getElementById("inpNguoiDuyetCV") || {}).value || ""),
+                  tenNguoiDuyetChiDinh: (function () { const sNT = document.getElementById("inpNguoiDuyetCV"); const oNT = sNT && sNT.selectedIndex >= 0 ? sNT.options[sNT.selectedIndex] : null;
+                    return oNT ? String(oNT.text || "").replace(" — chính bạn", "").replace(/\s*\([^()]*\)\s*$/, "").trim() : ""; })(),
                   
                   nguoiNhan: laGiaoCaPhong ? "" : nvId,
                   tenNguoiNhan: laGiaoCaPhong ? ("🏢 Cả phòng " + tenPhongGiao) : (nvObj ? nvObj.hoTen : nvId),
@@ -36694,6 +36803,11 @@ function writeSheet(ss, sheetName, headers, rowsData){
         };
          
         const _thayViec139 = (ma, don, pb) => {
+           
+          if (ma === "nghiem_thu_viec" && don) {
+            if (don.nguoiDuyetChiDinh && String(don.nguoiDuyetChiDinh) === String(u.id)) return true;
+            if (String(don.nguoiGiaoId || "") === String(u.id) && String(don.nguoiNhan || "") === String(u.id)) return true;
+          }
            
           if (cap === "it_admin") return _xemTheoThang(ma, pb);
           try {
